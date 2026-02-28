@@ -1,0 +1,23 @@
+[package]
+name = "copepod-sdk"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Official Rust SDK for the Copepod BaaS platform"
+
+[dependencies]
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream", "multipart"] }
+bytes = "1"
+tokio = { version = "1", features = ["sync"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+chrono = { version = "0.4", features = ["serde"] }
+eventsource-stream = "0.2"
+futures-util = "0.3"
+url = "2"
+tracing = "0.1"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+wiremock = "0.6"
