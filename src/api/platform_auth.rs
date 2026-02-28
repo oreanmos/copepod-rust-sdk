@@ -77,4 +77,44 @@ impl CopepodClient {
         let body = serde_json::json!({ "code": code });
         self.post_empty("api/auth/mfa/disable", &body).await
     }
+
+    /// Use a recovery code for MFA during platform login.
+    pub async fn mfa_recovery(&self, mfa_token: &str, recovery_code: &str) -> Result<AuthResponse> {
+        let body = serde_json::json!({ "mfa_token": mfa_token, "recovery_code": recovery_code });
+        let resp: AuthResponse = self.post("api/platform/auth/mfa/recovery", &body).await?;
+        self.token_store
+            .set(TokenPair {
+                token: resp.token.clone(),
+                refresh_token: resp.refresh_token.clone(),
+                expires_at: None,
+            })
+            .await;
+        Ok(resp)
+    }
+
+    /// Get the current authenticated user.
+    pub async fn get_me(&self) -> Result<Value> {
+        self.get("api/platform/auth/me").await
+    }
+
+    /// Check if initial setup has been completed.
+    pub async fn setup_status(&self) -> Result<Value> {
+        self.get("api/platform/auth/setup-status").await
+    }
+
+    /// Perform initial platform setup (create first admin user).
+    pub async fn setup(&self, body: &impl serde::Serialize) -> Result<AuthResponse> {
+        self.post("api/platform/auth/setup", body).await
+    }
+
+    /// Enroll in MFA (platform user).
+    pub async fn mfa_enroll(&self) -> Result<Value> {
+        self.post("api/platform/auth/mfa/enroll", &serde_json::json!({})).await
+    }
+
+    /// Confirm MFA enrollment (platform user).
+    pub async fn mfa_confirm_enroll(&self, code: &str) -> Result<Value> {
+        let body = serde_json::json!({ "code": code });
+        self.post("api/platform/auth/mfa/confirm-enroll", &body).await
+    }
 }

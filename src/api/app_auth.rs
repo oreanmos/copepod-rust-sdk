@@ -109,4 +109,133 @@ impl CopepodClient {
         let body = serde_json::json!({ "token": token, "password": password });
         self.post_empty(&path, &body).await
     }
+
+    /// Request an email change for an app user.
+    pub async fn request_email_change(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        collection: &str,
+        new_email: &str,
+    ) -> Result<()> {
+        let path = format!(
+            "api/platform/orgs/{}/apps/{}/auth/{}/request-email-change",
+            org_id, app_id, collection
+        );
+        let body = serde_json::json!({ "new_email": new_email });
+        self.post_empty(&path, &body).await
+    }
+
+    /// Confirm an email change for an app user.
+    pub async fn confirm_email_change(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        collection: &str,
+        token: &str,
+    ) -> Result<()> {
+        let path = format!(
+            "api/platform/orgs/{}/apps/{}/auth/{}/confirm-email-change",
+            org_id, app_id, collection
+        );
+        let body = serde_json::json!({ "token": token });
+        self.post_empty(&path, &body).await
+    }
+
+    /// Enroll in MFA for an app user.
+    pub async fn app_mfa_enroll(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        collection: &str,
+    ) -> Result<serde_json::Value> {
+        let path = format!(
+            "api/platform/orgs/{}/apps/{}/auth/{}/mfa/enroll",
+            org_id, app_id, collection
+        );
+        self.post(&path, &serde_json::json!({})).await
+    }
+
+    /// Confirm MFA enrollment for an app user.
+    pub async fn app_mfa_confirm_enroll(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        collection: &str,
+        code: &str,
+    ) -> Result<()> {
+        let path = format!(
+            "api/platform/orgs/{}/apps/{}/auth/{}/mfa/confirm-enroll",
+            org_id, app_id, collection
+        );
+        let body = serde_json::json!({ "code": code });
+        self.post_empty(&path, &body).await
+    }
+
+    /// Disable MFA for an app user.
+    pub async fn app_mfa_disable(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        collection: &str,
+        code: &str,
+    ) -> Result<()> {
+        let path = format!(
+            "api/platform/orgs/{}/apps/{}/auth/{}/mfa/disable",
+            org_id, app_id, collection
+        );
+        let body = serde_json::json!({ "code": code });
+        self.post_empty(&path, &body).await
+    }
+
+    /// Verify MFA code during app user login.
+    pub async fn app_mfa_verify(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        collection: &str,
+        mfa_token: &str,
+        code: &str,
+    ) -> Result<AuthResponse> {
+        let path = format!(
+            "api/platform/orgs/{}/apps/{}/auth/{}/mfa/verify",
+            org_id, app_id, collection
+        );
+        let body = serde_json::json!({ "mfa_token": mfa_token, "code": code });
+        self.post(&path, &body).await
+    }
+
+    /// Use a recovery code for MFA during app user login.
+    pub async fn app_mfa_recovery(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        collection: &str,
+        mfa_token: &str,
+        recovery_code: &str,
+    ) -> Result<AuthResponse> {
+        let path = format!(
+            "api/platform/orgs/{}/apps/{}/auth/{}/mfa/recovery",
+            org_id, app_id, collection
+        );
+        let body = serde_json::json!({ "mfa_token": mfa_token, "recovery_code": recovery_code });
+        self.post(&path, &body).await
+    }
+
+    /// Set password for an app user (admin).
+    pub async fn admin_set_password(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        collection: &str,
+        user_id: &str,
+        password: &str,
+    ) -> Result<serde_json::Value> {
+        let path = format!(
+            "api/platform/orgs/{}/apps/{}/auth/{}/{}/set-password",
+            org_id, app_id, collection, user_id
+        );
+        let body = serde_json::json!({ "password": password });
+        self.post(&path, &body).await
+    }
 }

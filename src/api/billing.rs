@@ -44,4 +44,29 @@ impl CopepodClient {
         )
         .await
     }
+
+    /// List payment history for an organization.
+    pub async fn list_payments(&self, org_id: &str) -> Result<Value> {
+        self.get(&format!("api/platform/orgs/{}/billing/payments", org_id))
+            .await
+    }
+
+    /// Get usage metrics for an organization.
+    pub async fn get_usage(&self, org_id: &str) -> Result<Value> {
+        self.get(&format!("api/platform/orgs/{}/usage", org_id))
+            .await
+    }
+
+    /// Update entitlements for an organization (billing context).
+    pub async fn update_billing_entitlements(
+        &self,
+        org_id: &str,
+        body: &impl serde::Serialize,
+    ) -> Result<Value> {
+        self.put(
+            &format!("api/platform/orgs/{}/billing/entitlements", org_id),
+            body,
+        )
+        .await
+    }
 }

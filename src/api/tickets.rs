@@ -176,4 +176,103 @@ impl CopepodClient {
     pub async fn get_ticket_stats(&self) -> Result<Value> {
         self.get("api/admin/tickets/stats").await
     }
+
+    // -- Org-scoped support ticket endpoints --
+
+    /// List support tickets for an organization.
+    pub async fn list_support_tickets(
+        &self,
+        org_id: &str,
+    ) -> Result<ListResult<Ticket>> {
+        self.get(&format!("api/platform/orgs/{}/support/tickets", org_id))
+            .await
+    }
+
+    /// Create a support ticket for an organization.
+    pub async fn create_support_ticket(
+        &self,
+        org_id: &str,
+        body: &impl serde::Serialize,
+    ) -> Result<Ticket> {
+        self.post(&format!("api/platform/orgs/{}/support/tickets", org_id), body)
+            .await
+    }
+
+    /// Get a support ticket by ID.
+    pub async fn get_support_ticket(
+        &self,
+        org_id: &str,
+        ticket_id: &str,
+    ) -> Result<Ticket> {
+        self.get(&format!(
+            "api/platform/orgs/{}/support/tickets/{}",
+            org_id, ticket_id
+        ))
+        .await
+    }
+
+    /// Update a support ticket.
+    pub async fn update_support_ticket(
+        &self,
+        org_id: &str,
+        ticket_id: &str,
+        body: &impl serde::Serialize,
+    ) -> Result<Ticket> {
+        self.patch(
+            &format!("api/platform/orgs/{}/support/tickets/{}", org_id, ticket_id),
+            body,
+        )
+        .await
+    }
+
+    /// Add a comment to a support ticket.
+    pub async fn add_support_comment(
+        &self,
+        org_id: &str,
+        ticket_id: &str,
+        body: &impl serde::Serialize,
+    ) -> Result<TicketComment> {
+        self.post(
+            &format!(
+                "api/platform/orgs/{}/support/tickets/{}/comment",
+                org_id, ticket_id
+            ),
+            body,
+        )
+        .await
+    }
+
+    /// Assign a support ticket to a user.
+    pub async fn assign_support_ticket(
+        &self,
+        org_id: &str,
+        ticket_id: &str,
+        user_id: &str,
+    ) -> Result<Value> {
+        let body = serde_json::json!({ "user_id": user_id });
+        self.post(
+            &format!(
+                "api/platform/orgs/{}/support/tickets/{}/assign",
+                org_id, ticket_id
+            ),
+            &body,
+        )
+        .await
+    }
+
+    /// Close a support ticket.
+    pub async fn close_support_ticket(
+        &self,
+        org_id: &str,
+        ticket_id: &str,
+    ) -> Result<Value> {
+        self.post(
+            &format!(
+                "api/platform/orgs/{}/support/tickets/{}/close",
+                org_id, ticket_id
+            ),
+            &serde_json::json!({}),
+        )
+        .await
+    }
 }
