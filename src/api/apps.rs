@@ -77,4 +77,21 @@ impl CopepodClient {
         ))
         .await
     }
+
+    /// Update allowed origins for an app.
+    pub async fn update_allowed_origins(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        body: &impl serde::Serialize,
+    ) -> Result<App> {
+        self.patch(
+            &format!(
+                "api/platform/orgs/{}/apps/{}/allowed-origins",
+                org_id, app_id
+            ),
+            body,
+        )
+        .await
+    }
 }

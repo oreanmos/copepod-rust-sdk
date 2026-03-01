@@ -1,3 +1,5 @@
+use serde_json::Value;
+
 use crate::client::CopepodClient;
 use crate::error::Result;
 use crate::models::{ListResult, User};
@@ -23,8 +25,16 @@ impl CopepodClient {
         self.patch(&format!("api/platform/users/{}", id), body).await
     }
 
-    /// Delete a platform user.
-    pub async fn delete_user(&self, id: &str) -> Result<()> {
-        self.delete(&format!("api/platform/users/{}", id)).await
+    /// Reset a platform user's password (admin).
+    pub async fn reset_password(
+        &self,
+        id: &str,
+        body: &impl serde::Serialize,
+    ) -> Result<Value> {
+        self.post(
+            &format!("api/platform/users/{}/reset-password", id),
+            body,
+        )
+        .await
     }
 }

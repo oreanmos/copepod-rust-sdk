@@ -35,3 +35,5 @@ pub mod entitlements;
 pub mod iam;
 pub mod plans;
 pub mod oauth;
+pub mod cluster;
+pub mod audit_logs;

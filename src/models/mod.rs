@@ -21,6 +21,8 @@ pub mod governance;
 pub mod iam;
 pub mod plan;
 pub mod backup;
+pub mod cluster;
+pub mod audit;
 
 pub use common::*;
 pub use auth::*;
@@ -45,3 +47,5 @@ pub use governance::*;
 pub use iam::*;
 pub use plan::*;
 pub use backup::*;
+pub use cluster::*;
+pub use audit::*;
