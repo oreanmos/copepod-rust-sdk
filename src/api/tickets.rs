@@ -17,7 +17,7 @@ impl CopepodClient {
         app_id: &str,
         body: &impl serde::Serialize,
     ) -> Result<Ticket> {
-        let path = format!("api/orgs/{}/apps/{}/tickets", org_id, app_id);
+        let path = format!("api/platform/orgs/{}/apps/{}/tickets", org_id, app_id);
         self.post(&path, body).await
     }
 
@@ -27,7 +27,7 @@ impl CopepodClient {
         org_id: &str,
         app_id: &str,
     ) -> Result<ListResult<Ticket>> {
-        let path = format!("api/orgs/{}/apps/{}/tickets", org_id, app_id);
+        let path = format!("api/platform/orgs/{}/apps/{}/tickets", org_id, app_id);
         self.get(&path).await
     }
 
@@ -38,7 +38,7 @@ impl CopepodClient {
         app_id: &str,
         ticket_id: &str,
     ) -> Result<Ticket> {
-        let path = format!("api/orgs/{}/apps/{}/tickets/{}", org_id, app_id, ticket_id);
+        let path = format!("api/platform/orgs/{}/apps/{}/tickets/{}", org_id, app_id, ticket_id);
         self.get(&path).await
     }
 
@@ -50,7 +50,7 @@ impl CopepodClient {
         ticket_id: &str,
     ) -> Result<Ticket> {
         let path = format!(
-            "api/orgs/{}/apps/{}/tickets/{}/close",
+            "api/platform/orgs/{}/apps/{}/tickets/{}/close",
             org_id, app_id, ticket_id
         );
         self.post(&path, &serde_json::json!({})).await
@@ -67,7 +67,7 @@ impl CopepodClient {
         body: &impl serde::Serialize,
     ) -> Result<TicketComment> {
         let path = format!(
-            "api/orgs/{}/apps/{}/tickets/{}/comments",
+            "api/platform/orgs/{}/apps/{}/tickets/{}/comments",
             org_id, app_id, ticket_id
         );
         self.post(&path, body).await
@@ -81,7 +81,7 @@ impl CopepodClient {
         ticket_id: &str,
     ) -> Result<ListResult<TicketComment>> {
         let path = format!(
-            "api/orgs/{}/apps/{}/tickets/{}/comments",
+            "api/platform/orgs/{}/apps/{}/tickets/{}/comments",
             org_id, app_id, ticket_id
         );
         self.get(&path).await
@@ -100,7 +100,7 @@ impl CopepodClient {
         content_type: &str,
     ) -> Result<TicketAttachment> {
         let path = format!(
-            "api/orgs/{}/apps/{}/tickets/{}/attachments",
+            "api/platform/orgs/{}/apps/{}/tickets/{}/attachments",
             org_id, app_id, ticket_id
         );
 
@@ -129,7 +129,7 @@ impl CopepodClient {
         attachment_id: &str,
     ) -> Result<Bytes> {
         let path = format!(
-            "api/orgs/{}/apps/{}/tickets/{}/attachments/{}",
+            "api/platform/orgs/{}/apps/{}/tickets/{}/attachments/{}",
             org_id, app_id, ticket_id, attachment_id
         );
         let resp = self
@@ -159,7 +159,7 @@ impl CopepodClient {
 
     /// List all tickets (admin).
     pub async fn list_tickets(&self) -> Result<ListResult<Ticket>> {
-        self.get("api/admin/tickets").await
+        self.get("api/platform/admin/tickets").await
     }
 
     /// Update a ticket (admin).
@@ -168,13 +168,13 @@ impl CopepodClient {
         ticket_id: &str,
         body: &impl serde::Serialize,
     ) -> Result<Ticket> {
-        self.patch(&format!("api/admin/tickets/{}", ticket_id), body)
+        self.patch(&format!("api/platform/admin/tickets/{}", ticket_id), body)
             .await
     }
 
     /// Get ticket statistics (admin).
     pub async fn get_ticket_stats(&self) -> Result<Value> {
-        self.get("api/admin/tickets/stats").await
+        self.get("api/platform/admin/tickets/stats").await
     }
 
     // -- Org-scoped support ticket endpoints --

@@ -13,7 +13,7 @@ impl CopepodClient {
         collection: &str,
     ) -> RecordQueryBuilder<'a> {
         let path = format!(
-            "api/orgs/{}/apps/{}/collections/{}/records",
+            "api/platform/orgs/{}/apps/{}/records/{}",
             org_id, app_id, collection
         );
         RecordQueryBuilder::new(self, path)
@@ -28,7 +28,7 @@ impl CopepodClient {
         body: &impl serde::Serialize,
     ) -> Result<Value> {
         let path = format!(
-            "api/orgs/{}/apps/{}/collections/{}/records",
+            "api/platform/orgs/{}/apps/{}/records/{}",
             org_id, app_id, collection
         );
         self.post(&path, body).await
@@ -44,7 +44,7 @@ impl CopepodClient {
         body: &impl serde::Serialize,
     ) -> Result<Value> {
         let path = format!(
-            "api/orgs/{}/apps/{}/collections/{}/records/{}",
+            "api/platform/orgs/{}/apps/{}/records/{}/{}",
             org_id, app_id, collection, record_id
         );
         self.patch(&path, body).await
@@ -59,7 +59,7 @@ impl CopepodClient {
         record_id: &str,
     ) -> Result<()> {
         let path = format!(
-            "api/orgs/{}/apps/{}/collections/{}/records/{}",
+            "api/platform/orgs/{}/apps/{}/records/{}/{}",
             org_id, app_id, collection, record_id
         );
         self.delete(&path).await

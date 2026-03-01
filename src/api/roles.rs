@@ -9,7 +9,7 @@ impl CopepodClient {
         org_id: &str,
         app_id: &str,
     ) -> Result<ListResult<AppRole>> {
-        self.get(&format!("api/orgs/{}/apps/{}/roles", org_id, app_id))
+        self.get(&format!("api/platform/orgs/{}/apps/{}/roles", org_id, app_id))
             .await
     }
 
@@ -20,7 +20,7 @@ impl CopepodClient {
         app_id: &str,
         body: &impl serde::Serialize,
     ) -> Result<AppRole> {
-        self.post(&format!("api/orgs/{}/apps/{}/roles", org_id, app_id), body)
+        self.post(&format!("api/platform/orgs/{}/apps/{}/roles", org_id, app_id), body)
             .await
     }
 
@@ -33,7 +33,7 @@ impl CopepodClient {
         body: &impl serde::Serialize,
     ) -> Result<AppRole> {
         self.patch(
-            &format!("api/orgs/{}/apps/{}/roles/{}", org_id, app_id, role_id),
+            &format!("api/platform/orgs/{}/apps/{}/roles/{}", org_id, app_id, role_id),
             body,
         )
         .await
@@ -47,7 +47,7 @@ impl CopepodClient {
         role_id: &str,
     ) -> Result<()> {
         self.delete(&format!(
-            "api/orgs/{}/apps/{}/roles/{}",
+            "api/platform/orgs/{}/apps/{}/roles/{}",
             org_id, app_id, role_id
         ))
         .await
@@ -61,7 +61,7 @@ impl CopepodClient {
         user_id: &str,
     ) -> Result<ListResult<UserRole>> {
         self.get(&format!(
-            "api/orgs/{}/apps/{}/users/{}/roles",
+            "api/platform/orgs/{}/apps/{}/users/{}/roles",
             org_id, app_id, user_id
         ))
         .await
@@ -77,7 +77,7 @@ impl CopepodClient {
     ) -> Result<UserRole> {
         self.post(
             &format!(
-                "api/orgs/{}/apps/{}/users/{}/roles",
+                "api/platform/orgs/{}/apps/{}/users/{}/roles",
                 org_id, app_id, user_id
             ),
             body,
@@ -94,7 +94,7 @@ impl CopepodClient {
         role_id: &str,
     ) -> Result<()> {
         self.delete(&format!(
-            "api/orgs/{}/apps/{}/users/{}/roles/{}",
+            "api/platform/orgs/{}/apps/{}/users/{}/roles/{}",
             org_id, app_id, user_id, role_id
         ))
         .await

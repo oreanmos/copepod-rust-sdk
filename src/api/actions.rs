@@ -7,7 +7,7 @@ use crate::models::ActionEntry;
 impl CopepodClient {
     /// List all available actions.
     pub async fn list_actions(&self) -> Result<Vec<ActionEntry>> {
-        self.get("api/actions").await
+        self.get("api/platform/actions").await
     }
 
     /// Get the action permission matrix for an app.
@@ -17,7 +17,7 @@ impl CopepodClient {
         app_id: &str,
     ) -> Result<Value> {
         self.get(&format!(
-            "api/orgs/{}/apps/{}/actions/matrix",
+            "api/platform/orgs/{}/apps/{}/actions/matrix",
             org_id, app_id
         ))
         .await
@@ -33,7 +33,7 @@ impl CopepodClient {
     ) -> Result<Value> {
         self.put(
             &format!(
-                "api/orgs/{}/apps/{}/actions/matrix/{}",
+                "api/platform/orgs/{}/apps/{}/actions/matrix/{}",
                 org_id, app_id, action_key
             ),
             body,
@@ -43,7 +43,7 @@ impl CopepodClient {
 
     /// Synchronize actions with the server.
     pub async fn sync_actions(&self) -> Result<()> {
-        self.post_empty("api/actions/sync", &serde_json::json!({}))
+        self.post_empty("api/platform/actions/sync", &serde_json::json!({}))
             .await
     }
 }

@@ -9,10 +9,14 @@ impl CopepodClient {
         &self,
         org_id: &str,
         app_id: &str,
+        collection: &str,
         identity: &str,
         password: &str,
     ) -> Result<AuthResponse> {
-        let path = format!("api/orgs/{}/apps/{}/auth/login", org_id, app_id);
+        let path = format!(
+            "api/platform/orgs/{}/apps/{}/auth/{}/auth-with-password",
+            org_id, app_id, collection
+        );
         let body = serde_json::json!({ "identity": identity, "password": password });
         let resp: AuthResponse = self.post(&path, &body).await?;
         self.token_store
@@ -30,9 +34,13 @@ impl CopepodClient {
         &self,
         org_id: &str,
         app_id: &str,
+        collection: &str,
         body: &impl serde::Serialize,
     ) -> Result<AuthResponse> {
-        let path = format!("api/orgs/{}/apps/{}/auth/register", org_id, app_id);
+        let path = format!(
+            "api/platform/orgs/{}/apps/{}/auth/{}/register",
+            org_id, app_id, collection
+        );
         self.post(&path, body).await
     }
 
@@ -41,6 +49,7 @@ impl CopepodClient {
         &self,
         org_id: &str,
         app_id: &str,
+        collection: &str,
     ) -> Result<AuthResponse> {
         let pair = self
             .token_store
@@ -48,7 +57,10 @@ impl CopepodClient {
             .await
             .ok_or_else(|| crate::error::CopepodError::Auth("No token to refresh".into()))?;
 
-        let path = format!("api/orgs/{}/apps/{}/auth/refresh", org_id, app_id);
+        let path = format!(
+            "api/platform/orgs/{}/apps/{}/auth/{}/auth-refresh",
+            org_id, app_id, collection
+        );
         let body = serde_json::json!({ "refresh_token": pair.refresh_token });
         let resp: AuthResponse = self.post(&path, &body).await?;
         self.token_store
@@ -66,9 +78,13 @@ impl CopepodClient {
         &self,
         org_id: &str,
         app_id: &str,
+        collection: &str,
         email: &str,
     ) -> Result<()> {
-        let path = format!("api/orgs/{}/apps/{}/auth/request-verification", org_id, app_id);
+        let path = format!(
+            "api/platform/orgs/{}/apps/{}/auth/{}/request-verification",
+            org_id, app_id, collection
+        );
         let body = serde_json::json!({ "email": email });
         self.post_empty(&path, &body).await
     }
@@ -78,9 +94,13 @@ impl CopepodClient {
         &self,
         org_id: &str,
         app_id: &str,
+        collection: &str,
         token: &str,
     ) -> Result<()> {
-        let path = format!("api/orgs/{}/apps/{}/auth/confirm-verification", org_id, app_id);
+        let path = format!(
+            "api/platform/orgs/{}/apps/{}/auth/{}/confirm-verification",
+            org_id, app_id, collection
+        );
         let body = serde_json::json!({ "token": token });
         self.post_empty(&path, &body).await
     }
@@ -90,9 +110,13 @@ impl CopepodClient {
         &self,
         org_id: &str,
         app_id: &str,
+        collection: &str,
         email: &str,
     ) -> Result<()> {
-        let path = format!("api/orgs/{}/apps/{}/auth/request-password-reset", org_id, app_id);
+        let path = format!(
+            "api/platform/orgs/{}/apps/{}/auth/{}/request-password-reset",
+            org_id, app_id, collection
+        );
         let body = serde_json::json!({ "email": email });
         self.post_empty(&path, &body).await
     }
@@ -102,10 +126,14 @@ impl CopepodClient {
         &self,
         org_id: &str,
         app_id: &str,
+        collection: &str,
         token: &str,
         password: &str,
     ) -> Result<()> {
-        let path = format!("api/orgs/{}/apps/{}/auth/confirm-password-reset", org_id, app_id);
+        let path = format!(
+            "api/platform/orgs/{}/apps/{}/auth/{}/confirm-password-reset",
+            org_id, app_id, collection
+        );
         let body = serde_json::json!({ "token": token, "password": password });
         self.post_empty(&path, &body).await
     }

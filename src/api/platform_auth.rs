@@ -9,7 +9,7 @@ impl CopepodClient {
     /// Log in with email and password. Stores tokens automatically.
     pub async fn login(&self, email: &str, password: &str) -> Result<AuthResponse> {
         let body = serde_json::json!({ "email": email, "password": password });
-        let resp: AuthResponse = self.post("api/auth/login", &body).await?;
+        let resp: AuthResponse = self.post("api/platform/auth/login", &body).await?;
         self.token_store
             .set(TokenPair {
                 token: resp.token.clone(),
@@ -29,7 +29,7 @@ impl CopepodClient {
             .ok_or_else(|| crate::error::CopepodError::Auth("No token to refresh".into()))?;
 
         let body = serde_json::json!({ "refresh_token": pair.refresh_token });
-        let resp: AuthResponse = self.post("api/auth/refresh", &body).await?;
+        let resp: AuthResponse = self.post("api/platform/auth/refresh", &body).await?;
         self.token_store
             .set(TokenPair {
                 token: resp.token.clone(),
@@ -42,7 +42,7 @@ impl CopepodClient {
 
     /// Log out and clear the token store.
     pub async fn logout(&self) -> Result<()> {
-        let _ = self.post_empty("api/auth/logout", &serde_json::json!({})).await;
+        let _ = self.post_empty("api/platform/auth/logout", &serde_json::json!({})).await;
         self.token_store.clear().await;
         Ok(())
     }
@@ -50,7 +50,7 @@ impl CopepodClient {
     /// Verify an MFA code during login.
     pub async fn mfa_verify(&self, mfa_token: &str, code: &str) -> Result<AuthResponse> {
         let body = serde_json::json!({ "mfa_token": mfa_token, "code": code });
-        let resp: AuthResponse = self.post("api/auth/mfa/verify", &body).await?;
+        let resp: AuthResponse = self.post("api/platform/auth/mfa/verify", &body).await?;
         self.token_store
             .set(TokenPair {
                 token: resp.token.clone(),
@@ -63,19 +63,19 @@ impl CopepodClient {
 
     /// Start MFA setup (returns provisioning URI, secret, etc.).
     pub async fn mfa_setup(&self) -> Result<Value> {
-        self.get("api/auth/mfa/setup").await
+        self.get("api/platform/auth/mfa/setup").await
     }
 
     /// Enable MFA with a TOTP code.
     pub async fn mfa_enable(&self, code: &str) -> Result<()> {
         let body = serde_json::json!({ "code": code });
-        self.post_empty("api/auth/mfa/enable", &body).await
+        self.post_empty("api/platform/auth/mfa/enable", &body).await
     }
 
     /// Disable MFA with a TOTP code.
     pub async fn mfa_disable(&self, code: &str) -> Result<()> {
         let body = serde_json::json!({ "code": code });
-        self.post_empty("api/auth/mfa/disable", &body).await
+        self.post_empty("api/platform/auth/mfa/disable", &body).await
     }
 
     /// Use a recovery code for MFA during platform login.

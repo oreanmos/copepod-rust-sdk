@@ -11,7 +11,7 @@ impl CopepodClient {
         app_id: &str,
     ) -> Result<Value> {
         self.get(&format!(
-            "api/orgs/{}/apps/{}/cache/stats",
+            "api/platform/orgs/{}/apps/{}/cache/stats",
             org_id, app_id
         ))
         .await
@@ -20,7 +20,7 @@ impl CopepodClient {
     /// Flush the entire cache for an app.
     pub async fn flush_cache(&self, org_id: &str, app_id: &str) -> Result<()> {
         self.post_empty(
-            &format!("api/orgs/{}/apps/{}/cache/flush", org_id, app_id),
+            &format!("api/platform/orgs/{}/apps/{}/cache/flush", org_id, app_id),
             &serde_json::json!({}),
         )
         .await
@@ -34,7 +34,7 @@ impl CopepodClient {
         key: &str,
     ) -> Result<()> {
         self.delete(&format!(
-            "api/orgs/{}/apps/{}/cache/{}",
+            "api/platform/orgs/{}/apps/{}/cache/{}",
             org_id, app_id, key
         ))
         .await

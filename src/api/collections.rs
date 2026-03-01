@@ -10,7 +10,7 @@ impl CopepodClient {
         app_id: &str,
     ) -> Result<ListResult<Collection>> {
         self.get(&format!(
-            "api/orgs/{}/apps/{}/collections",
+            "api/platform/orgs/{}/apps/{}/collections",
             org_id, app_id
         ))
         .await
@@ -24,7 +24,7 @@ impl CopepodClient {
         collection_id: &str,
     ) -> Result<Collection> {
         self.get(&format!(
-            "api/orgs/{}/apps/{}/collections/{}",
+            "api/platform/orgs/{}/apps/{}/collections/{}",
             org_id, app_id, collection_id
         ))
         .await
@@ -38,7 +38,7 @@ impl CopepodClient {
         body: &impl serde::Serialize,
     ) -> Result<Collection> {
         self.post(
-            &format!("api/orgs/{}/apps/{}/collections", org_id, app_id),
+            &format!("api/platform/orgs/{}/apps/{}/collections", org_id, app_id),
             body,
         )
         .await
@@ -54,7 +54,7 @@ impl CopepodClient {
     ) -> Result<Collection> {
         self.patch(
             &format!(
-                "api/orgs/{}/apps/{}/collections/{}",
+                "api/platform/orgs/{}/apps/{}/collections/{}",
                 org_id, app_id, collection_id
             ),
             body,
@@ -70,7 +70,7 @@ impl CopepodClient {
         collection_id: &str,
     ) -> Result<()> {
         self.delete(&format!(
-            "api/orgs/{}/apps/{}/collections/{}",
+            "api/platform/orgs/{}/apps/{}/collections/{}",
             org_id, app_id, collection_id
         ))
         .await

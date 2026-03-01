@@ -23,7 +23,7 @@ impl CopepodClient {
             .unwrap_or_default();
 
         let path = format!(
-            "api/realtime/orgs/{}/apps/{}/events",
+            "api/platform/orgs/{}/apps/{}/realtime",
             org_id, app_id
         );
         let url = self.base_url.join(&path)?;

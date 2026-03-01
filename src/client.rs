@@ -141,7 +141,7 @@ impl CopepodClient {
             }
 
             // Call the refresh endpoint
-            let url = self.base_url.join("api/auth/refresh")?;
+            let url = self.base_url.join("api/platform/auth/refresh")?;
             let resp = self
                 .http
                 .post(url)

@@ -11,7 +11,7 @@ impl CopepodClient {
         app_id: &str,
     ) -> Result<Value> {
         self.get(&format!(
-            "api/orgs/{}/apps/{}/settings/email",
+            "api/platform/orgs/{}/apps/{}/settings/email",
             org_id, app_id
         ))
         .await
@@ -25,7 +25,7 @@ impl CopepodClient {
         body: &impl serde::Serialize,
     ) -> Result<Value> {
         self.put(
-            &format!("api/orgs/{}/apps/{}/settings/email", org_id, app_id),
+            &format!("api/platform/orgs/{}/apps/{}/settings/email", org_id, app_id),
             body,
         )
         .await
@@ -38,7 +38,7 @@ impl CopepodClient {
         app_id: &str,
     ) -> Result<Value> {
         self.get(&format!(
-            "api/orgs/{}/apps/{}/settings/auth",
+            "api/platform/orgs/{}/apps/{}/settings/auth",
             org_id, app_id
         ))
         .await
@@ -52,7 +52,7 @@ impl CopepodClient {
         body: &impl serde::Serialize,
     ) -> Result<Value> {
         self.put(
-            &format!("api/orgs/{}/apps/{}/settings/auth", org_id, app_id),
+            &format!("api/platform/orgs/{}/apps/{}/settings/auth", org_id, app_id),
             body,
         )
         .await
@@ -60,7 +60,7 @@ impl CopepodClient {
 
     /// Get platform-wide settings (admin).
     pub async fn get_platform_settings(&self) -> Result<Value> {
-        self.get("api/settings").await
+        self.get("api/platform/settings").await
     }
 
     /// Update platform-wide settings (admin).
@@ -68,6 +68,6 @@ impl CopepodClient {
         &self,
         body: &impl serde::Serialize,
     ) -> Result<Value> {
-        self.put("api/settings", body).await
+        self.put("api/platform/settings", body).await
     }
 }

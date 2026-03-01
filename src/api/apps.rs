@@ -5,12 +5,12 @@ use crate::models::{ApiKey, App, ListResult};
 impl CopepodClient {
     /// List all apps in an organization.
     pub async fn list_apps(&self, org_id: &str) -> Result<ListResult<App>> {
-        self.get(&format!("api/orgs/{}/apps", org_id)).await
+        self.get(&format!("api/platform/orgs/{}/apps", org_id)).await
     }
 
     /// Get an app by ID.
     pub async fn get_app(&self, org_id: &str, app_id: &str) -> Result<App> {
-        self.get(&format!("api/orgs/{}/apps/{}", org_id, app_id))
+        self.get(&format!("api/platform/orgs/{}/apps/{}", org_id, app_id))
             .await
     }
 
@@ -20,7 +20,7 @@ impl CopepodClient {
         org_id: &str,
         body: &impl serde::Serialize,
     ) -> Result<App> {
-        self.post(&format!("api/orgs/{}/apps", org_id), body).await
+        self.post(&format!("api/platform/orgs/{}/apps", org_id), body).await
     }
 
     /// Update an app.
@@ -30,13 +30,13 @@ impl CopepodClient {
         app_id: &str,
         body: &impl serde::Serialize,
     ) -> Result<App> {
-        self.patch(&format!("api/orgs/{}/apps/{}", org_id, app_id), body)
+        self.patch(&format!("api/platform/orgs/{}/apps/{}", org_id, app_id), body)
             .await
     }
 
     /// Delete an app.
     pub async fn delete_app(&self, org_id: &str, app_id: &str) -> Result<()> {
-        self.delete(&format!("api/orgs/{}/apps/{}", org_id, app_id))
+        self.delete(&format!("api/platform/orgs/{}/apps/{}", org_id, app_id))
             .await
     }
 
@@ -46,7 +46,7 @@ impl CopepodClient {
         org_id: &str,
         app_id: &str,
     ) -> Result<ListResult<ApiKey>> {
-        self.get(&format!("api/orgs/{}/apps/{}/api-keys", org_id, app_id))
+        self.get(&format!("api/platform/orgs/{}/apps/{}/api-keys", org_id, app_id))
             .await
     }
 
@@ -58,7 +58,7 @@ impl CopepodClient {
         body: &impl serde::Serialize,
     ) -> Result<ApiKey> {
         self.post(
-            &format!("api/orgs/{}/apps/{}/api-keys", org_id, app_id),
+            &format!("api/platform/orgs/{}/apps/{}/api-keys", org_id, app_id),
             body,
         )
         .await
@@ -72,7 +72,7 @@ impl CopepodClient {
         key_id: &str,
     ) -> Result<()> {
         self.delete(&format!(
-            "api/orgs/{}/apps/{}/api-keys/{}",
+            "api/platform/orgs/{}/apps/{}/api-keys/{}",
             org_id, app_id, key_id
         ))
         .await

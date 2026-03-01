@@ -21,8 +21,8 @@ impl CopepodClient {
         content_type: &str,
     ) -> Result<Value> {
         let path = format!(
-            "api/orgs/{}/apps/{}/collections/{}/records/{}/files/{}",
-            org_id, app_id, collection, record_id, field
+            "api/platform/orgs/{}/apps/{}/files/{}/{}/{}",
+            org_id, app_id, collection, record_id, filename
         );
 
         let part = reqwest::multipart::Part::bytes(data)
@@ -51,7 +51,7 @@ impl CopepodClient {
         filename: &str,
     ) -> Result<Bytes> {
         let path = format!(
-            "api/orgs/{}/apps/{}/collections/{}/records/{}/files/{}",
+            "api/platform/orgs/{}/apps/{}/files/{}/{}/{}",
             org_id, app_id, collection, record_id, filename
         );
         let resp = self
@@ -87,7 +87,7 @@ impl CopepodClient {
         filename: &str,
     ) -> Result<()> {
         let path = format!(
-            "api/orgs/{}/apps/{}/collections/{}/records/{}/files/{}",
+            "api/platform/orgs/{}/apps/{}/files/{}/{}/{}",
             org_id, app_id, collection, record_id, filename
         );
         self.delete(&path).await

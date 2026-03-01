@@ -11,7 +11,7 @@ impl CopepodClient {
         org_id: &str,
         app_id: &str,
     ) -> Result<ListResult<User>> {
-        self.get(&format!("api/orgs/{}/apps/{}/users", org_id, app_id))
+        self.get(&format!("api/platform/orgs/{}/apps/{}/users", org_id, app_id))
             .await
     }
 
@@ -23,7 +23,7 @@ impl CopepodClient {
         user_id: &str,
     ) -> Result<User> {
         self.get(&format!(
-            "api/orgs/{}/apps/{}/users/{}",
+            "api/platform/orgs/{}/apps/{}/users/{}",
             org_id, app_id, user_id
         ))
         .await
@@ -37,7 +37,7 @@ impl CopepodClient {
         user_id: &str,
     ) -> Result<Value> {
         self.get(&format!(
-            "api/orgs/{}/apps/{}/users/{}/stats",
+            "api/platform/orgs/{}/apps/{}/users/{}/stats",
             org_id, app_id, user_id
         ))
         .await
@@ -51,7 +51,7 @@ impl CopepodClient {
         user_id: &str,
     ) -> Result<Value> {
         self.get(&format!(
-            "api/orgs/{}/apps/{}/users/{}/achievements",
+            "api/platform/orgs/{}/apps/{}/users/{}/achievements",
             org_id, app_id, user_id
         ))
         .await
@@ -64,7 +64,7 @@ impl CopepodClient {
         app_id: &str,
     ) -> Result<Vec<Value>> {
         self.get(&format!(
-            "api/orgs/{}/apps/{}/achievements",
+            "api/platform/orgs/{}/apps/{}/achievements",
             org_id, app_id
         ))
         .await
@@ -78,7 +78,7 @@ impl CopepodClient {
         body: &impl serde::Serialize,
     ) -> Result<Value> {
         self.post(
-            &format!("api/orgs/{}/apps/{}/achievements", org_id, app_id),
+            &format!("api/platform/orgs/{}/apps/{}/achievements", org_id, app_id),
             body,
         )
         .await
@@ -94,7 +94,7 @@ impl CopepodClient {
     ) -> Result<Value> {
         self.patch(
             &format!(
-                "api/orgs/{}/apps/{}/achievements/{}",
+                "api/platform/orgs/{}/apps/{}/achievements/{}",
                 org_id, app_id, achievement_id
             ),
             body,
@@ -110,7 +110,7 @@ impl CopepodClient {
         achievement_id: &str,
     ) -> Result<()> {
         self.delete(&format!(
-            "api/orgs/{}/apps/{}/achievements/{}",
+            "api/platform/orgs/{}/apps/{}/achievements/{}",
             org_id, app_id, achievement_id
         ))
         .await
