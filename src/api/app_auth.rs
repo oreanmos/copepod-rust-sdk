@@ -1,10 +1,10 @@
 use crate::auth::TokenPair;
 use crate::client::CopepodClient;
 use crate::error::Result;
-use crate::models::auth::AuthResponse;
+use crate::models::auth::{AppLoginResult, AuthResponse, MfaChallenge};
 
 impl CopepodClient {
-    /// Log in as an app user.
+    /// Log in as an app user. Returns MFA challenge if 2FA is enabled.
     pub async fn app_login(
         &self,
         org_id: &str,
@@ -12,13 +12,23 @@ impl CopepodClient {
         collection: &str,
         identity: &str,
         password: &str,
-    ) -> Result<AuthResponse> {
+    ) -> Result<AppLoginResult> {
         let path = format!(
             "api/platform/orgs/{}/apps/{}/auth/{}/auth-with-password",
             org_id, app_id, collection
         );
         let body = serde_json::json!({ "identity": identity, "password": password });
-        let resp: AuthResponse = self.post(&path, &body).await?;
+        let raw: serde_json::Value = self.post_raw(&path, &body).await?;
+
+        // Check if the response is an MFA challenge
+        if raw.get("mfa_required").and_then(|v| v.as_bool()).unwrap_or(false) {
+            let challenge: MfaChallenge = serde_json::from_value(raw)
+                .map_err(crate::error::CopepodError::Deserialize)?;
+            return Ok(AppLoginResult::MfaRequired(challenge));
+        }
+
+        let resp: AuthResponse = serde_json::from_value(raw)
+            .map_err(crate::error::CopepodError::Deserialize)?;
         self.token_store
             .set(TokenPair {
                 token: resp.token.clone(),
@@ -26,7 +36,7 @@ impl CopepodClient {
                 expires_at: None,
             })
             .await;
-        Ok(resp)
+        Ok(AppLoginResult::Success(resp))
     }
 
     /// Register a new app user.

@@ -225,6 +225,21 @@ impl CopepodClient {
         Self::handle_empty_response(resp).await
     }
 
+    /// Perform an authenticated POST request, returning raw JSON Value.
+    pub(crate) async fn post_raw(
+        &self,
+        path: &str,
+        body: &impl Serialize,
+    ) -> Result<serde_json::Value> {
+        let resp = self
+            .auth_request(Method::POST, path)
+            .await?
+            .json(body)
+            .send()
+            .await?;
+        Self::handle_response(resp).await
+    }
+
     /// Perform an authenticated PATCH request with a JSON body.
     pub(crate) async fn patch<T: DeserializeOwned>(
         &self,
