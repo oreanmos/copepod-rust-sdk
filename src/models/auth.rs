@@ -16,6 +16,23 @@ pub struct MfaChallenge {
     pub mfa_token: String,
 }
 
+/// Response from MFA enrollment endpoint.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MfaEnrollResponse {
+    pub qr_svg: String,
+    pub totp_uri: String,
+    pub recovery_codes: Vec<String>,
+}
+
+/// Result of an app login attempt — either success or MFA challenge.
+#[derive(Debug, Clone)]
+pub enum AppLoginResult {
+    /// Login succeeded, tokens issued.
+    Success(AuthResponse),
+    /// MFA is required, caller must verify with the mfa_token.
+    MfaRequired(MfaChallenge),
+}
+
 /// A platform or app user.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
