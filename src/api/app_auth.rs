@@ -176,7 +176,7 @@ impl CopepodClient {
         org_id: &str,
         app_id: &str,
         collection: &str,
-    ) -> Result<serde_json::Value> {
+    ) -> Result<crate::models::auth::MfaEnrollResponse> {
         let path = format!(
             "api/platform/orgs/{}/apps/{}/auth/{}/mfa/enroll",
             org_id, app_id, collection
