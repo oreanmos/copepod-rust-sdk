@@ -22,19 +22,13 @@ impl CopepodClient {
 
     /// Update a platform user.
     pub async fn update_user(&self, id: &str, body: &impl serde::Serialize) -> Result<User> {
-        self.patch(&format!("api/platform/users/{}", id), body).await
+        self.patch(&format!("api/platform/users/{}", id), body)
+            .await
     }
 
     /// Reset a platform user's password (admin).
-    pub async fn reset_password(
-        &self,
-        id: &str,
-        body: &impl serde::Serialize,
-    ) -> Result<Value> {
-        self.post(
-            &format!("api/platform/users/{}/reset-password", id),
-            body,
-        )
-        .await
+    pub async fn reset_password(&self, id: &str, body: &impl serde::Serialize) -> Result<Value> {
+        self.post(&format!("api/platform/users/{}/reset-password", id), body)
+            .await
     }
 }

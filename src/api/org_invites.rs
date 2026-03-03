@@ -20,32 +20,18 @@ impl CopepodClient {
     }
 
     /// Resend an invite.
-    pub async fn resend_invite(
-        &self,
-        org_id: &str,
-        invite_id: &str,
-    ) -> Result<serde_json::Value> {
+    pub async fn resend_invite(&self, org_id: &str, invite_id: &str) -> Result<serde_json::Value> {
         self.post(
-            &format!(
-                "api/platform/orgs/{}/invites/{}/resend",
-                org_id, invite_id
-            ),
+            &format!("api/platform/orgs/{}/invites/{}/resend", org_id, invite_id),
             &serde_json::json!({}),
         )
         .await
     }
 
     /// Revoke an invite.
-    pub async fn revoke_invite(
-        &self,
-        org_id: &str,
-        invite_id: &str,
-    ) -> Result<serde_json::Value> {
+    pub async fn revoke_invite(&self, org_id: &str, invite_id: &str) -> Result<serde_json::Value> {
         self.post(
-            &format!(
-                "api/platform/orgs/{}/invites/{}/revoke",
-                org_id, invite_id
-            ),
+            &format!("api/platform/orgs/{}/invites/{}/revoke", org_id, invite_id),
             &serde_json::json!({}),
         )
         .await

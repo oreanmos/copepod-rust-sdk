@@ -30,7 +30,8 @@ impl CopepodClient {
 
     /// List members of an organization.
     pub async fn list_org_members(&self, org_id: &str) -> Result<ListResult<OrgMember>> {
-        self.get(&format!("api/platform/orgs/{}/members", org_id)).await
+        self.get(&format!("api/platform/orgs/{}/members", org_id))
+            .await
     }
 
     /// Add a member to an organization.
@@ -39,7 +40,8 @@ impl CopepodClient {
         org_id: &str,
         body: &impl serde::Serialize,
     ) -> Result<OrgMember> {
-        self.post(&format!("api/platform/orgs/{}/members", org_id), body).await
+        self.post(&format!("api/platform/orgs/{}/members", org_id), body)
+            .await
     }
 
     /// Update an organization member's role.
@@ -49,8 +51,11 @@ impl CopepodClient {
         user_id: &str,
         body: &impl serde::Serialize,
     ) -> Result<OrgMember> {
-        self.patch(&format!("api/platform/orgs/{}/members/{}", org_id, user_id), body)
-            .await
+        self.patch(
+            &format!("api/platform/orgs/{}/members/{}", org_id, user_id),
+            body,
+        )
+        .await
     }
 
     /// Remove a member from an organization.

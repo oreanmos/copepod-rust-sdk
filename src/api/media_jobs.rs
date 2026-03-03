@@ -15,11 +15,8 @@ impl CopepodClient {
         app_id: &str,
         body: &impl serde::Serialize,
     ) -> Result<MediaJob> {
-        self.post(
-            &format!("api/platform/apps/{}/media/jobs", app_id),
-            body,
-        )
-        .await
+        self.post(&format!("api/platform/apps/{}/media/jobs", app_id), body)
+            .await
     }
 
     /// Get a specific media job.

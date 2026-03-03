@@ -5,11 +5,7 @@ use crate::error::Result;
 
 impl CopepodClient {
     /// List cache keys for an app.
-    pub async fn list_cache_keys(
-        &self,
-        org_id: &str,
-        app_id: &str,
-    ) -> Result<Value> {
+    pub async fn list_cache_keys(&self, org_id: &str, app_id: &str) -> Result<Value> {
         self.get(&format!(
             "api/platform/orgs/{}/apps/{}/cache",
             org_id, app_id
@@ -18,12 +14,7 @@ impl CopepodClient {
     }
 
     /// Get a specific cache entry by key.
-    pub async fn get_cache_entry(
-        &self,
-        org_id: &str,
-        app_id: &str,
-        key: &str,
-    ) -> Result<Value> {
+    pub async fn get_cache_entry(&self, org_id: &str, app_id: &str, key: &str) -> Result<Value> {
         self.get(&format!(
             "api/platform/orgs/{}/apps/{}/cache/{}",
             org_id, app_id, key
@@ -47,12 +38,7 @@ impl CopepodClient {
     }
 
     /// Delete a specific cache entry by key.
-    pub async fn delete_cache_entry(
-        &self,
-        org_id: &str,
-        app_id: &str,
-        key: &str,
-    ) -> Result<()> {
+    pub async fn delete_cache_entry(&self, org_id: &str, app_id: &str, key: &str) -> Result<()> {
         self.delete(&format!(
             "api/platform/orgs/{}/apps/{}/cache/{}",
             org_id, app_id, key

@@ -20,11 +20,8 @@ impl CopepodClient {
         org_id: &str,
         body: &impl serde::Serialize,
     ) -> Result<RetentionPolicy> {
-        self.post(
-            &format!("api/platform/orgs/{}/retention", org_id),
-            body,
-        )
-        .await
+        self.post(&format!("api/platform/orgs/{}/retention", org_id), body)
+            .await
     }
 
     /// Update a retention policy.
@@ -35,21 +32,14 @@ impl CopepodClient {
         body: &impl serde::Serialize,
     ) -> Result<RetentionPolicy> {
         self.patch(
-            &format!(
-                "api/platform/orgs/{}/retention/{}",
-                org_id, policy_id
-            ),
+            &format!("api/platform/orgs/{}/retention/{}", org_id, policy_id),
             body,
         )
         .await
     }
 
     /// Delete a retention policy.
-    pub async fn delete_retention_policy(
-        &self,
-        org_id: &str,
-        policy_id: &str,
-    ) -> Result<()> {
+    pub async fn delete_retention_policy(&self, org_id: &str, policy_id: &str) -> Result<()> {
         self.delete(&format!(
             "api/platform/orgs/{}/retention/{}",
             org_id, policy_id
@@ -87,10 +77,7 @@ impl CopepodClient {
     // --- DSAR (Data Subject Access Requests) ---
 
     /// List DSAR requests.
-    pub async fn list_dsar_requests(
-        &self,
-        org_id: &str,
-    ) -> Result<ListResult<DsarRequest>> {
+    pub async fn list_dsar_requests(&self, org_id: &str) -> Result<ListResult<DsarRequest>> {
         self.get(&format!("api/platform/orgs/{}/dsar", org_id))
             .await
     }
@@ -106,15 +93,8 @@ impl CopepodClient {
     }
 
     /// Get the status of a DSAR request.
-    pub async fn get_dsar_request(
-        &self,
-        org_id: &str,
-        request_id: &str,
-    ) -> Result<DsarRequest> {
-        self.get(&format!(
-            "api/platform/orgs/{}/dsar/{}",
-            org_id, request_id
-        ))
-        .await
+    pub async fn get_dsar_request(&self, org_id: &str, request_id: &str) -> Result<DsarRequest> {
+        self.get(&format!("api/platform/orgs/{}/dsar/{}", org_id, request_id))
+            .await
     }
 }

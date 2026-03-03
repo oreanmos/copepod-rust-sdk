@@ -8,14 +8,12 @@ use crate::error::{CopepodError, Result};
 
 impl CopepodClient {
     /// Upload a file to a record field.
-    #[allow(clippy::too_many_arguments)]
     pub async fn upload_file(
         &self,
         org_id: &str,
         app_id: &str,
         collection: &str,
         record_id: &str,
-        field: &str,
         data: Vec<u8>,
         filename: &str,
         content_type: &str,
@@ -25,14 +23,10 @@ impl CopepodClient {
             org_id, app_id, collection, record_id, filename
         );
 
-        let part = reqwest::multipart::Part::bytes(data)
-            .file_name(filename.to_string())
-            .mime_str(content_type)
-            .map_err(CopepodError::Http)?;
-
-        let form = reqwest::multipart::Form::new().part("file", part);
-
-        let mut builder = self.request(Method::POST, &path).multipart(form);
+        let mut builder = self
+            .request(Method::POST, &path)
+            .header(reqwest::header::CONTENT_TYPE, content_type)
+            .body(data);
         if let Some(pair) = self.token_store.get().await {
             builder = builder.header(AUTHORIZATION, format!("Bearer {}", pair.token));
         }
@@ -54,11 +48,7 @@ impl CopepodClient {
             "api/platform/orgs/{}/apps/{}/files/{}/{}/{}",
             org_id, app_id, collection, record_id, filename
         );
-        let resp = self
-            .auth_request(Method::GET, &path)
-            .await?
-            .send()
-            .await?;
+        let resp = self.auth_request(Method::GET, &path).await?.send().await?;
 
         if resp.status().is_success() {
             Ok(resp.bytes().await?)

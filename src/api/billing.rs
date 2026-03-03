@@ -7,7 +7,8 @@ use crate::models::{CheckoutSession, Plan, Subscription};
 impl CopepodClient {
     /// Get billing/subscription status for an organization.
     pub async fn get_billing_status(&self, org_id: &str) -> Result<Subscription> {
-        self.get(&format!("api/platform/orgs/{}/billing", org_id)).await
+        self.get(&format!("api/platform/orgs/{}/billing", org_id))
+            .await
     }
 
     /// Create a checkout session for an organization.
@@ -16,8 +17,11 @@ impl CopepodClient {
         org_id: &str,
         body: &impl serde::Serialize,
     ) -> Result<CheckoutSession> {
-        self.post(&format!("api/platform/orgs/{}/billing/checkout", org_id), body)
-            .await
+        self.post(
+            &format!("api/platform/orgs/{}/billing/checkout", org_id),
+            body,
+        )
+        .await
     }
 
     /// List available plans for an organization.
@@ -27,11 +31,7 @@ impl CopepodClient {
     }
 
     /// Update the plan for a subscription.
-    pub async fn update_plan(
-        &self,
-        org_id: &str,
-        body: &impl serde::Serialize,
-    ) -> Result<Value> {
+    pub async fn update_plan(&self, org_id: &str, body: &impl serde::Serialize) -> Result<Value> {
         self.put(&format!("api/platform/orgs/{}/billing/plan", org_id), body)
             .await
     }

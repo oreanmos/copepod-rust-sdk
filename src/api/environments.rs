@@ -10,11 +10,7 @@ impl CopepodClient {
     }
 
     /// Create a new environment.
-    pub async fn create_env(
-        &self,
-        app_id: &str,
-        body: &impl serde::Serialize,
-    ) -> Result<AppEnv> {
+    pub async fn create_env(&self, app_id: &str, body: &impl serde::Serialize) -> Result<AppEnv> {
         self.post(&format!("api/platform/apps/{}/envs", app_id), body)
             .await
     }

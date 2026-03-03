@@ -45,21 +45,14 @@ impl CopepodClient {
         body: &impl serde::Serialize,
     ) -> Result<serde_json::Value> {
         self.post(
-            &format!(
-                "api/platform/orgs/{}/apps/{}/backup",
-                org_id, app_id
-            ),
+            &format!("api/platform/orgs/{}/apps/{}/backup", org_id, app_id),
             body,
         )
         .await
     }
 
     /// List available backups for an app.
-    pub async fn list_backups(
-        &self,
-        org_id: &str,
-        app_id: &str,
-    ) -> Result<BackupStatus> {
+    pub async fn list_backups(&self, org_id: &str, app_id: &str) -> Result<BackupStatus> {
         self.get(&format!(
             "api/platform/orgs/{}/apps/{}/backups",
             org_id, app_id
@@ -75,10 +68,7 @@ impl CopepodClient {
         body: &impl serde::Serialize,
     ) -> Result<serde_json::Value> {
         self.post(
-            &format!(
-                "api/platform/orgs/{}/apps/{}/restore",
-                org_id, app_id
-            ),
+            &format!("api/platform/orgs/{}/apps/{}/restore", org_id, app_id),
             body,
         )
         .await

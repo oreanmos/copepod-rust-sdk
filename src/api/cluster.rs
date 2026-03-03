@@ -11,10 +11,7 @@ impl CopepodClient {
     }
 
     /// Create a new shard group.
-    pub async fn create_shard_group(
-        &self,
-        body: &impl serde::Serialize,
-    ) -> Result<ShardGroup> {
+    pub async fn create_shard_group(&self, body: &impl serde::Serialize) -> Result<ShardGroup> {
         self.post("api/platform/cluster/shard-groups", body).await
     }
 
@@ -31,11 +28,7 @@ impl CopepodClient {
     }
 
     /// Move a shard to a different group.
-    pub async fn move_shard(
-        &self,
-        shard_id: &str,
-        body: &impl serde::Serialize,
-    ) -> Result<Value> {
+    pub async fn move_shard(&self, shard_id: &str, body: &impl serde::Serialize) -> Result<Value> {
         self.post(
             &format!("api/platform/cluster/shards/{}/move", shard_id),
             body,
@@ -44,10 +37,7 @@ impl CopepodClient {
     }
 
     /// Manually create/register a shard.
-    pub async fn create_shard(
-        &self,
-        body: &impl serde::Serialize,
-    ) -> Result<ShardResponse> {
+    pub async fn create_shard(&self, body: &impl serde::Serialize) -> Result<ShardResponse> {
         self.post("api/platform/cluster/shards", body).await
     }
 }

@@ -43,16 +43,9 @@ impl CopepodClient {
     }
 
     /// Test a webhook by sending a test payload.
-    pub async fn test_webhook(
-        &self,
-        app_id: &str,
-        webhook_id: &str,
-    ) -> Result<serde_json::Value> {
+    pub async fn test_webhook(&self, app_id: &str, webhook_id: &str) -> Result<serde_json::Value> {
         self.post(
-            &format!(
-                "api/platform/apps/{}/webhooks/{}/test",
-                app_id, webhook_id
-            ),
+            &format!("api/platform/apps/{}/webhooks/{}/test", app_id, webhook_id),
             &serde_json::json!({}),
         )
         .await
@@ -97,11 +90,7 @@ impl CopepodClient {
     }
 
     /// Delete an event subscription.
-    pub async fn delete_event_subscription(
-        &self,
-        app_id: &str,
-        sub_id: &str,
-    ) -> Result<()> {
+    pub async fn delete_event_subscription(&self, app_id: &str, sub_id: &str) -> Result<()> {
         self.delete(&format!(
             "api/platform/apps/{}/events/subscriptions/{}",
             app_id, sub_id

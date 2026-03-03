@@ -6,10 +6,7 @@ impl CopepodClient {
     // --- IAM Roles ---
 
     /// List IAM roles for an organization.
-    pub async fn list_iam_roles(
-        &self,
-        org_id: &str,
-    ) -> Result<ListResult<IamRole>> {
+    pub async fn list_iam_roles(&self, org_id: &str) -> Result<ListResult<IamRole>> {
         self.get(&format!("api/platform/orgs/{}/roles", org_id))
             .await
     }
@@ -25,16 +22,9 @@ impl CopepodClient {
     }
 
     /// Get an IAM role.
-    pub async fn get_iam_role(
-        &self,
-        org_id: &str,
-        role_id: &str,
-    ) -> Result<IamRole> {
-        self.get(&format!(
-            "api/platform/orgs/{}/roles/{}",
-            org_id, role_id
-        ))
-        .await
+    pub async fn get_iam_role(&self, org_id: &str, role_id: &str) -> Result<IamRole> {
+        self.get(&format!("api/platform/orgs/{}/roles/{}", org_id, role_id))
+            .await
     }
 
     /// Update an IAM role.
@@ -52,30 +42,17 @@ impl CopepodClient {
     }
 
     /// Delete an IAM role.
-    pub async fn delete_iam_role(
-        &self,
-        org_id: &str,
-        role_id: &str,
-    ) -> Result<()> {
-        self.delete(&format!(
-            "api/platform/orgs/{}/roles/{}",
-            org_id, role_id
-        ))
-        .await
+    pub async fn delete_iam_role(&self, org_id: &str, role_id: &str) -> Result<()> {
+        self.delete(&format!("api/platform/orgs/{}/roles/{}", org_id, role_id))
+            .await
     }
 
     // --- Policy Bindings ---
 
     /// List policy bindings for an organization.
-    pub async fn list_policy_bindings(
-        &self,
-        org_id: &str,
-    ) -> Result<ListResult<PolicyBinding>> {
-        self.get(&format!(
-            "api/platform/orgs/{}/policy-bindings",
-            org_id
-        ))
-        .await
+    pub async fn list_policy_bindings(&self, org_id: &str) -> Result<ListResult<PolicyBinding>> {
+        self.get(&format!("api/platform/orgs/{}/policy-bindings", org_id))
+            .await
     }
 
     /// Create a policy binding.
@@ -92,11 +69,7 @@ impl CopepodClient {
     }
 
     /// Delete a policy binding.
-    pub async fn delete_policy_binding(
-        &self,
-        org_id: &str,
-        binding_id: &str,
-    ) -> Result<()> {
+    pub async fn delete_policy_binding(&self, org_id: &str, binding_id: &str) -> Result<()> {
         self.delete(&format!(
             "api/platform/orgs/{}/policy-bindings/{}",
             org_id, binding_id
@@ -107,15 +80,9 @@ impl CopepodClient {
     // --- Service Accounts ---
 
     /// List service accounts for an organization.
-    pub async fn list_service_accounts(
-        &self,
-        org_id: &str,
-    ) -> Result<ListResult<ServiceAccount>> {
-        self.get(&format!(
-            "api/platform/orgs/{}/service-accounts",
-            org_id
-        ))
-        .await
+    pub async fn list_service_accounts(&self, org_id: &str) -> Result<ListResult<ServiceAccount>> {
+        self.get(&format!("api/platform/orgs/{}/service-accounts", org_id))
+            .await
     }
 
     /// Create a service account.
@@ -132,11 +99,7 @@ impl CopepodClient {
     }
 
     /// Delete a service account.
-    pub async fn delete_service_account(
-        &self,
-        org_id: &str,
-        sa_id: &str,
-    ) -> Result<()> {
+    pub async fn delete_service_account(&self, org_id: &str, sa_id: &str) -> Result<()> {
         self.delete(&format!(
             "api/platform/orgs/{}/service-accounts/{}",
             org_id, sa_id

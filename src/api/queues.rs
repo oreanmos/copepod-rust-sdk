@@ -10,21 +10,14 @@ impl CopepodClient {
     }
 
     /// Create a queue.
-    pub async fn create_queue(
-        &self,
-        app_id: &str,
-        body: &impl serde::Serialize,
-    ) -> Result<Queue> {
+    pub async fn create_queue(&self, app_id: &str, body: &impl serde::Serialize) -> Result<Queue> {
         self.post(&format!("api/platform/apps/{}/queues", app_id), body)
             .await
     }
 
     /// Delete a queue.
     pub async fn delete_queue(&self, app_id: &str, queue_id: &str) -> Result<()> {
-        self.delete(&format!(
-            "api/platform/apps/{}/queues/{}",
-            app_id, queue_id
-        ))
-        .await
+        self.delete(&format!("api/platform/apps/{}/queues/{}", app_id, queue_id))
+            .await
     }
 }

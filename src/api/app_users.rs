@@ -6,22 +6,16 @@ use crate::models::{ListResult, User};
 
 impl CopepodClient {
     /// List users of an app.
-    pub async fn list_app_users(
-        &self,
-        org_id: &str,
-        app_id: &str,
-    ) -> Result<ListResult<User>> {
-        self.get(&format!("api/platform/orgs/{}/apps/{}/users", org_id, app_id))
-            .await
+    pub async fn list_app_users(&self, org_id: &str, app_id: &str) -> Result<ListResult<User>> {
+        self.get(&format!(
+            "api/platform/orgs/{}/apps/{}/users",
+            org_id, app_id
+        ))
+        .await
     }
 
     /// Get an app user by ID.
-    pub async fn get_app_user(
-        &self,
-        org_id: &str,
-        app_id: &str,
-        user_id: &str,
-    ) -> Result<User> {
+    pub async fn get_app_user(&self, org_id: &str, app_id: &str, user_id: &str) -> Result<User> {
         self.get(&format!(
             "api/platform/orgs/{}/apps/{}/users/{}",
             org_id, app_id, user_id
@@ -30,12 +24,7 @@ impl CopepodClient {
     }
 
     /// Get statistics for an app user.
-    pub async fn get_user_stats(
-        &self,
-        org_id: &str,
-        app_id: &str,
-        user_id: &str,
-    ) -> Result<Value> {
+    pub async fn get_user_stats(&self, org_id: &str, app_id: &str, user_id: &str) -> Result<Value> {
         self.get(&format!(
             "api/platform/orgs/{}/apps/{}/users/{}/stats",
             org_id, app_id, user_id
@@ -58,11 +47,7 @@ impl CopepodClient {
     }
 
     /// List all achievements for an app.
-    pub async fn list_achievements(
-        &self,
-        org_id: &str,
-        app_id: &str,
-    ) -> Result<Vec<Value>> {
+    pub async fn list_achievements(&self, org_id: &str, app_id: &str) -> Result<Vec<Value>> {
         self.get(&format!(
             "api/platform/orgs/{}/apps/{}/achievements",
             org_id, app_id

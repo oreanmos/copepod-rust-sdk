@@ -22,10 +22,7 @@ impl CopepodClient {
             .map(|p| p.token)
             .unwrap_or_default();
 
-        let path = format!(
-            "api/platform/orgs/{}/apps/{}/realtime",
-            org_id, app_id
-        );
+        let path = format!("api/platform/orgs/{}/apps/{}/realtime", org_id, app_id);
         let url = self.base_url.join(&path)?;
 
         let resp = self

@@ -42,7 +42,9 @@ impl CopepodClient {
 
     /// Log out and clear the token store.
     pub async fn logout(&self) -> Result<()> {
-        let _ = self.post_empty("api/platform/auth/logout", &serde_json::json!({})).await;
+        let _ = self
+            .post_empty("api/platform/auth/logout", &serde_json::json!({}))
+            .await;
         self.token_store.clear().await;
         Ok(())
     }
@@ -75,7 +77,8 @@ impl CopepodClient {
     /// Disable MFA with a TOTP code.
     pub async fn mfa_disable(&self, code: &str) -> Result<()> {
         let body = serde_json::json!({ "code": code });
-        self.post_empty("api/platform/auth/mfa/disable", &body).await
+        self.post_empty("api/platform/auth/mfa/disable", &body)
+            .await
     }
 
     /// Use a recovery code for MFA during platform login.
@@ -109,12 +112,14 @@ impl CopepodClient {
 
     /// Enroll in MFA (platform user).
     pub async fn mfa_enroll(&self) -> Result<Value> {
-        self.post("api/platform/auth/mfa/enroll", &serde_json::json!({})).await
+        self.post("api/platform/auth/mfa/enroll", &serde_json::json!({}))
+            .await
     }
 
     /// Confirm MFA enrollment (platform user).
     pub async fn mfa_confirm_enroll(&self, code: &str) -> Result<Value> {
         let body = serde_json::json!({ "code": code });
-        self.post("api/platform/auth/mfa/confirm-enroll", &body).await
+        self.post("api/platform/auth/mfa/confirm-enroll", &body)
+            .await
     }
 }

@@ -10,11 +10,7 @@ impl CopepodClient {
     }
 
     /// Create a job.
-    pub async fn create_job(
-        &self,
-        app_id: &str,
-        body: &impl serde::Serialize,
-    ) -> Result<Job> {
+    pub async fn create_job(&self, app_id: &str, body: &impl serde::Serialize) -> Result<Job> {
         self.post(&format!("api/platform/apps/{}/jobs", app_id), body)
             .await
     }
@@ -26,11 +22,7 @@ impl CopepodClient {
     }
 
     /// Retry a failed job.
-    pub async fn retry_job(
-        &self,
-        app_id: &str,
-        job_id: &str,
-    ) -> Result<serde_json::Value> {
+    pub async fn retry_job(&self, app_id: &str, job_id: &str) -> Result<serde_json::Value> {
         self.post(
             &format!("api/platform/apps/{}/jobs/{}/retry", app_id, job_id),
             &serde_json::json!({}),
@@ -39,11 +31,7 @@ impl CopepodClient {
     }
 
     /// Cancel a pending or running job.
-    pub async fn cancel_job(
-        &self,
-        app_id: &str,
-        job_id: &str,
-    ) -> Result<serde_json::Value> {
+    pub async fn cancel_job(&self, app_id: &str, job_id: &str) -> Result<serde_json::Value> {
         self.post(
             &format!("api/platform/apps/{}/jobs/{}/cancel", app_id, job_id),
             &serde_json::json!({}),

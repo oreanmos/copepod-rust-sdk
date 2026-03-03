@@ -11,24 +11,14 @@ impl CopepodClient {
 
     /// Get a specific error group.
     pub async fn get_error(&self, app_id: &str, group_id: &str) -> Result<ErrorGroup> {
-        self.get(&format!(
-            "api/platform/apps/{}/errors/{}",
-            app_id, group_id
-        ))
-        .await
+        self.get(&format!("api/platform/apps/{}/errors/{}", app_id, group_id))
+            .await
     }
 
     /// Resolve an error group.
-    pub async fn resolve_error(
-        &self,
-        app_id: &str,
-        group_id: &str,
-    ) -> Result<serde_json::Value> {
+    pub async fn resolve_error(&self, app_id: &str, group_id: &str) -> Result<serde_json::Value> {
         self.post(
-            &format!(
-                "api/platform/apps/{}/errors/{}/resolve",
-                app_id, group_id
-            ),
+            &format!("api/platform/apps/{}/errors/{}/resolve", app_id, group_id),
             &serde_json::json!({}),
         )
         .await
@@ -41,11 +31,7 @@ impl CopepodClient {
     }
 
     /// Create an alert rule.
-    pub async fn create_alert(
-        &self,
-        app_id: &str,
-        body: &impl serde::Serialize,
-    ) -> Result<Alert> {
+    pub async fn create_alert(&self, app_id: &str, body: &impl serde::Serialize) -> Result<Alert> {
         self.post(&format!("api/platform/apps/{}/alerts", app_id), body)
             .await
     }
@@ -66,10 +52,7 @@ impl CopepodClient {
 
     /// Delete an alert rule.
     pub async fn delete_alert(&self, app_id: &str, alert_id: &str) -> Result<()> {
-        self.delete(&format!(
-            "api/platform/apps/{}/alerts/{}",
-            app_id, alert_id
-        ))
-        .await
+        self.delete(&format!("api/platform/apps/{}/alerts/{}", app_id, alert_id))
+            .await
     }
 }

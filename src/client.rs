@@ -176,11 +176,7 @@ impl CopepodClient {
     }
 
     /// Add authorization header to a request builder.
-    pub(crate) async fn auth_request(
-        &self,
-        method: Method,
-        path: &str,
-    ) -> Result<RequestBuilder> {
+    pub(crate) async fn auth_request(&self, method: Method, path: &str) -> Result<RequestBuilder> {
         self.ensure_auth().await?;
         let mut builder = self.request(method, path);
         if let Some(pair) = self.token_store.get().await {
@@ -211,11 +207,7 @@ impl CopepodClient {
     }
 
     /// Perform an authenticated POST request with no response body.
-    pub(crate) async fn post_empty(
-        &self,
-        path: &str,
-        body: &impl Serialize,
-    ) -> Result<()> {
+    pub(crate) async fn post_empty(&self, path: &str, body: &impl Serialize) -> Result<()> {
         let resp = self
             .auth_request(Method::POST, path)
             .await?
@@ -272,11 +264,7 @@ impl CopepodClient {
 
     /// Perform an authenticated PUT request with no response body.
     #[allow(dead_code)]
-    pub(crate) async fn put_empty(
-        &self,
-        path: &str,
-        body: &impl Serialize,
-    ) -> Result<()> {
+    pub(crate) async fn put_empty(&self, path: &str, body: &impl Serialize) -> Result<()> {
         let resp = self
             .auth_request(Method::PUT, path)
             .await?

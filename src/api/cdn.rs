@@ -5,8 +5,7 @@ use crate::models::CdnRule;
 impl CopepodClient {
     /// Get CDN rules for an app.
     pub async fn get_cdn_rules(&self, app_id: &str) -> Result<CdnRule> {
-        self.get(&format!("api/platform/apps/{}/cdn", app_id))
-            .await
+        self.get(&format!("api/platform/apps/{}/cdn", app_id)).await
     }
 
     /// Update CDN rules for an app.

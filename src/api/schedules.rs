@@ -27,10 +27,7 @@ impl CopepodClient {
         body: &impl serde::Serialize,
     ) -> Result<Schedule> {
         self.patch(
-            &format!(
-                "api/platform/apps/{}/schedules/{}",
-                app_id, schedule_id
-            ),
+            &format!("api/platform/apps/{}/schedules/{}", app_id, schedule_id),
             body,
         )
         .await

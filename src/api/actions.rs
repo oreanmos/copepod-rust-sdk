@@ -11,11 +11,7 @@ impl CopepodClient {
     }
 
     /// Get the action permission matrix for an app.
-    pub async fn get_action_matrix(
-        &self,
-        org_id: &str,
-        app_id: &str,
-    ) -> Result<Value> {
+    pub async fn get_action_matrix(&self, org_id: &str, app_id: &str) -> Result<Value> {
         self.get(&format!(
             "api/platform/orgs/{}/apps/{}/actions/matrix",
             org_id, app_id

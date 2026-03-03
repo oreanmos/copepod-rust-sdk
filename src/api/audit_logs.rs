@@ -7,11 +7,7 @@ impl CopepodClient {
     /// List audit log entries (admin only).
     ///
     /// Supports pagination via `page` and `per_page` query parameters.
-    pub async fn list_audit_logs(
-        &self,
-        page: Option<u32>,
-        per_page: Option<u32>,
-    ) -> Result<Value> {
+    pub async fn list_audit_logs(&self, page: Option<u32>, per_page: Option<u32>) -> Result<Value> {
         let mut path = "api/platform/logs/audit".to_string();
         let mut params = Vec::new();
         if let Some(p) = page {

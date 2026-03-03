@@ -51,7 +51,9 @@ async fn test_login_stores_tokens() {
 
     Mock::given(method("POST"))
         .and(path("/api/auth/login"))
-        .and(body_json(json!({ "email": "user@test.com", "password": "secret" })))
+        .and(body_json(
+            json!({ "email": "user@test.com", "password": "secret" }),
+        ))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "token": "access-123",
             "refresh_token": "refresh-456",
@@ -213,7 +215,12 @@ async fn test_create_and_get_record() {
 
     // Create
     let created: serde_json::Value = client
-        .create_record("o1", "a1", "posts", &json!({ "title": "Hello", "body": "World" }))
+        .create_record(
+            "o1",
+            "a1",
+            "posts",
+            &json!({ "title": "Hello", "body": "World" }),
+        )
         .await
         .unwrap();
     assert_eq!(created["id"], "rec1");
@@ -342,7 +349,9 @@ async fn test_500_error() {
     let result = client.list_orgs().await;
     assert!(result.is_err());
     match result.unwrap_err() {
-        CopepodError::Api { status, message, .. } => {
+        CopepodError::Api {
+            status, message, ..
+        } => {
             assert_eq!(status, 500);
             assert_eq!(message, "Internal server error");
         }
@@ -357,10 +366,11 @@ async fn test_download_file() {
     let server = MockServer::start().await;
 
     Mock::given(method("GET"))
-        .and(path("/api/orgs/o1/apps/a1/collections/images/records/r1/files/photo.jpg"))
+        .and(path(
+            "/api/orgs/o1/apps/a1/collections/images/records/r1/files/photo.jpg",
+        ))
         .respond_with(
-            ResponseTemplate::new(200)
-                .set_body_bytes(vec![0xFF, 0xD8, 0xFF, 0xE0]) // JPEG magic bytes
+            ResponseTemplate::new(200).set_body_bytes(vec![0xFF, 0xD8, 0xFF, 0xE0]), // JPEG magic bytes
         )
         .mount(&server)
         .await;
@@ -583,11 +593,15 @@ async fn test_ticket_workflow() {
         .unwrap();
 
     let ticket = client
-        .create_ticket("o1", "a1", &json!({
-            "subject": "Bug report",
-            "description": "Something is broken",
-            "priority": "high"
-        }))
+        .create_ticket(
+            "o1",
+            "a1",
+            &json!({
+                "subject": "Bug report",
+                "description": "Something is broken",
+                "priority": "high"
+            }),
+        )
         .await
         .unwrap();
     assert_eq!(ticket.subject, "Bug report");
@@ -597,4 +611,109 @@ async fn test_ticket_workflow() {
         .await
         .unwrap();
     assert_eq!(comment.body, "Looking into it");
+}
+
+// -- Deployments status test --
+
+#[tokio::test]
+async fn test_get_deployment_status() {
+    let server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/platform/orgs/o1/deployments/d1/status"))
+        .and(header("Authorization", "Bearer tok"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "running": true,
+            "ready_replicas": 2,
+            "desired_replicas": 2,
+            "message": "phase: Ready",
+            "db_status": "running"
+        })))
+        .mount(&server)
+        .await;
+
+    let client = CopepodClient::builder()
+        .base_url(&server.uri())
+        .token("tok")
+        .auto_refresh(false)
+        .build()
+        .unwrap();
+
+    let status = client.get_deployment_status("o1", "d1").await.unwrap();
+    assert!(status.running);
+    assert_eq!(status.ready_replicas, 2);
+    assert_eq!(status.desired_replicas, 2);
+    assert_eq!(status.message, "phase: Ready");
+}
+
+#[tokio::test]
+async fn test_deploy_queued_returns_queue_metadata() {
+    let server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/api/platform/orgs/o1/deployments/d1/deploy"))
+        .and(header("Authorization", "Bearer tok"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "queued": true,
+            "app_id": "d1",
+            "log_id": "l1",
+            "action": "deploy",
+            "status": "pending"
+        })))
+        .mount(&server)
+        .await;
+
+    let client = CopepodClient::builder()
+        .base_url(&server.uri())
+        .token("tok")
+        .auto_refresh(false)
+        .build()
+        .unwrap();
+
+    let queued = client.deploy_queued("o1", "d1").await.unwrap();
+    assert!(queued.queued);
+    assert_eq!(queued.log_id, "l1");
+    assert_eq!(queued.action, "deploy");
+}
+
+#[tokio::test]
+async fn test_list_deployment_builds_parses_items_wrapper() {
+    let server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/platform/orgs/o1/deployments/d1/builds"))
+        .and(header("Authorization", "Bearer tok"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "items": [
+                {
+                    "id": "b1",
+                    "deployed_app_id": "d1",
+                    "git_source_id": "g1",
+                    "commit_sha": "abc123",
+                    "commit_message": "feat: update",
+                    "branch": "main",
+                    "status": "success",
+                    "build_method": "dockerfile",
+                    "image_tag": "abc123",
+                    "duration_ms": 1234,
+                    "error_message": null,
+                    "created": "2024-01-01T00:00:00Z",
+                    "updated": "2024-01-01T00:00:00Z"
+                }
+            ]
+        })))
+        .mount(&server)
+        .await;
+
+    let client = CopepodClient::builder()
+        .base_url(&server.uri())
+        .token("tok")
+        .auto_refresh(false)
+        .build()
+        .unwrap();
+
+    let builds = client.list_deployment_builds("o1", "d1").await.unwrap();
+    assert_eq!(builds.len(), 1);
+    assert_eq!(builds[0].id, "b1");
+    assert_eq!(builds[0].build_method, "dockerfile");
 }

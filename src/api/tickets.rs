@@ -5,7 +5,7 @@ use serde_json::Value;
 
 use crate::client::CopepodClient;
 use crate::error::{CopepodError, Result};
-use crate::models::{ListResult, Ticket, TicketComment, TicketAttachment};
+use crate::models::{ListResult, Ticket, TicketAttachment, TicketComment};
 
 impl CopepodClient {
     // -- App-scoped ticket endpoints --
@@ -22,11 +22,7 @@ impl CopepodClient {
     }
 
     /// List tickets in an app.
-    pub async fn list_app_tickets(
-        &self,
-        org_id: &str,
-        app_id: &str,
-    ) -> Result<ListResult<Ticket>> {
+    pub async fn list_app_tickets(&self, org_id: &str, app_id: &str) -> Result<ListResult<Ticket>> {
         let path = format!("api/platform/orgs/{}/apps/{}/tickets", org_id, app_id);
         self.get(&path).await
     }
@@ -38,7 +34,10 @@ impl CopepodClient {
         app_id: &str,
         ticket_id: &str,
     ) -> Result<Ticket> {
-        let path = format!("api/platform/orgs/{}/apps/{}/tickets/{}", org_id, app_id, ticket_id);
+        let path = format!(
+            "api/platform/orgs/{}/apps/{}/tickets/{}",
+            org_id, app_id, ticket_id
+        );
         self.get(&path).await
     }
 
@@ -104,14 +103,14 @@ impl CopepodClient {
             org_id, app_id, ticket_id
         );
 
-        let part = reqwest::multipart::Part::bytes(data)
-            .file_name(filename.to_string())
-            .mime_str(content_type)
-            .map_err(CopepodError::Http)?;
-
-        let form = reqwest::multipart::Form::new().part("file", part);
-
-        let mut builder = self.request(Method::POST, &path).multipart(form);
+        let mut builder = self
+            .request(Method::POST, &path)
+            .header(reqwest::header::CONTENT_TYPE, content_type)
+            .header(
+                reqwest::header::CONTENT_DISPOSITION,
+                format!("attachment; filename=\"{}\"", filename),
+            )
+            .body(data);
         if let Some(pair) = self.token_store.get().await {
             builder = builder.header(AUTHORIZATION, format!("Bearer {}", pair.token));
         }
@@ -132,11 +131,7 @@ impl CopepodClient {
             "api/platform/orgs/{}/apps/{}/tickets/{}/attachments/{}",
             org_id, app_id, ticket_id, attachment_id
         );
-        let resp = self
-            .auth_request(Method::GET, &path)
-            .await?
-            .send()
-            .await?;
+        let resp = self.auth_request(Method::GET, &path).await?.send().await?;
 
         if resp.status().is_success() {
             Ok(resp.bytes().await?)
@@ -180,10 +175,7 @@ impl CopepodClient {
     // -- Org-scoped support ticket endpoints --
 
     /// List support tickets for an organization.
-    pub async fn list_support_tickets(
-        &self,
-        org_id: &str,
-    ) -> Result<ListResult<Ticket>> {
+    pub async fn list_support_tickets(&self, org_id: &str) -> Result<ListResult<Ticket>> {
         self.get(&format!("api/platform/orgs/{}/support/tickets", org_id))
             .await
     }
@@ -194,16 +186,15 @@ impl CopepodClient {
         org_id: &str,
         body: &impl serde::Serialize,
     ) -> Result<Ticket> {
-        self.post(&format!("api/platform/orgs/{}/support/tickets", org_id), body)
-            .await
+        self.post(
+            &format!("api/platform/orgs/{}/support/tickets", org_id),
+            body,
+        )
+        .await
     }
 
     /// Get a support ticket by ID.
-    pub async fn get_support_ticket(
-        &self,
-        org_id: &str,
-        ticket_id: &str,
-    ) -> Result<Ticket> {
+    pub async fn get_support_ticket(&self, org_id: &str, ticket_id: &str) -> Result<Ticket> {
         self.get(&format!(
             "api/platform/orgs/{}/support/tickets/{}",
             org_id, ticket_id
@@ -261,11 +252,7 @@ impl CopepodClient {
     }
 
     /// Close a support ticket.
-    pub async fn close_support_ticket(
-        &self,
-        org_id: &str,
-        ticket_id: &str,
-    ) -> Result<Value> {
+    pub async fn close_support_ticket(&self, org_id: &str, ticket_id: &str) -> Result<Value> {
         self.post(
             &format!(
                 "api/platform/orgs/{}/support/tickets/{}/close",

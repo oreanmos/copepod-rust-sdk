@@ -4,13 +4,12 @@ use crate::models::{AppRole, ListResult, UserRole};
 
 impl CopepodClient {
     /// List roles for an app.
-    pub async fn list_roles(
-        &self,
-        org_id: &str,
-        app_id: &str,
-    ) -> Result<ListResult<AppRole>> {
-        self.get(&format!("api/platform/orgs/{}/apps/{}/roles", org_id, app_id))
-            .await
+    pub async fn list_roles(&self, org_id: &str, app_id: &str) -> Result<ListResult<AppRole>> {
+        self.get(&format!(
+            "api/platform/orgs/{}/apps/{}/roles",
+            org_id, app_id
+        ))
+        .await
     }
 
     /// Create a new role for an app.
@@ -20,8 +19,11 @@ impl CopepodClient {
         app_id: &str,
         body: &impl serde::Serialize,
     ) -> Result<AppRole> {
-        self.post(&format!("api/platform/orgs/{}/apps/{}/roles", org_id, app_id), body)
-            .await
+        self.post(
+            &format!("api/platform/orgs/{}/apps/{}/roles", org_id, app_id),
+            body,
+        )
+        .await
     }
 
     /// Update a role.
@@ -33,19 +35,17 @@ impl CopepodClient {
         body: &impl serde::Serialize,
     ) -> Result<AppRole> {
         self.patch(
-            &format!("api/platform/orgs/{}/apps/{}/roles/{}", org_id, app_id, role_id),
+            &format!(
+                "api/platform/orgs/{}/apps/{}/roles/{}",
+                org_id, app_id, role_id
+            ),
             body,
         )
         .await
     }
 
     /// Delete a role.
-    pub async fn delete_role(
-        &self,
-        org_id: &str,
-        app_id: &str,
-        role_id: &str,
-    ) -> Result<()> {
+    pub async fn delete_role(&self, org_id: &str, app_id: &str, role_id: &str) -> Result<()> {
         self.delete(&format!(
             "api/platform/orgs/{}/apps/{}/roles/{}",
             org_id, app_id, role_id

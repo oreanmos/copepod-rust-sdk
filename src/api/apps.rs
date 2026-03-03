@@ -5,7 +5,8 @@ use crate::models::{ApiKey, App, ListResult};
 impl CopepodClient {
     /// List all apps in an organization.
     pub async fn list_apps(&self, org_id: &str) -> Result<ListResult<App>> {
-        self.get(&format!("api/platform/orgs/{}/apps", org_id)).await
+        self.get(&format!("api/platform/orgs/{}/apps", org_id))
+            .await
     }
 
     /// Get an app by ID.
@@ -15,12 +16,9 @@ impl CopepodClient {
     }
 
     /// Create a new app.
-    pub async fn create_app(
-        &self,
-        org_id: &str,
-        body: &impl serde::Serialize,
-    ) -> Result<App> {
-        self.post(&format!("api/platform/orgs/{}/apps", org_id), body).await
+    pub async fn create_app(&self, org_id: &str, body: &impl serde::Serialize) -> Result<App> {
+        self.post(&format!("api/platform/orgs/{}/apps", org_id), body)
+            .await
     }
 
     /// Update an app.
@@ -30,8 +28,11 @@ impl CopepodClient {
         app_id: &str,
         body: &impl serde::Serialize,
     ) -> Result<App> {
-        self.patch(&format!("api/platform/orgs/{}/apps/{}", org_id, app_id), body)
-            .await
+        self.patch(
+            &format!("api/platform/orgs/{}/apps/{}", org_id, app_id),
+            body,
+        )
+        .await
     }
 
     /// Delete an app.
@@ -41,13 +42,12 @@ impl CopepodClient {
     }
 
     /// List API keys for an app.
-    pub async fn list_api_keys(
-        &self,
-        org_id: &str,
-        app_id: &str,
-    ) -> Result<ListResult<ApiKey>> {
-        self.get(&format!("api/platform/orgs/{}/apps/{}/api-keys", org_id, app_id))
-            .await
+    pub async fn list_api_keys(&self, org_id: &str, app_id: &str) -> Result<ListResult<ApiKey>> {
+        self.get(&format!(
+            "api/platform/orgs/{}/apps/{}/api-keys",
+            org_id, app_id
+        ))
+        .await
     }
 
     /// Create a new API key for an app.
@@ -65,12 +65,7 @@ impl CopepodClient {
     }
 
     /// Revoke an API key.
-    pub async fn revoke_api_key(
-        &self,
-        org_id: &str,
-        app_id: &str,
-        key_id: &str,
-    ) -> Result<()> {
+    pub async fn revoke_api_key(&self, org_id: &str, app_id: &str, key_id: &str) -> Result<()> {
         self.delete(&format!(
             "api/platform/orgs/{}/apps/{}/api-keys/{}",
             org_id, app_id, key_id

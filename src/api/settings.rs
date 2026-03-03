@@ -12,21 +12,14 @@ impl CopepodClient {
     }
 
     /// Update platform-wide settings (admin).
-    pub async fn update_platform_settings(
-        &self,
-        body: &impl serde::Serialize,
-    ) -> Result<Value> {
+    pub async fn update_platform_settings(&self, body: &impl serde::Serialize) -> Result<Value> {
         self.put("api/platform/settings", body).await
     }
 
     // -- Per-app email sender --
 
     /// Get the email sender configuration for an app.
-    pub async fn get_email_sender(
-        &self,
-        org_id: &str,
-        app_id: &str,
-    ) -> Result<Value> {
+    pub async fn get_email_sender(&self, org_id: &str, app_id: &str) -> Result<Value> {
         self.get(&format!(
             "api/platform/orgs/{}/apps/{}/email/sender",
             org_id, app_id
@@ -49,11 +42,7 @@ impl CopepodClient {
     }
 
     /// Delete the email sender for an app.
-    pub async fn delete_email_sender(
-        &self,
-        org_id: &str,
-        app_id: &str,
-    ) -> Result<()> {
+    pub async fn delete_email_sender(&self, org_id: &str, app_id: &str) -> Result<()> {
         self.delete(&format!(
             "api/platform/orgs/{}/apps/{}/email/sender",
             org_id, app_id
@@ -64,11 +53,7 @@ impl CopepodClient {
     // -- Per-app email templates --
 
     /// List all email templates for an app.
-    pub async fn list_email_templates(
-        &self,
-        org_id: &str,
-        app_id: &str,
-    ) -> Result<Value> {
+    pub async fn list_email_templates(&self, org_id: &str, app_id: &str) -> Result<Value> {
         self.get(&format!(
             "api/platform/orgs/{}/apps/{}/email/templates",
             org_id, app_id

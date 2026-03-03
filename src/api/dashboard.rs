@@ -16,8 +16,11 @@ impl CopepodClient {
 
     /// Get server metrics for the given number of hours.
     pub async fn get_server_metrics(&self, hours: u32) -> Result<Vec<GraphData>> {
-        self.get(&format!("api/platform/dashboard/server-metrics?hours={}", hours))
-            .await
+        self.get(&format!(
+            "api/platform/dashboard/server-metrics?hours={}",
+            hours
+        ))
+        .await
     }
 
     /// Get server resource usage information.

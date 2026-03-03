@@ -21,14 +21,18 @@ impl CopepodClient {
         let raw: serde_json::Value = self.post_raw(&path, &body).await?;
 
         // Check if the response is an MFA challenge
-        if raw.get("mfa_required").and_then(|v| v.as_bool()).unwrap_or(false) {
-            let challenge: MfaChallenge = serde_json::from_value(raw)
-                .map_err(crate::error::CopepodError::Deserialize)?;
+        if raw
+            .get("mfa_required")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false)
+        {
+            let challenge: MfaChallenge =
+                serde_json::from_value(raw).map_err(crate::error::CopepodError::Deserialize)?;
             return Ok(AppLoginResult::MfaRequired(challenge));
         }
 
-        let resp: AuthResponse = serde_json::from_value(raw)
-            .map_err(crate::error::CopepodError::Deserialize)?;
+        let resp: AuthResponse =
+            serde_json::from_value(raw).map_err(crate::error::CopepodError::Deserialize)?;
         self.token_store
             .set(TokenPair {
                 token: resp.token.clone(),
