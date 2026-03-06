@@ -30,6 +30,10 @@ pub enum CopepodError {
     /// Server-sent events error.
     #[error("SSE error: {0}")]
     Sse(String),
+
+    /// Filesystem I/O error (e.g. reading migration files).
+    #[error("IO error: {0}")]
+    Io(String),
 }
 
 pub type Result<T> = std::result::Result<T, CopepodError>;

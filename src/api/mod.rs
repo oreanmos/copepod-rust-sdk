@@ -21,6 +21,7 @@ pub mod import_backup;
 pub mod jobs;
 pub mod logs;
 pub mod media_jobs;
+pub mod migrations;
 pub mod oauth;
 pub mod observability;
 pub mod org_invites;
