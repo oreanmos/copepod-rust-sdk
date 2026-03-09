@@ -6,11 +6,7 @@ use crate::models::{AppMigration, MigrationInput, MigrationSyncRequest, Migratio
 
 impl CopepodClient {
     /// List all registered migrations for an app.
-    pub async fn list_migrations(
-        &self,
-        org_id: &str,
-        app_id: &str,
-    ) -> Result<Vec<AppMigration>> {
+    pub async fn list_migrations(&self, org_id: &str, app_id: &str) -> Result<Vec<AppMigration>> {
         self.get(&format!(
             "api/platform/orgs/{}/apps/{}/migrations",
             org_id, app_id

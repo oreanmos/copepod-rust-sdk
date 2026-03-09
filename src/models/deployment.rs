@@ -205,6 +205,26 @@ pub struct DeploymentRuntimeStatus {
     pub db_status: DeploymentStatus,
 }
 
+/// Result from source detection for git-backed deployments and launchpads.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct SourceDetectionResult {
+    pub framework: Option<String>,
+    pub port: Option<u16>,
+    pub health_check_mode: Option<String>,
+    pub memory_request: Option<String>,
+    pub memory_limit: Option<String>,
+    #[serde(default)]
+    pub suggested_env_vars: Vec<SuggestedEnvVar>,
+}
+
+/// Suggested environment variable inferred from repository contents.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SuggestedEnvVar {
+    pub key: String,
+    pub example: String,
+    pub description: String,
+}
+
 /// Webhook configuration for auto-redeploy.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeploymentWebhook {
