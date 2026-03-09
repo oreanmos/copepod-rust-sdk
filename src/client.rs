@@ -112,6 +112,20 @@ impl CopepodClient {
         CopepodClientBuilder::new()
     }
 
+    /// Bind an organization ID and return a scoped helper.
+    pub fn org<'a>(&'a self, org_id: impl Into<String>) -> crate::scoped::ScopedOrgClient<'a> {
+        crate::scoped::ScopedOrgClient::new(self, org_id)
+    }
+
+    /// Bind an organization ID and app ID and return an app-scoped helper.
+    pub fn app<'a>(
+        &'a self,
+        org_id: impl Into<String>,
+        app_id: impl Into<String>,
+    ) -> crate::scoped::ScopedAppClient<'a> {
+        crate::scoped::ScopedAppClient::new(self, org_id, app_id)
+    }
+
     /// Get a reference to the token store.
     pub fn token_store(&self) -> &Arc<TokenStore> {
         &self.token_store
