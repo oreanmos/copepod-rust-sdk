@@ -19,6 +19,7 @@ pub mod governance;
 pub mod iam;
 pub mod import_backup;
 pub mod jobs;
+pub mod launchpads;
 pub mod logs;
 pub mod media_jobs;
 pub mod migrations;

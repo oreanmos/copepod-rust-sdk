@@ -5,6 +5,7 @@ use crate::models::{
     DeploymentBuildTriggerResponse, DeploymentDomain, DeploymentEnvVar, DeploymentGitSource,
     DeploymentGitSourceCreateResponse, DeploymentHistoryEntry, DeploymentLogs, DeploymentMetrics,
     DeploymentQueueAck, DeploymentRuntimeStatus, DeploymentVolume, DeploymentWebhook,
+    SourceDetectionResult,
 };
 
 impl CopepodClient {
@@ -68,7 +69,10 @@ impl CopepodClient {
     /// Trigger a deploy and return queue metadata.
     pub async fn deploy_queued(&self, org_id: &str, deploy_id: &str) -> Result<DeploymentQueueAck> {
         self.post(
-            &format!("api/platform/orgs/{}/deployments/{}/deploy", org_id, deploy_id),
+            &format!(
+                "api/platform/orgs/{}/deployments/{}/deploy",
+                org_id, deploy_id
+            ),
             &serde_json::json!({}),
         )
         .await
@@ -76,7 +80,9 @@ impl CopepodClient {
 
     /// Stop a running deployment.
     pub async fn stop_deployment(&self, org_id: &str, deploy_id: &str) -> Result<()> {
-        self.stop_deployment_queued(org_id, deploy_id).await.map(|_| ())
+        self.stop_deployment_queued(org_id, deploy_id)
+            .await
+            .map(|_| ())
     }
 
     /// Stop a deployment and return queue metadata.
@@ -86,7 +92,10 @@ impl CopepodClient {
         deploy_id: &str,
     ) -> Result<DeploymentQueueAck> {
         self.post(
-            &format!("api/platform/orgs/{}/deployments/{}/stop", org_id, deploy_id),
+            &format!(
+                "api/platform/orgs/{}/deployments/{}/stop",
+                org_id, deploy_id
+            ),
             &serde_json::json!({}),
         )
         .await
@@ -94,7 +103,9 @@ impl CopepodClient {
 
     /// Start a stopped deployment.
     pub async fn start_deployment(&self, org_id: &str, deploy_id: &str) -> Result<()> {
-        self.start_deployment_queued(org_id, deploy_id).await.map(|_| ())
+        self.start_deployment_queued(org_id, deploy_id)
+            .await
+            .map(|_| ())
     }
 
     /// Start a deployment and return queue metadata.
@@ -104,7 +115,10 @@ impl CopepodClient {
         deploy_id: &str,
     ) -> Result<DeploymentQueueAck> {
         self.post(
-            &format!("api/platform/orgs/{}/deployments/{}/start", org_id, deploy_id),
+            &format!(
+                "api/platform/orgs/{}/deployments/{}/start",
+                org_id, deploy_id
+            ),
             &serde_json::json!({}),
         )
         .await
@@ -422,6 +436,22 @@ impl CopepodClient {
         self.post(
             &format!(
                 "api/platform/orgs/{}/deployments/{}/builds/trigger",
+                org_id, deploy_id
+            ),
+            &serde_json::json!({}),
+        )
+        .await
+    }
+
+    /// Detect runtime hints from a deployment's configured git source.
+    pub async fn detect_deployment_source(
+        &self,
+        org_id: &str,
+        deploy_id: &str,
+    ) -> Result<SourceDetectionResult> {
+        self.post(
+            &format!(
+                "api/platform/orgs/{}/deployments/{}/detect",
                 org_id, deploy_id
             ),
             &serde_json::json!({}),

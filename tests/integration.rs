@@ -275,6 +275,106 @@ async fn test_list_records_with_query() {
 }
 
 #[tokio::test]
+async fn test_list_launchpads() {
+    let server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/platform/orgs/org1/launchpads"))
+        .and(header("Authorization", "Bearer tok"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
+            {
+                "id": "lp1",
+                "org_id": "org1",
+                "name": "Generic App",
+                "slug": "generic-app",
+                "description": "Reusable deployment flow",
+                "status": "draft",
+                "version": 1,
+                "draft_definition": {
+                    "headline": "Deploy",
+                    "launch_button_label": "Launch",
+                    "create_app": true,
+                    "app_defaults": {},
+                    "deployment_defaults": {},
+                    "source_defaults": {},
+                    "domain_defaults": null,
+                    "static_env": [],
+                    "fields": [],
+                    "hook_kind": null
+                },
+                "published_definition": null,
+                "published_at": null,
+                "created": "2026-03-09T00:00:00Z",
+                "updated": "2026-03-09T00:00:00Z"
+            }
+        ])))
+        .mount(&server)
+        .await;
+
+    let client = CopepodClient::builder()
+        .base_url(&server.uri())
+        .token("tok")
+        .auto_refresh(false)
+        .build()
+        .unwrap();
+
+    let launchpads = client.list_launchpads("org1").await.unwrap();
+    assert_eq!(launchpads.len(), 1);
+    assert_eq!(launchpads[0].slug, "generic-app");
+}
+
+#[tokio::test]
+async fn test_detect_launchpad_source() {
+    let server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/api/platform/orgs/org1/launchpads/lp1/detect-source"))
+        .and(header("Authorization", "Bearer tok"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "framework": "Axum",
+            "port": 3000,
+            "health_check_mode": "tcp",
+            "memory_request": "128Mi",
+            "memory_limit": "256Mi",
+            "suggested_env_vars": [
+                {
+                    "key": "RUST_LOG",
+                    "example": "info",
+                    "description": "Rust logging level"
+                }
+            ]
+        })))
+        .mount(&server)
+        .await;
+
+    let client = CopepodClient::builder()
+        .base_url(&server.uri())
+        .token("tok")
+        .auto_refresh(false)
+        .build()
+        .unwrap();
+
+    let detected = client
+        .detect_launchpad_source(
+            "org1",
+            "lp1",
+            &copepod_sdk::LaunchpadLaunchRequest {
+                values: std::iter::once((
+                    "git_repo_url".to_string(),
+                    "https://github.com/example/app".to_string(),
+                ))
+                .collect(),
+            },
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(detected.framework.as_deref(), Some("Axum"));
+    assert_eq!(detected.port, Some(3000));
+    assert_eq!(detected.suggested_env_vars.len(), 1);
+}
+
+#[tokio::test]
 async fn test_delete_record() {
     let server = MockServer::start().await;
 
