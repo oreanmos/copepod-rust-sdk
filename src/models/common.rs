@@ -9,3 +9,9 @@ pub struct ListResult<T> {
     pub total_pages: u32,
     pub items: Vec<T>,
 }
+
+/// Simple list response wrapping an items array (no pagination).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ItemsResponse<T> {
+    pub items: Vec<T>,
+}
