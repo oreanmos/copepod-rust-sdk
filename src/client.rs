@@ -24,6 +24,7 @@ pub struct CopepodClientBuilder {
     token: Option<String>,
     refresh_token: Option<String>,
     auto_refresh: bool,
+    http_client: Option<reqwest::Client>,
 }
 
 impl CopepodClientBuilder {
@@ -33,6 +34,7 @@ impl CopepodClientBuilder {
             token: None,
             refresh_token: None,
             auto_refresh: true,
+            http_client: None,
         }
     }
 
@@ -60,6 +62,13 @@ impl CopepodClientBuilder {
         self
     }
 
+    /// Provide a pre-configured `reqwest::Client` for connection pooling.
+    /// When set, the builder skips creating its own HTTP client.
+    pub fn http_client(mut self, client: reqwest::Client) -> Self {
+        self.http_client = Some(client);
+        self
+    }
+
     /// Build the client.
     pub fn build(self) -> Result<CopepodClient> {
         let base_url_str = self
@@ -82,14 +91,18 @@ impl CopepodClientBuilder {
             Arc::new(TokenStore::new())
         };
 
-        let http = reqwest::Client::builder()
-            .default_headers({
-                let mut headers = HeaderMap::new();
-                headers.insert("Accept", HeaderValue::from_static("application/json"));
-                headers
-            })
-            .build()
-            .map_err(CopepodError::Http)?;
+        let http = if let Some(client) = self.http_client {
+            client
+        } else {
+            reqwest::Client::builder()
+                .default_headers({
+                    let mut headers = HeaderMap::new();
+                    headers.insert("Accept", HeaderValue::from_static("application/json"));
+                    headers
+                })
+                .build()
+                .map_err(CopepodError::Http)?
+        };
 
         Ok(CopepodClient {
             http,
