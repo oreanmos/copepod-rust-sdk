@@ -27,15 +27,12 @@ impl CopepodClient {
         if status.is_success() {
             Ok(resp.bytes().await?)
         } else {
-            let body: serde_json::Value = resp.json().await.unwrap_or_default();
+            let bytes = resp.bytes().await.unwrap_or_default();
+            let (code, message) = crate::client::decode_error_body(&bytes);
             Err(crate::error::CopepodError::Api {
                 status: status.as_u16(),
-                code: body.get("code").and_then(|v| v.as_str()).map(String::from),
-                message: body
-                    .get("message")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("Unknown error")
-                    .to_string(),
+                code,
+                message,
             })
         }
     }

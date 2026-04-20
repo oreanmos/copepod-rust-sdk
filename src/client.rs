@@ -340,16 +340,112 @@ impl CopepodClient {
     }
 
     /// Map an error response to CopepodError::Api.
+    ///
+    /// Tries to parse the body as a Copepod-shaped JSON error
+    /// (`{"code": "...", "message": "..."}`). If that fails (e.g. an upstream
+    /// proxy returned a plain-text error like
+    /// `"failed to reach primary node"`), falls back to the raw body text so
+    /// the real reason isn't lost. The fallback message is truncated to
+    /// [`MAX_ERROR_BODY_CHARS`] characters to bound log size.
     async fn map_error<T>(status: StatusCode, resp: reqwest::Response) -> Result<T> {
-        let body: serde_json::Value = resp.json().await.unwrap_or_default();
+        let bytes = resp.bytes().await.unwrap_or_default();
+        let (code, message) = decode_error_body(&bytes);
         Err(CopepodError::Api {
             status: status.as_u16(),
-            code: body.get("code").and_then(|v| v.as_str()).map(String::from),
-            message: body
-                .get("message")
-                .and_then(|v| v.as_str())
-                .unwrap_or("Unknown error")
-                .to_string(),
+            code,
+            message,
         })
+    }
+}
+
+/// Maximum number of characters we keep when falling back to a plain-text
+/// error body. Long upstream HTML/text bodies are truncated to bound log
+/// size while still carrying enough context to debug.
+const MAX_ERROR_BODY_CHARS: usize = 512;
+
+/// Decode a Copepod error response body into `(code, message)`.
+///
+/// 1. Try to parse as JSON `{"code": ..., "message": ...}`.
+/// 2. Otherwise, fall back to the UTF-8 body text (trimmed and truncated).
+/// 3. If the body is empty, fall back to `"Unknown error"`.
+pub(crate) fn decode_error_body(bytes: &[u8]) -> (Option<String>, String) {
+    if let Ok(value) = serde_json::from_slice::<serde_json::Value>(bytes) {
+        let code = value.get("code").and_then(|v| v.as_str()).map(String::from);
+        if let Some(msg) = value.get("message").and_then(|v| v.as_str()) {
+            return (code, msg.to_string());
+        }
+        // JSON parsed but didn't have a `message`; surface the JSON itself.
+        if !value.is_null() {
+            return (
+                code,
+                truncate_chars(&value.to_string(), MAX_ERROR_BODY_CHARS),
+            );
+        }
+    }
+
+    let text = std::str::from_utf8(bytes).unwrap_or("").trim();
+    if text.is_empty() {
+        return (None, "Unknown error".to_string());
+    }
+    (None, truncate_chars(text, MAX_ERROR_BODY_CHARS))
+}
+
+fn truncate_chars(s: &str, max_chars: usize) -> String {
+    if s.chars().count() <= max_chars {
+        return s.to_string();
+    }
+    let truncated: String = s.chars().take(max_chars).collect();
+    format!("{truncated}…")
+}
+
+#[cfg(test)]
+mod error_body_tests {
+    use super::{decode_error_body, truncate_chars};
+
+    #[test]
+    fn decodes_copepod_json_error_shape() {
+        let body =
+            br#"{"code":"refresh_family_not_found","message":"refresh token family not found"}"#;
+        let (code, msg) = decode_error_body(body);
+        assert_eq!(code.as_deref(), Some("refresh_family_not_found"));
+        assert_eq!(msg, "refresh token family not found");
+    }
+
+    #[test]
+    fn falls_back_to_plain_text_body() {
+        let body = b"failed to reach primary node";
+        let (code, msg) = decode_error_body(body);
+        assert!(code.is_none());
+        assert_eq!(msg, "failed to reach primary node");
+    }
+
+    #[test]
+    fn empty_body_yields_unknown_error() {
+        let (code, msg) = decode_error_body(b"");
+        assert!(code.is_none());
+        assert_eq!(msg, "Unknown error");
+    }
+
+    #[test]
+    fn json_without_message_field_is_preserved() {
+        let body = br#"{"detail":"something else"}"#;
+        let (code, msg) = decode_error_body(body);
+        assert!(code.is_none());
+        assert!(msg.contains("detail"));
+    }
+
+    #[test]
+    fn long_text_body_is_truncated() {
+        let long = "x".repeat(2000);
+        let (_code, msg) = decode_error_body(long.as_bytes());
+        assert!(msg.chars().count() <= 513); // 512 + ellipsis
+        assert!(msg.ends_with('…'));
+    }
+
+    #[test]
+    fn truncate_chars_handles_multi_byte() {
+        let s = "ééééé";
+        assert_eq!(truncate_chars(s, 3), "ééé…");
+        assert_eq!(truncate_chars(s, 10), "ééééé");
     }
 }
