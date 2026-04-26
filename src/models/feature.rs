@@ -17,6 +17,16 @@ pub struct FeatureDefinition {
     pub description: Option<String>,
     #[serde(default)]
     pub enum_values: Option<Vec<String>>,
+    #[serde(default)]
+    pub billable: bool,
+    #[serde(default)]
+    pub price_cents: Option<i64>,
+    #[serde(default)]
+    pub currency: Option<String>,
+    #[serde(default)]
+    pub mollie_addon_id: Option<String>,
+    #[serde(default)]
+    pub display_name: Option<String>,
     pub created: String,
 }
 
@@ -31,6 +41,35 @@ pub struct FeatureDefinitionCreate {
     pub description: Option<String>,
     #[serde(default)]
     pub enum_values: Option<Vec<String>>,
+    #[serde(default)]
+    pub billable: bool,
+    #[serde(default)]
+    pub price_cents: Option<i64>,
+    #[serde(default)]
+    pub currency: Option<String>,
+    #[serde(default)]
+    pub mollie_addon_id: Option<String>,
+    #[serde(default)]
+    pub display_name: Option<String>,
+}
+
+/// Patch payload for an existing feature definition. Each field is
+/// `Some(...)` when the caller wants to set it, `None` to leave unchanged.
+/// Inner `Option<T>` allows setting a column to NULL.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct FeatureDefinitionPatch {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub billable: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub price_cents: Option<Option<i64>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub currency: Option<Option<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mollie_addon_id: Option<Option<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub display_name: Option<Option<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<Option<String>>,
 }
 
 /// A mapping from a plan to a feature value.
