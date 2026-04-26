@@ -1,3 +1,4 @@
+pub mod addon;
 pub mod app;
 pub mod audit;
 pub mod auth;
@@ -28,6 +29,7 @@ pub mod support;
 pub mod ticket;
 pub mod webhook;
 
+pub use addon::*;
 pub use app::*;
 pub use audit::*;
 pub use auth::*;
