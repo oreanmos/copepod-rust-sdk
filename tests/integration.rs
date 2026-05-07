@@ -787,6 +787,36 @@ async fn test_ticket_workflow_accepts_legacy_ticket_response() {
     assert_eq!(comment.content, "Looking into it");
 }
 
+#[tokio::test]
+async fn test_ticket_comments_accept_items_only_response() {
+    let server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/platform/orgs/o1/apps/a1/tickets/t1/comments"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "items": [{
+                "id": "c1",
+                "ticket_id": "t1",
+                "user_id": "u1",
+                "body": "Looking into it",
+                "created": "2024-01-01T00:00:00Z"
+            }]
+        })))
+        .mount(&server)
+        .await;
+
+    let client = CopepodClient::builder()
+        .base_url(&server.uri())
+        .token("tok")
+        .auto_refresh(false)
+        .build()
+        .unwrap();
+
+    let comments = client.list_comments("o1", "a1", "t1").await.unwrap();
+    assert_eq!(comments.items.len(), 1);
+    assert_eq!(comments.items[0].content, "Looking into it");
+}
+
 // -- Deployments status test --
 
 #[tokio::test]

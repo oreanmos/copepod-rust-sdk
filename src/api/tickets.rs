@@ -6,7 +6,8 @@ use serde_json::Value;
 use crate::client::CopepodClient;
 use crate::error::{CopepodError, Result};
 use crate::models::{
-    ListResult, Ticket, TicketAttachment, TicketComment, TicketListQuery, TicketStats,
+    ItemsResponse, ListResult, Ticket, TicketAttachment, TicketComment, TicketListQuery,
+    TicketStats,
 };
 
 impl CopepodClient {
@@ -159,7 +160,7 @@ impl CopepodClient {
         org_id: &str,
         app_id: &str,
         ticket_id: &str,
-    ) -> Result<ListResult<TicketComment>> {
+    ) -> Result<ItemsResponse<TicketComment>> {
         let path = format!(
             "api/platform/orgs/{}/apps/{}/tickets/{}/comments",
             org_id, app_id, ticket_id
@@ -272,7 +273,7 @@ impl CopepodClient {
     pub async fn list_ticket_comments_admin(
         &self,
         ticket_id: &str,
-    ) -> Result<ListResult<TicketComment>> {
+    ) -> Result<ItemsResponse<TicketComment>> {
         self.get(&format!("api/platform/tickets/{}/comments", ticket_id))
             .await
     }
