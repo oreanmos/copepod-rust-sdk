@@ -4,20 +4,30 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Ticket {
     pub id: String,
+    #[serde(default)]
     pub ticket_number: String,
+    #[serde(default)]
     pub app_id: String,
     #[serde(default)]
     pub app_name: Option<String>,
     #[serde(default)]
     pub app_slug: Option<String>,
+    #[serde(default)]
     pub org_id: String,
+    #[serde(default)]
     pub user_id: String,
+    #[serde(default)]
     pub user_email: String,
+    #[serde(default)]
     pub user_name: String,
     pub subject: String,
+    #[serde(default)]
     pub description: String,
+    #[serde(default = "default_category")]
     pub category: String,
+    #[serde(default = "default_status")]
     pub status: String,
+    #[serde(default = "default_priority")]
     pub priority: String,
     #[serde(default)]
     pub error_code: Option<String>,
@@ -47,7 +57,9 @@ pub struct Ticket {
     pub comment_count: u64,
     #[serde(default)]
     pub last_comment_at: Option<String>,
+    #[serde(default)]
     pub created: String,
+    #[serde(default)]
     pub updated: String,
 }
 
@@ -84,6 +96,10 @@ fn default_priority() -> String {
     "normal".to_string()
 }
 
+fn default_status() -> String {
+    "open".to_string()
+}
+
 /// Request body to update a ticket.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TicketUpdate {
@@ -105,12 +121,19 @@ pub struct TicketUpdate {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TicketComment {
     pub id: String,
+    #[serde(default)]
     pub ticket_id: String,
+    #[serde(default)]
     pub user_id: String,
+    #[serde(default)]
     pub user_name: String,
+    #[serde(default, alias = "body")]
     pub content: String,
+    #[serde(default)]
     pub is_from_support: bool,
+    #[serde(default)]
     pub is_internal: bool,
+    #[serde(default)]
     pub created: String,
 }
 

@@ -727,6 +727,66 @@ async fn test_ticket_workflow() {
     assert_eq!(comment.content, "Looking into it");
 }
 
+#[tokio::test]
+async fn test_ticket_workflow_accepts_legacy_ticket_response() {
+    let server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/api/platform/orgs/o1/apps/a1/tickets"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "id": "t1",
+            "subject": "Bug report",
+            "description": "Something is broken",
+            "status": "open",
+            "priority": "high",
+            "created": "2024-01-01T00:00:00Z",
+            "updated": "2024-01-01T00:00:00Z"
+        })))
+        .mount(&server)
+        .await;
+
+    Mock::given(method("POST"))
+        .and(path("/api/platform/orgs/o1/apps/a1/tickets/t1/comments"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "id": "c1",
+            "ticket_id": "t1",
+            "user_id": "u1",
+            "body": "Looking into it",
+            "created": "2024-01-01T00:00:00Z"
+        })))
+        .mount(&server)
+        .await;
+
+    let client = CopepodClient::builder()
+        .base_url(&server.uri())
+        .token("tok")
+        .auto_refresh(false)
+        .build()
+        .unwrap();
+
+    let ticket = client
+        .create_ticket(
+            "o1",
+            "a1",
+            &json!({
+                "subject": "Bug report",
+                "description": "Something is broken",
+                "priority": "high"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(ticket.subject, "Bug report");
+    assert_eq!(ticket.ticket_number, "");
+    assert_eq!(ticket.category, "question");
+
+    let comment = client
+        .add_comment("o1", "a1", "t1", &json!({ "content": "Looking into it" }))
+        .await
+        .unwrap();
+    assert_eq!(comment.content, "Looking into it");
+}
+
 // -- Deployments status test --
 
 #[tokio::test]
