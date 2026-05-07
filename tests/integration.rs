@@ -660,13 +660,24 @@ async fn test_ticket_workflow() {
     let server = MockServer::start().await;
 
     Mock::given(method("POST"))
-        .and(path("/api/orgs/o1/apps/a1/tickets"))
+        .and(path("/api/platform/orgs/o1/apps/a1/tickets"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "id": "t1",
+            "ticket_number": "OIKO-20260507-ABC123",
+            "app_id": "a1",
+            "app_name": "Oikonotes",
+            "app_slug": "oikonotes",
+            "org_id": "o1",
+            "user_id": "u1",
+            "user_email": "user@example.com",
+            "user_name": "User One",
             "subject": "Bug report",
             "description": "Something is broken",
+            "category": "bug",
             "status": "open",
             "priority": "high",
+            "context": {},
+            "comment_count": 0,
             "created": "2024-01-01T00:00:00Z",
             "updated": "2024-01-01T00:00:00Z"
         })))
@@ -674,12 +685,15 @@ async fn test_ticket_workflow() {
         .await;
 
     Mock::given(method("POST"))
-        .and(path("/api/orgs/o1/apps/a1/tickets/t1/comments"))
+        .and(path("/api/platform/orgs/o1/apps/a1/tickets/t1/comments"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "id": "c1",
             "ticket_id": "t1",
             "user_id": "u1",
-            "body": "Looking into it",
+            "user_name": "User One",
+            "content": "Looking into it",
+            "is_from_support": false,
+            "is_internal": false,
             "created": "2024-01-01T00:00:00Z"
         })))
         .mount(&server)
@@ -707,10 +721,10 @@ async fn test_ticket_workflow() {
     assert_eq!(ticket.subject, "Bug report");
 
     let comment = client
-        .add_comment("o1", "a1", "t1", &json!({ "body": "Looking into it" }))
+        .add_comment("o1", "a1", "t1", &json!({ "content": "Looking into it" }))
         .await
         .unwrap();
-    assert_eq!(comment.body, "Looking into it");
+    assert_eq!(comment.content, "Looking into it");
 }
 
 // -- Deployments status test --
