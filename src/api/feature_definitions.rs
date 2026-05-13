@@ -11,10 +11,7 @@ impl CopepodClient {
         body: &FeatureDefinitionCreate,
     ) -> Result<FeatureDefinition> {
         self.post(
-            &format!(
-                "api/platform/orgs/{}/apps/{}/features",
-                org_id, app_id
-            ),
+            &format!("api/platform/orgs/{}/apps/{}/features", org_id, app_id),
             body,
         )
         .await

@@ -2,7 +2,12 @@ use serde_json::Value;
 
 use crate::client::CopepodClient;
 use crate::error::Result;
-use crate::models::{CheckoutSession, Plan, Subscription};
+use crate::models::{
+    AiUsageCheckRequest, AiUsageCheckResponse, AiUsageReportRequest, AiUsageReportResponse,
+    AiUsageStatus, AppBillingCatalog, BillingIntentCheckoutRequest, BillingIntentCheckoutResponse,
+    BillingIntentCreate, BillingIntentResponse, CheckoutSession, Plan,
+    RegisterWithBillingIntentRequest, Subscription,
+};
 
 impl CopepodClient {
     /// Get billing/subscription status for an organization.
@@ -65,6 +70,126 @@ impl CopepodClient {
     ) -> Result<Value> {
         self.put(
             &format!("api/platform/orgs/{}/billing/entitlements", org_id),
+            body,
+        )
+        .await
+    }
+
+    /// Fetch the public app billing catalog.
+    pub async fn get_app_billing_catalog(
+        &self,
+        org_id: &str,
+        app_id: &str,
+    ) -> Result<AppBillingCatalog> {
+        self.get_public(&format!(
+            "api/platform/orgs/{org_id}/apps/{app_id}/billing/catalog"
+        ))
+        .await
+    }
+
+    /// Create a public pre-registration billing intent.
+    pub async fn create_app_billing_intent(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        body: &BillingIntentCreate,
+    ) -> Result<BillingIntentResponse> {
+        self.post_public(
+            &format!("api/platform/orgs/{org_id}/apps/{app_id}/billing/intents"),
+            body,
+        )
+        .await
+    }
+
+    /// Fetch a public pre-registration billing intent.
+    pub async fn get_app_billing_intent(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        intent_id: &str,
+    ) -> Result<BillingIntentResponse> {
+        self.get_public(&format!(
+            "api/platform/orgs/{org_id}/apps/{app_id}/billing/intents/{intent_id}"
+        ))
+        .await
+    }
+
+    /// Start Mollie checkout for a pre-registration billing intent.
+    pub async fn checkout_app_billing_intent(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        intent_id: &str,
+        body: &BillingIntentCheckoutRequest,
+    ) -> Result<BillingIntentCheckoutResponse> {
+        self.post_public(
+            &format!(
+                "api/platform/orgs/{org_id}/apps/{app_id}/billing/intents/{intent_id}/checkout"
+            ),
+            body,
+        )
+        .await
+    }
+
+    /// Register an app user by consuming a paid billing intent.
+    pub async fn register_with_billing_intent(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        collection: &str,
+        body: &RegisterWithBillingIntentRequest,
+    ) -> Result<crate::models::AuthResponse> {
+        self.post_public(
+            &format!(
+                "api/platform/orgs/{org_id}/apps/{app_id}/auth/{collection}/register-with-billing-intent"
+            ),
+            body,
+        )
+        .await
+    }
+
+    /// Fetch the current app user's hosted AI usage status.
+    pub async fn get_current_ai_usage(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        collection: &str,
+    ) -> Result<AiUsageStatus> {
+        self.get(&format!(
+            "api/platform/orgs/{org_id}/apps/{app_id}/auth/{collection}/me/ai-usage"
+        ))
+        .await
+    }
+
+    /// Check whether a hosted AI request is allowed for the current app user.
+    pub async fn check_current_ai_usage(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        collection: &str,
+        body: &AiUsageCheckRequest,
+    ) -> Result<AiUsageCheckResponse> {
+        self.post(
+            &format!(
+                "api/platform/orgs/{org_id}/apps/{app_id}/auth/{collection}/me/ai-usage/check"
+            ),
+            body,
+        )
+        .await
+    }
+
+    /// Report hosted AI token usage for the current app user.
+    pub async fn report_current_ai_usage(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        collection: &str,
+        body: &AiUsageReportRequest,
+    ) -> Result<AiUsageReportResponse> {
+        self.post(
+            &format!(
+                "api/platform/orgs/{org_id}/apps/{app_id}/auth/{collection}/me/ai-usage/report"
+            ),
             body,
         )
         .await

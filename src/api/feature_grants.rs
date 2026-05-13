@@ -11,10 +11,7 @@ impl CopepodClient {
         body: &FeatureGrantInput,
     ) -> Result<FeatureGrant> {
         self.put(
-            &format!(
-                "api/platform/orgs/{}/apps/{}/grants",
-                org_id, app_id
-            ),
+            &format!("api/platform/orgs/{}/apps/{}/grants", org_id, app_id),
             body,
         )
         .await
