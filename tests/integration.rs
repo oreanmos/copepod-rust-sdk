@@ -13,6 +13,109 @@ fn test_builder_missing_base_url() {
     assert!(matches!(err, CopepodError::Auth(_)));
 }
 
+#[tokio::test]
+async fn app_user_plan_change_preview_uses_auth_context() {
+    let server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path(
+            "/api/platform/orgs/o1/apps/a1/auth/users/me/subscription/change-preview",
+        ))
+        .and(header("Authorization", "Bearer app-token"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "current_plan": "basic",
+            "target_plan": "pro",
+            "direction": "upgrade",
+            "current_period_start": "2026-05-01T00:00:00Z",
+            "current_period_end": "2026-06-01T00:00:00Z",
+            "old_recurring_cents": 400,
+            "new_recurring_cents": 900,
+            "prorated_charge_cents": 250,
+            "currency": "EUR",
+            "effective_at": "2026-05-15T00:00:00Z",
+            "checkout_required": true
+        })))
+        .mount(&server)
+        .await;
+
+    let client = CopepodClient::builder()
+        .base_url(&server.uri())
+        .token("app-token")
+        .auto_refresh(false)
+        .build()
+        .unwrap();
+
+    let preview = client
+        .preview_app_user_plan_change("o1", "a1", "users", "pro")
+        .await
+        .unwrap();
+    assert_eq!(preview.target_plan, "pro");
+    assert_eq!(preview.prorated_charge_cents, 250);
+}
+
+#[tokio::test]
+async fn app_user_plan_change_submit_posts_consent() {
+    let server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path(
+            "/api/platform/orgs/o1/apps/a1/auth/users/me/subscription/change",
+        ))
+        .and(header("Authorization", "Bearer app-token"))
+        .and(body_json(json!({
+            "target_plan": "pro",
+            "accepted_terms_version": "2026-05-plan-change-v1",
+            "accepted_immediate_service": true,
+            "accepted_price": true,
+            "redirect_url": "https://example.test/settings/subscription"
+        })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "payment_open",
+            "preview": {
+                "current_plan": "basic",
+                "target_plan": "pro",
+                "direction": "upgrade",
+                "current_period_start": "2026-05-01T00:00:00Z",
+                "current_period_end": "2026-06-01T00:00:00Z",
+                "old_recurring_cents": 400,
+                "new_recurring_cents": 900,
+                "prorated_charge_cents": 250,
+                "currency": "EUR",
+                "effective_at": "2026-05-15T00:00:00Z",
+                "checkout_required": true
+            },
+            "checkout_url": "https://checkout.example/pay",
+            "payment_id": "tr_123"
+        })))
+        .mount(&server)
+        .await;
+
+    let client = CopepodClient::builder()
+        .base_url(&server.uri())
+        .token("app-token")
+        .auto_refresh(false)
+        .build()
+        .unwrap();
+
+    let response = client
+        .change_app_user_plan(
+            "o1",
+            "a1",
+            "users",
+            &copepod_sdk::AppPlanChangeRequest {
+                target_plan: "pro".to_string(),
+                accepted_terms_version: Some("2026-05-plan-change-v1".to_string()),
+                accepted_immediate_service: true,
+                accepted_price: true,
+                redirect_url: Some("https://example.test/settings/subscription".to_string()),
+            },
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status, "payment_open");
+    assert_eq!(response.payment_id.as_deref(), Some("tr_123"));
+}
+
 #[test]
 fn test_builder_invalid_url() {
     let result = CopepodClient::builder().base_url("not a url").build();

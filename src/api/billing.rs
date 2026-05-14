@@ -1,8 +1,12 @@
+use reqwest::Method;
 use serde_json::Value;
 
 use crate::client::CopepodClient;
 use crate::error::Result;
-use crate::models::{CheckoutSession, Plan, Subscription};
+use crate::models::{
+    AppPlanChangePreview, AppPlanChangeRequest, AppPlanChangeResponse, CheckoutSession, Plan,
+    Subscription,
+};
 
 impl CopepodClient {
     /// Get billing/subscription status for an organization.
@@ -68,5 +72,56 @@ impl CopepodClient {
             body,
         )
         .await
+    }
+
+    /// Preview an app-user plan change using the caller's app-user bearer token.
+    pub async fn preview_app_user_plan_change(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        collection: &str,
+        target_plan: &str,
+    ) -> Result<AppPlanChangePreview> {
+        self.get(&format!(
+            "api/platform/orgs/{org_id}/apps/{app_id}/auth/{collection}/me/subscription/change-preview?target_plan={target_plan}"
+        ))
+        .await
+    }
+
+    /// Submit an app-user plan change using the caller's app-user bearer token.
+    pub async fn change_app_user_plan(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        collection: &str,
+        body: &AppPlanChangeRequest,
+    ) -> Result<AppPlanChangeResponse> {
+        self.post(
+            &format!(
+                "api/platform/orgs/{org_id}/apps/{app_id}/auth/{collection}/me/subscription/change"
+            ),
+            body,
+        )
+        .await
+    }
+
+    /// Cancel the current app-user's scheduled downgrade.
+    pub async fn cancel_app_user_plan_change(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        collection: &str,
+    ) -> Result<AppPlanChangeResponse> {
+        let resp = self
+            .auth_request(
+                Method::DELETE,
+                &format!(
+                    "api/platform/orgs/{org_id}/apps/{app_id}/auth/{collection}/me/subscription/change"
+                ),
+            )
+            .await?
+            .send()
+            .await?;
+        CopepodClient::handle_response_pub(resp).await
     }
 }
