@@ -89,6 +89,8 @@ pub struct BillingIntentCreate {
     #[serde(default)]
     pub addon_keys: Vec<String>,
     #[serde(default)]
+    pub promo_code: Option<String>,
+    #[serde(default)]
     pub success_url: Option<String>,
     #[serde(default)]
     pub cancel_url: Option<String>,
@@ -111,10 +113,30 @@ pub struct BillingIntentResponse {
     pub plan_slug: String,
     pub addon_keys: Vec<String>,
     pub amount_cents: i64,
+    #[serde(default)]
+    pub base_recurring_amount_cents: i64,
+    #[serde(default)]
+    pub discount_amount_cents: i64,
+    #[serde(default)]
+    pub recurring_amount_cents: i64,
     pub currency: String,
     pub status: String,
     #[serde(default)]
     pub checkout_url: Option<String>,
+    #[serde(default)]
+    pub mollie_customer_id: Option<String>,
+    #[serde(default)]
+    pub mollie_subscription_id: Option<String>,
+    #[serde(default)]
+    pub trial_duration_days: Option<i32>,
+    #[serde(default)]
+    pub trial_ends_at: Option<String>,
+    #[serde(default)]
+    pub first_charge_at: Option<String>,
+    #[serde(default)]
+    pub discount_campaign_id: Option<String>,
+    #[serde(default)]
+    pub discount_code: Option<String>,
     #[serde(default)]
     pub expires_at: Option<String>,
     pub created: String,
@@ -138,6 +160,66 @@ pub struct RegisterWithBillingIntentRequest {
     pub password: String,
     #[serde(default)]
     pub name: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AppBillingSettings {
+    #[serde(default)]
+    pub registration_requires_billing: bool,
+    #[serde(default)]
+    pub trial_authorization_amount_cents: i64,
+    #[serde(default)]
+    pub trial_grace_days: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DiscountCampaign {
+    pub id: String,
+    pub org_id: String,
+    pub app_id: String,
+    pub name: String,
+    #[serde(default)]
+    pub code: Option<String>,
+    pub active: bool,
+    pub auto_apply: bool,
+    pub discount_type: String,
+    pub discount_value: i64,
+    pub duration_cycles: i32,
+    #[serde(default)]
+    pub applies_to_plan_slugs: Vec<String>,
+    #[serde(default)]
+    pub starts_at: Option<String>,
+    #[serde(default)]
+    pub ends_at: Option<String>,
+    #[serde(default)]
+    pub max_redemptions: Option<i64>,
+    pub per_email_limit: i32,
+    pub created: String,
+    pub updated: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DiscountCampaignInput {
+    pub name: String,
+    #[serde(default)]
+    pub code: Option<String>,
+    #[serde(default)]
+    pub active: bool,
+    #[serde(default)]
+    pub auto_apply: bool,
+    pub discount_type: String,
+    pub discount_value: i64,
+    pub duration_cycles: i32,
+    #[serde(default)]
+    pub applies_to_plan_slugs: Vec<String>,
+    #[serde(default)]
+    pub starts_at: Option<String>,
+    #[serde(default)]
+    pub ends_at: Option<String>,
+    #[serde(default)]
+    pub max_redemptions: Option<i64>,
+    #[serde(default)]
+    pub per_email_limit: i32,
 }
 
 /// Query for previewing an app-user subscription plan change.

@@ -5,10 +5,10 @@ use crate::client::CopepodClient;
 use crate::error::Result;
 use crate::models::{
     AiUsageCheckRequest, AiUsageCheckResponse, AiUsageReportRequest, AiUsageReportResponse,
-    AiUsageStatus, AppBillingCatalog, AppPlanChangePreview, AppPlanChangeRequest,
-    AppPlanChangeResponse, BillingIntentCheckoutRequest, BillingIntentCheckoutResponse,
-    BillingIntentCreate, BillingIntentResponse, CheckoutSession, Plan,
-    RegisterWithBillingIntentRequest, Subscription,
+    AiUsageStatus, AppBillingCatalog, AppBillingSettings, AppPlanChangePreview,
+    AppPlanChangeRequest, AppPlanChangeResponse, BillingIntentCheckoutRequest,
+    BillingIntentCheckoutResponse, BillingIntentCreate, BillingIntentResponse, CheckoutSession,
+    DiscountCampaign, DiscountCampaignInput, Plan, RegisterWithBillingIntentRequest, Subscription,
 };
 
 impl CopepodClient {
@@ -87,6 +87,93 @@ impl CopepodClient {
             "api/platform/orgs/{org_id}/apps/{app_id}/billing/catalog"
         ))
         .await
+    }
+
+    /// Fetch app billing signup/trial settings.
+    pub async fn get_app_billing_settings(
+        &self,
+        org_id: &str,
+        app_id: &str,
+    ) -> Result<AppBillingSettings> {
+        self.get(&format!(
+            "api/platform/orgs/{org_id}/apps/{app_id}/billing/settings"
+        ))
+        .await
+    }
+
+    /// Update app billing signup/trial settings.
+    pub async fn update_app_billing_settings(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        body: &AppBillingSettings,
+    ) -> Result<AppBillingSettings> {
+        self.put(
+            &format!("api/platform/orgs/{org_id}/apps/{app_id}/billing/settings"),
+            body,
+        )
+        .await
+    }
+
+    /// List app discount campaigns.
+    pub async fn list_app_discount_campaigns(
+        &self,
+        org_id: &str,
+        app_id: &str,
+    ) -> Result<Vec<DiscountCampaign>> {
+        self.get(&format!(
+            "api/platform/orgs/{org_id}/apps/{app_id}/billing/discounts"
+        ))
+        .await
+    }
+
+    /// Create an app discount campaign.
+    pub async fn create_app_discount_campaign(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        body: &DiscountCampaignInput,
+    ) -> Result<DiscountCampaign> {
+        self.post(
+            &format!("api/platform/orgs/{org_id}/apps/{app_id}/billing/discounts"),
+            body,
+        )
+        .await
+    }
+
+    /// Update an app discount campaign.
+    pub async fn update_app_discount_campaign(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        campaign_id: &str,
+        body: &DiscountCampaignInput,
+    ) -> Result<DiscountCampaign> {
+        self.put(
+            &format!("api/platform/orgs/{org_id}/apps/{app_id}/billing/discounts/{campaign_id}"),
+            body,
+        )
+        .await
+    }
+
+    /// Delete an app discount campaign.
+    pub async fn delete_app_discount_campaign(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        campaign_id: &str,
+    ) -> Result<Value> {
+        let resp = self
+            .auth_request(
+                Method::DELETE,
+                &format!(
+                    "api/platform/orgs/{org_id}/apps/{app_id}/billing/discounts/{campaign_id}"
+                ),
+            )
+            .await?
+            .send()
+            .await?;
+        CopepodClient::handle_response_pub(resp).await
     }
 
     /// Create a public pre-registration billing intent.
@@ -199,6 +286,22 @@ impl CopepodClient {
             .send()
             .await?;
         CopepodClient::handle_response_pub(resp).await
+    }
+
+    /// Cancel the current app user's active subscription.
+    pub async fn cancel_current_app_subscription(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        collection: &str,
+    ) -> Result<Value> {
+        self.post(
+            &format!(
+                "api/platform/orgs/{org_id}/apps/{app_id}/auth/{collection}/me/subscription/cancel"
+            ),
+            &serde_json::json!({}),
+        )
+        .await
     }
 
     /// Fetch the current app user's hosted AI usage status.
