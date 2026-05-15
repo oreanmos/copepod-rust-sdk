@@ -50,6 +50,8 @@ pub struct Plan {
 pub struct AppBillingCatalog {
     pub plans: Vec<AppBillingPlan>,
     pub addons: Vec<AppBillingAddon>,
+    #[serde(default)]
+    pub discounts: Vec<AppBillingDiscount>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -80,6 +82,26 @@ pub struct AppBillingAddon {
     pub currency: String,
     #[serde(default)]
     pub included_in_plans: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AppBillingDiscount {
+    pub id: String,
+    pub name: String,
+    #[serde(default)]
+    pub code: Option<String>,
+    pub auto_apply: bool,
+    #[serde(default)]
+    pub show_on_pricing: bool,
+    pub discount_type: String,
+    pub discount_value: i64,
+    pub duration_cycles: i32,
+    #[serde(default)]
+    pub applies_to_plan_slugs: Vec<String>,
+    #[serde(default)]
+    pub starts_at: Option<String>,
+    #[serde(default)]
+    pub ends_at: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -182,6 +204,8 @@ pub struct DiscountCampaign {
     pub code: Option<String>,
     pub active: bool,
     pub auto_apply: bool,
+    #[serde(default)]
+    pub show_on_pricing: bool,
     pub discount_type: String,
     pub discount_value: i64,
     pub duration_cycles: i32,
@@ -207,6 +231,8 @@ pub struct DiscountCampaignInput {
     pub active: bool,
     #[serde(default)]
     pub auto_apply: bool,
+    #[serde(default)]
+    pub show_on_pricing: bool,
     pub discount_type: String,
     pub discount_value: i64,
     pub duration_cycles: i32,

@@ -116,6 +116,57 @@ async fn app_user_plan_change_submit_posts_consent() {
     assert_eq!(response.payment_id.as_deref(), Some("tr_123"));
 }
 
+#[tokio::test]
+async fn app_billing_catalog_parses_public_discounts() {
+    let server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/platform/orgs/o1/apps/a1/billing/catalog"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "plans": [{
+                "id": "plan_basic",
+                "name": "Basic",
+                "slug": "basic",
+                "description": "Basic plan",
+                "price_monthly": 400,
+                "price_yearly": 3600,
+                "currency": "EUR",
+                "features": {},
+                "included_addons": [],
+                "active": true,
+                "sort_order": 1
+            }],
+            "addons": [],
+            "discounts": [{
+                "id": "discount_beta",
+                "name": "Launch beta",
+                "code": "BETA",
+                "auto_apply": false,
+                "show_on_pricing": true,
+                "discount_type": "percent",
+                "discount_value": 25,
+                "duration_cycles": 6,
+                "applies_to_plan_slugs": ["basic"],
+                "starts_at": null,
+                "ends_at": null
+            }]
+        })))
+        .mount(&server)
+        .await;
+
+    let client = CopepodClient::builder()
+        .base_url(&server.uri())
+        .auto_refresh(false)
+        .build()
+        .unwrap();
+
+    let catalog = client.get_app_billing_catalog("o1", "a1").await.unwrap();
+    assert_eq!(catalog.plans[0].slug, "basic");
+    assert_eq!(catalog.discounts.len(), 1);
+    assert_eq!(catalog.discounts[0].code.as_deref(), Some("BETA"));
+    assert!(catalog.discounts[0].show_on_pricing);
+}
+
 #[test]
 fn test_builder_invalid_url() {
     let result = CopepodClient::builder().base_url("not a url").build();
