@@ -329,6 +329,12 @@ pub struct AiUsageCheckRequest {
     pub estimated_input_tokens: Option<i64>,
     #[serde(default)]
     pub estimated_output_tokens: Option<i64>,
+    #[serde(default)]
+    pub usage_unit: Option<String>,
+    #[serde(default)]
+    pub estimated_input_units: Option<i64>,
+    #[serde(default)]
+    pub estimated_output_units: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -346,6 +352,12 @@ pub struct AiUsageReportRequest {
     pub input_tokens: i64,
     pub output_tokens: i64,
     #[serde(default)]
+    pub usage_unit: Option<String>,
+    #[serde(default)]
+    pub input_units: Option<i64>,
+    #[serde(default)]
+    pub output_units: Option<i64>,
+    #[serde(default)]
     pub estimated: bool,
     #[serde(default)]
     pub request_id: Option<String>,
@@ -356,4 +368,46 @@ pub struct AiUsageReportResponse {
     pub event_id: String,
     pub cost_micro_eur: i64,
     pub status: AiUsageStatus,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{AiUsageCheckRequest, AiUsageReportRequest};
+
+    #[test]
+    fn audio_usage_check_serializes_optional_units() {
+        let value = serde_json::to_value(AiUsageCheckRequest {
+            model: "voxtral-mini-latest".to_string(),
+            estimated_input_tokens: None,
+            estimated_output_tokens: None,
+            usage_unit: Some("audio_seconds".to_string()),
+            estimated_input_units: Some(45),
+            estimated_output_units: Some(0),
+        })
+        .unwrap();
+
+        assert_eq!(value["usage_unit"], "audio_seconds");
+        assert_eq!(value["estimated_input_units"], 45);
+        assert_eq!(value["estimated_output_units"], 0);
+    }
+
+    #[test]
+    fn audio_usage_report_serializes_optional_units() {
+        let value = serde_json::to_value(AiUsageReportRequest {
+            model: "voxtral-mini-latest".to_string(),
+            operation: "transcribe_audio".to_string(),
+            input_tokens: 0,
+            output_tokens: 0,
+            usage_unit: Some("audio_seconds".to_string()),
+            input_units: Some(45),
+            output_units: Some(0),
+            estimated: true,
+            request_id: None,
+        })
+        .unwrap();
+
+        assert_eq!(value["usage_unit"], "audio_seconds");
+        assert_eq!(value["input_units"], 45);
+        assert_eq!(value["output_units"], 0);
+    }
 }
