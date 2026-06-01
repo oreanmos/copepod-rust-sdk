@@ -1,6 +1,6 @@
-use copepod_sdk::{CopepodClient, CopepodError};
+use copepod_sdk::{CopepodClient, CopepodError, ImageTransformRequest, SignedUrlRequest};
 use serde_json::json;
-use wiremock::matchers::{body_json, header, method, path};
+use wiremock::matchers::{body_json, header, method, path, query_param};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 // -- Client builder tests --
@@ -642,6 +642,93 @@ async fn test_download_file() {
         .unwrap();
     assert_eq!(bytes.len(), 4);
     assert_eq!(bytes[0], 0xFF);
+}
+
+#[tokio::test]
+async fn test_download_file_transformed() {
+    let server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path(
+            "/api/platform/orgs/o1/apps/a1/files/images/r1/photo.jpg",
+        ))
+        .and(query_param("w", "640"))
+        .and(query_param("format", "webp"))
+        .and(query_param("q", "82"))
+        .and(header("authorization", "Bearer tok"))
+        .respond_with(ResponseTemplate::new(200).set_body_bytes(vec![1, 2, 3]))
+        .mount(&server)
+        .await;
+
+    let client = CopepodClient::builder()
+        .base_url(&server.uri())
+        .token("tok")
+        .auto_refresh(false)
+        .build()
+        .unwrap();
+
+    let transform = ImageTransformRequest {
+        width: Some(640),
+        format: Some("webp".to_string()),
+        quality: Some(82),
+        ..Default::default()
+    };
+    let bytes = client
+        .download_file_transformed("o1", "a1", "images", "r1", "photo.jpg", &transform)
+        .await
+        .unwrap();
+    assert_eq!(&bytes[..], &[1, 2, 3]);
+}
+
+#[tokio::test]
+async fn test_create_signed_url_with_transform() {
+    let server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/api/platform/apps/a1/files/sign"))
+        .and(header("authorization", "Bearer tok"))
+        .and(body_json(json!({
+            "key": "a1/images/r1/photo.jpg",
+            "expires_in": 600,
+            "transform": {
+                "width": 1200,
+                "format": "webp",
+                "quality": 82
+            }
+        })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "url": "/api/platform/apps/a1/files/signed/a1/images/r1/photo.jpg?token=sig&expires=123&w=1200&format=webp&q=82",
+            "token": "sig",
+            "expires": 123,
+            "transform": "w=1200&format=webp&q=82"
+        })))
+        .mount(&server)
+        .await;
+
+    let client = CopepodClient::builder()
+        .base_url(&server.uri())
+        .token("tok")
+        .auto_refresh(false)
+        .build()
+        .unwrap();
+
+    let request = SignedUrlRequest {
+        key: "a1/images/r1/photo.jpg".to_string(),
+        expires_in: Some(600),
+        transform: Some(ImageTransformRequest {
+            width: Some(1200),
+            format: Some("webp".to_string()),
+            quality: Some(82),
+            ..Default::default()
+        }),
+    };
+    let response = client.create_file_signed_url("a1", &request).await.unwrap();
+    assert_eq!(response.token.as_deref(), Some("sig"));
+    assert_eq!(response.expires, Some(123));
+    assert_eq!(
+        response.transform.as_deref(),
+        Some("w=1200&format=webp&q=82")
+    );
 }
 
 // -- Error display tests --

@@ -1,6 +1,6 @@
 use crate::client::CopepodClient;
 use crate::error::Result;
-use crate::models::SignedUrlResponse;
+use crate::models::{SignedUrlRequest, SignedUrlResponse};
 
 impl CopepodClient {
     /// Create a signed URL for a file.
@@ -11,6 +11,15 @@ impl CopepodClient {
     ) -> Result<SignedUrlResponse> {
         self.post(&format!("api/platform/apps/{}/files/sign", app_id), body)
             .await
+    }
+
+    /// Create a signed URL for a file using the typed request model.
+    pub async fn create_file_signed_url(
+        &self,
+        app_id: &str,
+        body: &SignedUrlRequest,
+    ) -> Result<SignedUrlResponse> {
+        self.create_signed_url(app_id, body).await
     }
 
     /// Download a file using a signed key.

@@ -5,6 +5,7 @@ use serde_json::Value;
 
 use crate::client::CopepodClient;
 use crate::error::{CopepodError, Result};
+use crate::models::ImageTransformRequest;
 
 impl CopepodClient {
     /// Upload a file to a record field.
@@ -48,6 +49,44 @@ impl CopepodClient {
             "api/platform/orgs/{}/apps/{}/files/{}/{}/{}",
             org_id, app_id, collection, record_id, filename
         );
+        let resp = self.auth_request(Method::GET, &path).await?.send().await?;
+
+        if resp.status().is_success() {
+            Ok(resp.bytes().await?)
+        } else {
+            let status = resp.status();
+            let body: Value = resp.json().await.unwrap_or_default();
+            Err(CopepodError::Api {
+                status: status.as_u16(),
+                code: body.get("code").and_then(|v| v.as_str()).map(String::from),
+                message: body
+                    .get("message")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("Download failed")
+                    .to_string(),
+            })
+        }
+    }
+
+    /// Download an image variant from a record using Copepod transform params.
+    pub async fn download_file_transformed(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        collection: &str,
+        record_id: &str,
+        filename: &str,
+        transform: &ImageTransformRequest,
+    ) -> Result<Bytes> {
+        let mut path = format!(
+            "api/platform/orgs/{}/apps/{}/files/{}/{}/{}",
+            org_id, app_id, collection, record_id, filename
+        );
+        let query = transform.to_query_string();
+        if !query.is_empty() {
+            path.push('?');
+            path.push_str(&query);
+        }
         let resp = self.auth_request(Method::GET, &path).await?.send().await?;
 
         if resp.status().is_success() {
