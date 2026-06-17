@@ -621,8 +621,9 @@ async fn test_download_file() {
 
     Mock::given(method("GET"))
         .and(path(
-            "/api/orgs/o1/apps/a1/collections/images/records/r1/files/photo.jpg",
+            "/api/platform/orgs/o1/apps/a1/files/images/r1/photo.jpg",
         ))
+        .and(header("authorization", "Bearer tok"))
         .respond_with(
             ResponseTemplate::new(200).set_body_bytes(vec![0xFF, 0xD8, 0xFF, 0xE0]), // JPEG magic bytes
         )
@@ -642,6 +643,32 @@ async fn test_download_file() {
         .unwrap();
     assert_eq!(bytes.len(), 4);
     assert_eq!(bytes[0], 0xFF);
+}
+
+#[tokio::test]
+async fn test_delete_file() {
+    let server = MockServer::start().await;
+
+    Mock::given(method("DELETE"))
+        .and(path(
+            "/api/platform/orgs/o1/apps/a1/files/images/r1/photo.jpg",
+        ))
+        .and(header("authorization", "Bearer tok"))
+        .respond_with(ResponseTemplate::new(204))
+        .mount(&server)
+        .await;
+
+    let client = CopepodClient::builder()
+        .base_url(&server.uri())
+        .token("tok")
+        .auto_refresh(false)
+        .build()
+        .unwrap();
+
+    client
+        .delete_file("o1", "a1", "images", "r1", "photo.jpg")
+        .await
+        .unwrap();
 }
 
 #[tokio::test]
