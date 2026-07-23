@@ -9,6 +9,31 @@ use url::Url;
 use crate::auth::{TokenPair, TokenStore};
 use crate::error::{CopepodError, Result};
 
+#[derive(Clone)]
+pub(crate) struct ApiKey(HeaderValue);
+
+impl ApiKey {
+    fn new(value: String) -> Result<Self> {
+        if value.is_empty() || value.trim() != value {
+            return Err(CopepodError::InvalidArgument(
+                "API key cannot be empty or contain surrounding whitespace".into(),
+            ));
+        }
+
+        let mut header = HeaderValue::from_bytes(value.as_bytes()).map_err(|_| {
+            CopepodError::InvalidArgument("API key is not a valid HTTP header value".into())
+        })?;
+        header.set_sensitive(true);
+        Ok(Self(header))
+    }
+}
+
+impl std::fmt::Debug for ApiKey {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str("<redacted>")
+    }
+}
+
 /// The main client for interacting with the Copepod API.
 #[derive(Debug, Clone)]
 pub struct CopepodClient {
@@ -16,6 +41,7 @@ pub struct CopepodClient {
     pub(crate) base_url: Url,
     pub(crate) token_store: Arc<TokenStore>,
     pub(crate) auto_refresh: bool,
+    pub(crate) api_key: Option<ApiKey>,
 }
 
 /// Builder for constructing a [`CopepodClient`].
@@ -23,6 +49,7 @@ pub struct CopepodClientBuilder {
     base_url: Option<String>,
     token: Option<String>,
     refresh_token: Option<String>,
+    api_key: Option<String>,
     auto_refresh: bool,
     http_client: Option<reqwest::Client>,
 }
@@ -33,6 +60,7 @@ impl CopepodClientBuilder {
             base_url: None,
             token: None,
             refresh_token: None,
+            api_key: None,
             auto_refresh: true,
             http_client: None,
         }
@@ -53,6 +81,17 @@ impl CopepodClientBuilder {
     /// Set an existing refresh token.
     pub fn refresh_token(mut self, token: impl Into<String>) -> Self {
         self.refresh_token = Some(token.into());
+        self
+    }
+
+    /// Set an application API key.
+    ///
+    /// API-key-only operations, such as transactional email delivery, send
+    /// this value in `X-API-Key`. They do not send a Bearer token, even when
+    /// the client is also configured with [`Self::token`]. The key is validated
+    /// and marked sensitive when [`Self::build`] constructs the client.
+    pub fn api_key(mut self, api_key: impl Into<String>) -> Self {
+        self.api_key = Some(api_key.into());
         self
     }
 
@@ -109,6 +148,7 @@ impl CopepodClientBuilder {
             base_url,
             token_store,
             auto_refresh: self.auto_refresh,
+            api_key: self.api_key.map(ApiKey::new).transpose()?,
         })
     }
 }
@@ -210,6 +250,17 @@ impl CopepodClient {
             builder = builder.header(AUTHORIZATION, format!("Bearer {}", pair.token));
         }
         Ok(builder)
+    }
+
+    /// Build a request authenticated only with the configured application API key.
+    pub(crate) fn api_key_request(&self, method: Method, path: &str) -> Result<RequestBuilder> {
+        let api_key = self.api_key.as_ref().ok_or_else(|| {
+            CopepodError::Auth("An API key is required for this operation".into())
+        })?;
+
+        Ok(self
+            .request(method, path)
+            .header("X-API-Key", api_key.0.clone()))
     }
 
     /// Perform an authenticated GET request and deserialize the response.

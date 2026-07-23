@@ -19,6 +19,10 @@ pub enum CopepodError {
     #[error("Auth error: {0}")]
     Auth(String),
 
+    /// A client-side request argument failed validation.
+    #[error("Invalid argument: {0}")]
+    InvalidArgument(String),
+
     /// JSON deserialization error.
     #[error("Deserialization error: {0}")]
     Deserialize(#[from] serde_json::Error),

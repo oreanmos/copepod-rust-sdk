@@ -12,6 +12,7 @@ pub mod cluster;
 pub mod collections;
 pub mod dashboard;
 pub mod deployments;
+pub mod email;
 pub mod entitlements;
 pub mod environments;
 pub mod feature_definitions;
