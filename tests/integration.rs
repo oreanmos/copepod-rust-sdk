@@ -2,7 +2,7 @@ use copepod_sdk::{
     CopepodClient, CopepodError, ImageTransformRequest, RealtimeSubscriptionOptions,
     RecordEventAction, SignedUrlRequest,
 };
-use futures_util::{pin_mut, StreamExt};
+use futures_util::StreamExt;
 use serde_json::json;
 use wiremock::matchers::{body_json, header, method, path, query_param};
 use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -1426,7 +1426,7 @@ async fn realtime_subscription_uses_header_auth_and_typed_filters() {
         .auto_refresh(false)
         .build()
         .unwrap();
-    let stream = client
+    let mut stream = client
         .subscribe_with_options(
             "o1",
             "a1",
@@ -1438,7 +1438,6 @@ async fn realtime_subscription_uses_header_auth_and_typed_filters() {
         )
         .await
         .unwrap();
-    pin_mut!(stream);
 
     let event = stream.next().await.unwrap().unwrap();
     assert_eq!(event.id, 42);

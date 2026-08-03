@@ -14,7 +14,7 @@ impl CopepodClient {
         &self,
         org_id: &str,
         app_id: &str,
-    ) -> Result<impl Stream<Item = Result<RecordEvent>>> {
+    ) -> Result<impl Stream<Item = Result<RecordEvent>> + Unpin> {
         self.subscribe_with_options(org_id, app_id, RealtimeSubscriptionOptions::default())
             .await
     }
@@ -30,7 +30,7 @@ impl CopepodClient {
         org_id: &str,
         app_id: &str,
         options: RealtimeSubscriptionOptions,
-    ) -> Result<impl Stream<Item = Result<RecordEvent>>> {
+    ) -> Result<impl Stream<Item = Result<RecordEvent>> + Unpin> {
         let path = format!("api/platform/orgs/{org_id}/apps/{app_id}/realtime");
         let mut request = self.auth_request(Method::GET, &path).await?;
 
@@ -84,6 +84,10 @@ impl CopepodClient {
                 }
             });
 
-        Ok(stream)
+        // Keep the public stream movable even when combinators such as
+        // `filter_map` contain an async future that is not `Unpin`. Existing
+        // consumers can continue using `stream.next().await` without having
+        // to add their own pinning layer.
+        Ok(Box::pin(stream))
     }
 }
