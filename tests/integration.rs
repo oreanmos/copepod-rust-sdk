@@ -1,4 +1,8 @@
-use copepod_sdk::{CopepodClient, CopepodError, ImageTransformRequest, SignedUrlRequest};
+use copepod_sdk::{
+    CopepodClient, CopepodError, ImageTransformRequest, RealtimeSubscriptionOptions,
+    RecordEventAction, SignedUrlRequest,
+};
+use futures_util::{pin_mut, StreamExt};
 use serde_json::json;
 use wiremock::matchers::{body_json, header, method, path, query_param};
 use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -39,7 +43,7 @@ async fn app_user_plan_change_preview_uses_auth_context() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .token("app-token")
         .auto_refresh(false)
         .build()
@@ -91,7 +95,7 @@ async fn app_user_plan_change_submit_posts_consent() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .token("app-token")
         .auto_refresh(false)
         .build()
@@ -155,7 +159,7 @@ async fn app_billing_catalog_parses_public_discounts() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .auto_refresh(false)
         .build()
         .unwrap();
@@ -204,7 +208,7 @@ async fn test_login_stores_tokens() {
     let server = MockServer::start().await;
 
     Mock::given(method("POST"))
-        .and(path("/api/auth/login"))
+        .and(path("/api/platform/auth/login"))
         .and(body_json(
             json!({ "email": "user@test.com", "password": "secret" }),
         ))
@@ -225,7 +229,7 @@ async fn test_login_stores_tokens() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .auto_refresh(false)
         .build()
         .unwrap();
@@ -245,7 +249,7 @@ async fn test_login_error_response() {
     let server = MockServer::start().await;
 
     Mock::given(method("POST"))
-        .and(path("/api/auth/login"))
+        .and(path("/api/platform/auth/login"))
         .respond_with(ResponseTemplate::new(401).set_body_json(json!({
             "code": "invalid_credentials",
             "message": "Invalid email or password"
@@ -254,7 +258,7 @@ async fn test_login_error_response() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .auto_refresh(false)
         .build()
         .unwrap();
@@ -280,13 +284,13 @@ async fn test_logout_clears_token() {
     let server = MockServer::start().await;
 
     Mock::given(method("POST"))
-        .and(path("/api/auth/logout"))
+        .and(path("/api/platform/auth/logout"))
         .respond_with(ResponseTemplate::new(200))
         .mount(&server)
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .token("tok")
         .refresh_token("ref")
         .auto_refresh(false)
@@ -305,7 +309,7 @@ async fn test_list_orgs() {
     let server = MockServer::start().await;
 
     Mock::given(method("GET"))
-        .and(path("/api/orgs"))
+        .and(path("/api/platform/orgs"))
         .and(header("Authorization", "Bearer my-token"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "page": 1,
@@ -324,7 +328,7 @@ async fn test_list_orgs() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .token("my-token")
         .auto_refresh(false)
         .build()
@@ -341,7 +345,7 @@ async fn test_create_and_get_record() {
     let server = MockServer::start().await;
 
     Mock::given(method("POST"))
-        .and(path("/api/orgs/o1/apps/a1/collections/posts/records"))
+        .and(path("/api/platform/orgs/o1/apps/a1/records/posts"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "id": "rec1",
             "title": "Hello",
@@ -351,7 +355,7 @@ async fn test_create_and_get_record() {
         .await;
 
     Mock::given(method("GET"))
-        .and(path("/api/orgs/o1/apps/a1/collections/posts/records/rec1"))
+        .and(path("/api/platform/orgs/o1/apps/a1/records/posts/rec1"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "id": "rec1",
             "title": "Hello",
@@ -361,7 +365,7 @@ async fn test_create_and_get_record() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .token("tok")
         .auto_refresh(false)
         .build()
@@ -393,7 +397,7 @@ async fn test_list_records_with_query() {
     let server = MockServer::start().await;
 
     Mock::given(method("GET"))
-        .and(path("/api/orgs/o1/apps/a1/collections/posts/records"))
+        .and(path("/api/platform/orgs/o1/apps/a1/records/posts"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "page": 1,
             "per_page": 10,
@@ -408,7 +412,7 @@ async fn test_list_records_with_query() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .token("tok")
         .auto_refresh(false)
         .build()
@@ -466,7 +470,7 @@ async fn test_list_launchpads() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .token("tok")
         .auto_refresh(false)
         .build()
@@ -502,7 +506,7 @@ async fn test_detect_launchpad_source() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .token("tok")
         .auto_refresh(false)
         .build()
@@ -533,13 +537,13 @@ async fn test_delete_record() {
     let server = MockServer::start().await;
 
     Mock::given(method("DELETE"))
-        .and(path("/api/orgs/o1/apps/a1/collections/posts/records/rec1"))
+        .and(path("/api/platform/orgs/o1/apps/a1/records/posts/rec1"))
         .respond_with(ResponseTemplate::new(204))
         .mount(&server)
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .token("tok")
         .auto_refresh(false)
         .build()
@@ -558,7 +562,7 @@ async fn test_404_error() {
     let server = MockServer::start().await;
 
     Mock::given(method("GET"))
-        .and(path("/api/orgs/none"))
+        .and(path("/api/platform/orgs/none"))
         .respond_with(ResponseTemplate::new(404).set_body_json(json!({
             "code": "not_found",
             "message": "Organization not found"
@@ -567,7 +571,7 @@ async fn test_404_error() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .token("tok")
         .auto_refresh(false)
         .build()
@@ -586,7 +590,7 @@ async fn test_500_error() {
     let server = MockServer::start().await;
 
     Mock::given(method("GET"))
-        .and(path("/api/orgs"))
+        .and(path("/api/platform/orgs"))
         .respond_with(ResponseTemplate::new(500).set_body_json(json!({
             "message": "Internal server error"
         })))
@@ -594,7 +598,7 @@ async fn test_500_error() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .token("tok")
         .auto_refresh(false)
         .build()
@@ -631,7 +635,7 @@ async fn test_download_file() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .token("tok")
         .auto_refresh(false)
         .build()
@@ -659,7 +663,7 @@ async fn test_delete_file() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .token("tok")
         .auto_refresh(false)
         .build()
@@ -688,7 +692,7 @@ async fn test_download_file_transformed() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .token("tok")
         .auto_refresh(false)
         .build()
@@ -733,7 +737,7 @@ async fn test_create_signed_url_with_transform() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .token("tok")
         .auto_refresh(false)
         .build()
@@ -787,7 +791,7 @@ async fn test_auto_refresh_on_expiring_token() {
 
     // Mock refresh endpoint
     Mock::given(method("POST"))
-        .and(path("/api/auth/refresh"))
+        .and(path("/api/platform/auth/refresh"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "token": "new-access-token",
             "refresh_token": "new-refresh-token",
@@ -804,7 +808,7 @@ async fn test_auto_refresh_on_expiring_token() {
 
     // Mock orgs endpoint
     Mock::given(method("GET"))
-        .and(path("/api/orgs"))
+        .and(path("/api/platform/orgs"))
         .and(header("Authorization", "Bearer new-access-token"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "page": 1,
@@ -817,7 +821,7 @@ async fn test_auto_refresh_on_expiring_token() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .token("old-expiring-token")
         .refresh_token("valid-refresh")
         .auto_refresh(true)
@@ -850,7 +854,7 @@ async fn test_mfa_verify() {
     let server = MockServer::start().await;
 
     Mock::given(method("POST"))
-        .and(path("/api/auth/mfa/verify"))
+        .and(path("/api/platform/auth/mfa/verify"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "token": "mfa-access",
             "refresh_token": "mfa-refresh",
@@ -865,7 +869,7 @@ async fn test_mfa_verify() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .auto_refresh(false)
         .build()
         .unwrap();
@@ -881,7 +885,7 @@ async fn test_crud_collections() {
     let server = MockServer::start().await;
 
     Mock::given(method("GET"))
-        .and(path("/api/orgs/o1/apps/a1/collections"))
+        .and(path("/api/platform/orgs/o1/apps/a1/collections"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "page": 1,
             "per_page": 20,
@@ -902,13 +906,13 @@ async fn test_crud_collections() {
         .await;
 
     Mock::given(method("DELETE"))
-        .and(path("/api/orgs/o1/apps/a1/collections/col1"))
+        .and(path("/api/platform/orgs/o1/apps/a1/collections/col1"))
         .respond_with(ResponseTemplate::new(204))
         .mount(&server)
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .token("tok")
         .auto_refresh(false)
         .build()
@@ -968,7 +972,7 @@ async fn test_ticket_workflow() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .token("tok")
         .auto_refresh(false)
         .build()
@@ -1026,7 +1030,7 @@ async fn test_ticket_workflow_accepts_legacy_ticket_response() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .token("tok")
         .auto_refresh(false)
         .build()
@@ -1074,7 +1078,7 @@ async fn test_ticket_comments_accept_items_only_response() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .token("tok")
         .auto_refresh(false)
         .build()
@@ -1105,7 +1109,7 @@ async fn test_get_deployment_status() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .token("tok")
         .auto_refresh(false)
         .build()
@@ -1136,7 +1140,7 @@ async fn test_deploy_queued_returns_queue_metadata() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .token("tok")
         .auto_refresh(false)
         .build()
@@ -1178,7 +1182,7 @@ async fn test_list_deployment_builds_parses_items_wrapper() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .token("tok")
         .auto_refresh(false)
         .build()
@@ -1188,4 +1192,641 @@ async fn test_list_deployment_builds_parses_items_wrapper() {
     assert_eq!(builds.len(), 1);
     assert_eq!(builds[0].id, "b1");
     assert_eq!(builds[0].build_method, "dockerfile");
+}
+
+#[tokio::test]
+async fn instance_administrator_lifecycle_uses_explicit_contracts() {
+    let server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/platform/instance-administrators"))
+        .and(header("Authorization", "Bearer owner-token"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "items": [{
+                "user_id": "u1",
+                "email": "owner@example.test",
+                "name": "Owner",
+                "role": "owner",
+                "created": "2026-07-22T00:00:00Z",
+                "updated": "2026-07-22T00:00:00Z"
+            }]
+        })))
+        .mount(&server)
+        .await;
+
+    Mock::given(method("PUT"))
+        .and(path("/api/platform/instance-administrators/u2"))
+        .and(body_json(json!({
+            "role": "admin",
+            "reason": "approved in incident 1234"
+        })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "user_id": "u2",
+            "role": "admin"
+        })))
+        .mount(&server)
+        .await;
+
+    Mock::given(method("DELETE"))
+        .and(path("/api/platform/instance-administrators/u2"))
+        .and(body_json(json!({"reason": "access review completed"})))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "user_id": "u2",
+            "revoked": true
+        })))
+        .mount(&server)
+        .await;
+
+    let client = CopepodClient::builder()
+        .base_url(server.uri())
+        .token("owner-token")
+        .auto_refresh(false)
+        .build()
+        .unwrap();
+    let admins = client.list_instance_administrators().await.unwrap();
+    assert_eq!(admins.items[0].role, "owner");
+    let granted = client
+        .set_instance_role(
+            "u2",
+            &copepod_sdk::SetInstanceRoleRequest {
+                role: "admin".to_string(),
+                reason: "approved in incident 1234".to_string(),
+            },
+        )
+        .await
+        .unwrap();
+    assert_eq!(granted.role, "admin");
+    let revoked = client
+        .revoke_instance_role(
+            "u2",
+            &copepod_sdk::RevokeInstanceRoleRequest {
+                reason: "access review completed".to_string(),
+            },
+        )
+        .await
+        .unwrap();
+    assert!(revoked.revoked);
+}
+
+#[tokio::test]
+async fn owner_recovery_uses_the_break_glass_header_without_session_auth() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/api/platform/auth/admin-recovery"))
+        .and(header(
+            "x-copepod-admin-recovery-token",
+            "01234567890123456789012345678901",
+        ))
+        .and(body_json(json!({
+            "user_id": "u2",
+            "reason": "lost owner credentials incident"
+        })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "user_id": "u2",
+            "role": "owner",
+            "recovered": true
+        })))
+        .mount(&server)
+        .await;
+
+    let client = CopepodClient::builder()
+        .base_url(server.uri())
+        .auto_refresh(false)
+        .build()
+        .unwrap();
+    let result = client
+        .recover_instance_owner(
+            "01234567890123456789012345678901",
+            &copepod_sdk::RecoverInstanceOwnerRequest {
+                user_id: "u2".to_string(),
+                reason: "lost owner credentials incident".to_string(),
+            },
+        )
+        .await
+        .unwrap();
+    assert!(result.recovered);
+}
+
+#[tokio::test]
+async fn managed_database_backup_and_restore_contracts_are_typed() {
+    let server = MockServer::start().await;
+    let backup = json!({
+        "id": "b1",
+        "volume_id": "v1",
+        "deployed_app_id": "db1",
+        "filename": "postgres-db1-b1.dump",
+        "size_bytes": 123,
+        "status": "in_progress",
+        "destination": "s3-main",
+        "destination_meta": {},
+        "checksum_sha256": null,
+        "error_message": null,
+        "created": "2026-07-22T00:00:00Z",
+        "updated": "2026-07-22T00:00:00Z",
+        "completed_at": null
+    });
+
+    Mock::given(method("POST"))
+        .and(path("/api/platform/orgs/o1/databases/db1/backups"))
+        .and(body_json(json!({"destination_id": "s3-main"})))
+        .respond_with(ResponseTemplate::new(202).set_body_json(backup.clone()))
+        .mount(&server)
+        .await;
+    Mock::given(method("POST"))
+        .and(path(
+            "/api/platform/orgs/o1/databases/db1/backups/b1/restore",
+        ))
+        .and(body_json(json!({
+            "confirmation": "restore:b1",
+            "safety_backup_id": "b2"
+        })))
+        .respond_with(ResponseTemplate::new(202).set_body_json(json!({
+            "id": "r1",
+            "backup_id": "b1",
+            "safety_backup_id": "b2",
+            "deployed_app_id": "db1",
+            "status": "pending",
+            "error_message": null,
+            "created": "2026-07-22T00:00:00Z",
+            "updated": "2026-07-22T00:00:00Z",
+            "completed_at": null
+        })))
+        .mount(&server)
+        .await;
+    Mock::given(method("DELETE"))
+        .and(path("/api/platform/orgs/o1/databases/db1/backups/b1"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({"deleted": true})))
+        .mount(&server)
+        .await;
+
+    let client = CopepodClient::builder()
+        .base_url(server.uri())
+        .token("operator-token")
+        .auto_refresh(false)
+        .build()
+        .unwrap();
+    let queued = client
+        .trigger_managed_database_backup(
+            "o1",
+            "db1",
+            &copepod_sdk::TriggerDatabaseBackupRequest {
+                destination_id: Some("s3-main".to_string()),
+            },
+        )
+        .await
+        .unwrap();
+    assert_eq!(queued.status, copepod_sdk::VolumeBackupStatus::InProgress);
+    let restored = client
+        .restore_managed_database_backup(
+            "o1",
+            "db1",
+            "b1",
+            &copepod_sdk::RestoreDatabaseBackupRequest::confirmed("b1", "b2"),
+        )
+        .await
+        .unwrap();
+    assert_eq!(restored.backup_id, "b1");
+    assert!(
+        client
+            .delete_managed_database_backup("o1", "db1", "b1")
+            .await
+            .unwrap()
+            .deleted
+    );
+}
+
+#[tokio::test]
+async fn realtime_subscription_uses_header_auth_and_typed_filters() {
+    let server = MockServer::start().await;
+    let body = concat!(
+        "event: ready\n",
+        "data: {\"status\":\"connected\"}\n\n",
+        "id: 42\n",
+        "event: record\n",
+        "data: {\"id\":42,\"action\":\"update\",\"collection\":\"notes\",\"record\":{\"id\":\"n1\"}}\n\n",
+    );
+
+    Mock::given(method("GET"))
+        .and(path("/api/platform/orgs/o1/apps/a1/realtime"))
+        .and(header("Authorization", "Bearer app-token"))
+        .and(header("Last-Event-ID", "41"))
+        .and(query_param("collections", "notes"))
+        .and(query_param("actions", "update,delete"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .insert_header("Content-Type", "text/event-stream")
+                .set_body_raw(body, "text/event-stream"),
+        )
+        .mount(&server)
+        .await;
+
+    let client = CopepodClient::builder()
+        .base_url(server.uri())
+        .token("app-token")
+        .auto_refresh(false)
+        .build()
+        .unwrap();
+    let stream = client
+        .subscribe_with_options(
+            "o1",
+            "a1",
+            RealtimeSubscriptionOptions {
+                collections: vec!["notes".to_string()],
+                actions: vec![RecordEventAction::Update, RecordEventAction::Delete],
+                last_event_id: Some(41),
+            },
+        )
+        .await
+        .unwrap();
+    pin_mut!(stream);
+
+    let event = stream.next().await.unwrap().unwrap();
+    assert_eq!(event.id, 42);
+    assert_eq!(event.action, "update");
+    assert_eq!(event.collection, "notes");
+    assert_eq!(event.record["id"], "n1");
+
+    let requests = server.received_requests().await.unwrap();
+    assert_eq!(requests.len(), 1);
+    assert!(requests[0]
+        .url
+        .query_pairs()
+        .all(|(name, _)| name != "access_token"));
+}
+
+#[tokio::test]
+async fn api_key_contract_returns_raw_lists_and_the_one_time_secret() {
+    let server = MockServer::start().await;
+    let key = json!({
+        "id": "key-1",
+        "app_id": "a1",
+        "name": "reader",
+        "key_prefix": "cpd_01234567",
+        "scopes": ["records:read"],
+        "created": "2026-07-22T00:00:00Z",
+        "last_used": null,
+        "revoked_at": null
+    });
+
+    Mock::given(method("GET"))
+        .and(path("/api/platform/orgs/o1/apps/a1/api-keys"))
+        .and(header("Authorization", "Bearer admin-token"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([key.clone()])))
+        .mount(&server)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/api/platform/orgs/o1/apps/a1/api-keys"))
+        .and(body_json(json!({
+            "name": "reader",
+            "scopes": ["records:read"]
+        })))
+        .respond_with(ResponseTemplate::new(200).set_body_json({
+            let mut created = key;
+            created["key"] = json!("cpd_0123456789abcdef0123456789abcdef0123456789abcdef");
+            created
+        }))
+        .mount(&server)
+        .await;
+
+    let client = CopepodClient::builder()
+        .base_url(server.uri())
+        .token("admin-token")
+        .auto_refresh(false)
+        .build()
+        .unwrap();
+    let keys = client.list_api_keys("o1", "a1").await.unwrap();
+    assert_eq!(keys.len(), 1);
+    assert_eq!(keys[0].app_id, "a1");
+
+    let created = client
+        .create_api_key(
+            "o1",
+            "a1",
+            &copepod_sdk::ApiKeyCreate::new("reader")
+                .with_scope(copepod_sdk::API_KEY_SCOPE_RECORDS_READ),
+        )
+        .await
+        .unwrap();
+    assert!(created.key.starts_with("cpd_"));
+    assert_eq!(created.api_key.key_prefix, "cpd_01234567");
+}
+
+#[tokio::test]
+async fn shard_move_sends_and_returns_the_assignment_epoch() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/api/platform/cluster/shards/shard-1/move"))
+        .and(header("Authorization", "Bearer platform-admin"))
+        .and(body_json(json!({
+            "target_group_id": "group-2",
+            "expected_assignment_epoch": 11
+        })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "move_id": "move-1",
+            "shard_id": "shard-1",
+            "target_group_id": "group-2",
+            "assignment_epoch": 12,
+            "status": "completed"
+        })))
+        .mount(&server)
+        .await;
+
+    let client = CopepodClient::builder()
+        .base_url(server.uri())
+        .token("platform-admin")
+        .auto_refresh(false)
+        .build()
+        .unwrap();
+    let moved = client
+        .move_shard(
+            "shard-1",
+            &copepod_sdk::MoveShardRequest {
+                target_group_id: "group-2".to_string(),
+                expected_assignment_epoch: 11,
+            },
+        )
+        .await
+        .unwrap();
+    assert_eq!(moved.assignment_epoch, 12);
+}
+
+#[tokio::test]
+async fn raft_membership_repair_contracts_are_typed_and_guarded() {
+    let server = MockServer::start().await;
+    let initial = json!({
+        "membership_log_index": 41,
+        "leader_node_id": 1,
+        "leader_last_applied_index": 900,
+        "joint": false,
+        "voters": [
+            {
+                "node_id": 1,
+                "address": "copepod-0.copepod-headless:8090",
+                "role": "leader",
+                "matched_index": 900,
+                "caught_up": true
+            },
+            {
+                "node_id": 2,
+                "address": "copepod-1.copepod-headless:8090",
+                "role": "voter",
+                "matched_index": 900,
+                "caught_up": true
+            },
+            {
+                "node_id": 3,
+                "address": "copepod-2.copepod-headless:8090",
+                "role": "voter",
+                "matched_index": 700,
+                "caught_up": false
+            }
+        ],
+        "learners": []
+    });
+    let learner_added = json!({
+        "membership_log_index": 42,
+        "leader_node_id": 1,
+        "leader_last_applied_index": 901,
+        "joint": false,
+        "voters": initial["voters"].clone(),
+        "learners": [{
+            "node_id": 4,
+            "address": "copepod-3.copepod-headless:8090",
+            "role": "learner",
+            "matched_index": 850,
+            "caught_up": false
+        }]
+    });
+    let learner_promoted = json!({
+        "membership_log_index": 43,
+        "leader_node_id": 1,
+        "leader_last_applied_index": 902,
+        "joint": false,
+        "voters": [
+            initial["voters"][0].clone(),
+            initial["voters"][1].clone(),
+            initial["voters"][2].clone(),
+            {
+                "node_id": 4,
+                "address": "copepod-3.copepod-headless:8090",
+                "role": "voter",
+                "matched_index": 902,
+                "caught_up": true
+            }
+        ],
+        "learners": []
+    });
+    let stale_member_removed = json!({
+        "membership_log_index": 44,
+        "leader_node_id": 1,
+        "leader_last_applied_index": 903,
+        "joint": false,
+        "voters": [
+            initial["voters"][0].clone(),
+            initial["voters"][1].clone(),
+            learner_promoted["voters"][3].clone()
+        ],
+        "learners": []
+    });
+
+    Mock::given(method("GET"))
+        .and(path("/api/platform/cluster/raft/membership"))
+        .and(header("Authorization", "Bearer platform-admin"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(initial))
+        .mount(&server)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/api/platform/cluster/raft/learners"))
+        .and(header("Authorization", "Bearer platform-admin"))
+        .and(body_json(json!({
+            "node_id": 4,
+            "address": "copepod-3.copepod-headless:8090",
+            "expected_membership_log_index": 41
+        })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(learner_added))
+        .mount(&server)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/api/platform/cluster/raft/learners/4/promote"))
+        .and(header("Authorization", "Bearer platform-admin"))
+        .and(body_json(json!({
+            "expected_membership_log_index": 42
+        })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(learner_promoted))
+        .mount(&server)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/api/platform/cluster/raft/members/3/remove"))
+        .and(header("Authorization", "Bearer platform-admin"))
+        .and(body_json(json!({
+            "expected_membership_log_index": 43,
+            "expected_voters": [1, 2, 3, 4],
+            "allow_temporary_two_voters": false,
+            "confirmation": "REMOVE RAFT NODE 3"
+        })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(stale_member_removed))
+        .mount(&server)
+        .await;
+
+    let client = CopepodClient::builder()
+        .base_url(server.uri())
+        .token("platform-admin")
+        .auto_refresh(false)
+        .build()
+        .unwrap();
+
+    let membership = client.get_raft_membership().await.unwrap();
+    assert_eq!(membership.membership_log_index, Some(41));
+    assert_eq!(membership.voter_ids(), vec![1, 2, 3]);
+    assert_eq!(
+        membership.voters[0].role,
+        copepod_sdk::RaftMemberRole::Leader
+    );
+
+    let membership = client
+        .add_raft_learner(&copepod_sdk::AddRaftLearnerRequest {
+            node_id: 4,
+            address: "copepod-3.copepod-headless:8090".to_string(),
+            expected_membership_log_index: 41,
+        })
+        .await
+        .unwrap();
+    assert_eq!(membership.learners[0].node_id, 4);
+    assert!(!membership.learners[0].caught_up);
+
+    let membership = client
+        .promote_raft_learner(
+            4,
+            &copepod_sdk::PromoteRaftLearnerRequest {
+                expected_membership_log_index: 42,
+            },
+        )
+        .await
+        .unwrap();
+    assert_eq!(membership.voter_ids(), vec![1, 2, 3, 4]);
+
+    let membership = client
+        .remove_raft_member(
+            3,
+            &copepod_sdk::RemoveRaftMemberRequest::confirmed(3, 43, vec![1, 2, 3, 4]),
+        )
+        .await
+        .unwrap();
+    assert_eq!(membership.voter_ids(), vec![1, 2, 4]);
+}
+
+#[tokio::test]
+async fn root_key_rotation_never_sends_key_material() {
+    let server = MockServer::start().await;
+    let state = json!({
+        "from_fingerprint": "old-fingerprint",
+        "to_fingerprint": "new-fingerprint",
+        "status": "completed",
+        "rotated_values": 14,
+        "verified_values": 14,
+        "started_by": "owner-1",
+        "started": "2026-07-22T00:00:00Z",
+        "updated": "2026-07-22T00:01:00Z",
+        "completed": "2026-07-22T00:01:00Z"
+    });
+    Mock::given(method("GET"))
+        .and(path("/api/platform/settings/rotate"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "primary_fingerprint": "new-fingerprint",
+            "previous_configured": true,
+            "safe_to_remove_previous": false,
+            "rotation": state.clone()
+        })))
+        .mount(&server)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/api/platform/settings/rotate"))
+        .and(body_json(json!({
+            "action": "rotate",
+            "confirm_fingerprint": "new-fingerprint"
+        })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "rotation": state,
+            "primary_fingerprint": "new-fingerprint",
+            "safe_to_remove_previous": false
+        })))
+        .mount(&server)
+        .await;
+
+    let client = CopepodClient::builder()
+        .base_url(server.uri())
+        .token("owner-token")
+        .auto_refresh(false)
+        .build()
+        .unwrap();
+    let status = client.get_secret_rotation_status().await.unwrap();
+    assert!(status.previous_configured);
+    let result = client
+        .rotate_secrets(&copepod_sdk::RotateSecretsRequest {
+            action: "rotate".to_string(),
+            confirm_fingerprint: "new-fingerprint".to_string(),
+        })
+        .await
+        .unwrap();
+    assert_eq!(result.rotation.rotated_values, 14);
+}
+
+#[tokio::test]
+async fn outbound_webhook_create_is_the_only_response_with_a_secret() {
+    let server = MockServer::start().await;
+    let webhook = json!({
+        "id": "wh-1",
+        "app_id": "a1",
+        "url": "https://hooks.example.test/copepod",
+        "events": ["records.created"],
+        "active": true,
+        "description": "record sink",
+        "created": "2026-07-22T00:00:00Z",
+        "updated": "2026-07-22T00:00:00Z"
+    });
+    Mock::given(method("GET"))
+        .and(path("/api/platform/apps/a1/webhooks"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "items": [webhook.clone()]
+        })))
+        .mount(&server)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/api/platform/apps/a1/webhooks"))
+        .and(body_json(json!({
+            "url": "https://hooks.example.test/copepod",
+            "events": ["records.created"],
+            "description": "record sink"
+        })))
+        .respond_with(ResponseTemplate::new(200).set_body_json({
+            let mut created = webhook;
+            created["secret"] = json!("a".repeat(64));
+            created
+        }))
+        .mount(&server)
+        .await;
+
+    let client = CopepodClient::builder()
+        .base_url(server.uri())
+        .token("admin-token")
+        .auto_refresh(false)
+        .build()
+        .unwrap();
+    let listed = client.list_webhooks("a1").await.unwrap();
+    assert_eq!(listed.items.len(), 1);
+    assert_eq!(listed.items[0].description, "record sink");
+
+    let created = client
+        .create_webhook(
+            "a1",
+            &copepod_sdk::OutboundWebhookCreate {
+                url: "https://hooks.example.test/copepod".to_string(),
+                events: vec!["records.created".to_string()],
+                description: "record sink".to_string(),
+            },
+        )
+        .await
+        .unwrap();
+    assert_eq!(created.secret.len(), 64);
+    assert_eq!(created.webhook.id, "wh-1");
 }

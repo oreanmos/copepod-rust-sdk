@@ -1,6 +1,6 @@
 use crate::client::CopepodClient;
 use crate::error::Result;
-use crate::models::{ApiKey, App, ListResult};
+use crate::models::{ApiKey, ApiKeyCreate, ApiKeyCreated, App, ListResult};
 
 impl CopepodClient {
     /// List all apps in an organization.
@@ -42,7 +42,7 @@ impl CopepodClient {
     }
 
     /// List API keys for an app.
-    pub async fn list_api_keys(&self, org_id: &str, app_id: &str) -> Result<ListResult<ApiKey>> {
+    pub async fn list_api_keys(&self, org_id: &str, app_id: &str) -> Result<Vec<ApiKey>> {
         self.get(&format!(
             "api/platform/orgs/{}/apps/{}/api-keys",
             org_id, app_id
@@ -50,18 +50,31 @@ impl CopepodClient {
         .await
     }
 
-    /// Create a new API key for an app.
+    /// Create a new API key and return its one-time secret.
+    ///
+    /// Empty scopes are intentionally deny-by-default; grant every required
+    /// operation explicitly with [`ApiKeyCreate::with_scope`].
     pub async fn create_api_key(
         &self,
         org_id: &str,
         app_id: &str,
-        body: &impl serde::Serialize,
-    ) -> Result<ApiKey> {
+        body: &ApiKeyCreate,
+    ) -> Result<ApiKeyCreated> {
         self.post(
             &format!("api/platform/orgs/{}/apps/{}/api-keys", org_id, app_id),
             body,
         )
         .await
+    }
+
+    /// Compatibility alias for [`Self::create_api_key`].
+    pub async fn create_api_key_with_secret(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        body: &ApiKeyCreate,
+    ) -> Result<ApiKeyCreated> {
+        self.create_api_key(org_id, app_id, body).await
     }
 
     /// Revoke an API key.

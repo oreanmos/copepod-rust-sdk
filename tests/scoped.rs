@@ -18,7 +18,7 @@ async fn scoped_record_client_uses_bound_org_and_app() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .token("tok")
         .auto_refresh(false)
         .build()
@@ -64,7 +64,7 @@ async fn scoped_auth_client_reuses_bound_app_context() {
         .await;
 
     let client = CopepodClient::builder()
-        .base_url(&server.uri())
+        .base_url(server.uri())
         .auto_refresh(false)
         .build()
         .unwrap();

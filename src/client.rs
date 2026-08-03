@@ -378,6 +378,21 @@ impl CopepodClient {
         Self::handle_empty_response(resp).await
     }
 
+    /// Perform an authenticated DELETE request with a JSON body.
+    pub(crate) async fn delete_with_body<T: DeserializeOwned>(
+        &self,
+        path: &str,
+        body: &impl Serialize,
+    ) -> Result<T> {
+        let resp = self
+            .auth_request(Method::DELETE, path)
+            .await?
+            .json(body)
+            .send()
+            .await?;
+        Self::handle_response(resp).await
+    }
+
     /// Handle a JSON response, mapping errors. (crate-public for use by query builder, etc.)
     pub(crate) async fn handle_response_pub<T: DeserializeOwned>(
         resp: reqwest::Response,

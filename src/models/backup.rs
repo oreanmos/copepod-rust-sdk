@@ -23,6 +23,93 @@ pub struct RestoreRequest {
     pub snapshot_name: String,
 }
 
+/// Status of a durable managed-database backup or restore job.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum VolumeBackupStatus {
+    Pending,
+    InProgress,
+    Completed,
+    Failed,
+    #[serde(other)]
+    Unknown,
+}
+
+/// A streamed, remote managed-database backup artifact.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VolumeBackup {
+    pub id: String,
+    pub volume_id: String,
+    pub deployed_app_id: String,
+    pub filename: String,
+    pub size_bytes: i64,
+    pub status: VolumeBackupStatus,
+    pub destination: String,
+    pub destination_meta: serde_json::Value,
+    #[serde(default)]
+    pub checksum_sha256: Option<String>,
+    #[serde(default)]
+    pub error_message: Option<String>,
+    pub created: String,
+    pub updated: String,
+    #[serde(default)]
+    pub completed_at: Option<String>,
+}
+
+/// Durable status of a managed-database restore.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ManagedDatabaseRestoreJob {
+    pub id: String,
+    pub backup_id: String,
+    pub safety_backup_id: String,
+    pub deployed_app_id: String,
+    pub status: VolumeBackupStatus,
+    #[serde(default)]
+    pub error_message: Option<String>,
+    pub created: String,
+    pub updated: String,
+    #[serde(default)]
+    pub completed_at: Option<String>,
+}
+
+/// Backup artifacts and restore jobs for a managed database.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ManagedDatabaseBackupsResponse {
+    pub items: Vec<VolumeBackup>,
+    pub restore_jobs: Vec<ManagedDatabaseRestoreJob>,
+}
+
+/// Request a managed-database backup using an explicit or default destination.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct TriggerDatabaseBackupRequest {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub destination_id: Option<String>,
+}
+
+/// Request a checksum-verified restore with a separate recovery point.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RestoreDatabaseBackupRequest {
+    pub confirmation: String,
+    pub safety_backup_id: String,
+}
+
+impl RestoreDatabaseBackupRequest {
+    /// Build the exact confirmation required by the restore endpoint.
+    pub fn confirmed(backup_id: impl Into<String>, safety_backup_id: impl Into<String>) -> Self {
+        let backup_id = backup_id.into();
+        Self {
+            confirmation: format!("restore:{backup_id}"),
+            safety_backup_id: safety_backup_id.into(),
+        }
+    }
+}
+
+/// Response returned after deleting a managed-database backup.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ManagedDatabaseBackupDeleteResponse {
+    pub deleted: bool,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BackupDestination {
     pub id: String,
@@ -116,4 +203,20 @@ pub struct SignedUrlResponse {
     pub expires_at: Option<String>,
     #[serde(default)]
     pub transform: Option<String>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{RestoreDatabaseBackupRequest, VolumeBackupStatus};
+
+    #[test]
+    fn managed_database_status_and_confirmation_match_the_wire_contract() {
+        assert_eq!(
+            serde_json::to_string(&VolumeBackupStatus::InProgress).unwrap(),
+            "\"in_progress\""
+        );
+        let request = RestoreDatabaseBackupRequest::confirmed("backup-1", "safety-2");
+        assert_eq!(request.confirmation, "restore:backup-1");
+        assert_eq!(request.safety_backup_id, "safety-2");
+    }
 }

@@ -359,8 +359,8 @@ pub struct AiUsageReportRequest {
     pub output_units: Option<i64>,
     #[serde(default)]
     pub estimated: bool,
-    #[serde(default)]
-    pub request_id: Option<String>,
+    /// Stable identifier used to deduplicate retries of this usage report.
+    pub request_id: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -402,12 +402,25 @@ mod tests {
             input_units: Some(45),
             output_units: Some(0),
             estimated: true,
-            request_id: None,
+            request_id: "usage-request-1".to_string(),
         })
         .unwrap();
 
         assert_eq!(value["usage_unit"], "audio_seconds");
         assert_eq!(value["input_units"], 45);
         assert_eq!(value["output_units"], 0);
+        assert_eq!(value["request_id"], "usage-request-1");
+    }
+
+    #[test]
+    fn usage_report_rejects_a_missing_idempotency_key() {
+        let value = serde_json::json!({
+            "model": "mistral-small-latest",
+            "operation": "chat",
+            "input_tokens": 10,
+            "output_tokens": 5
+        });
+
+        assert!(serde_json::from_value::<AiUsageReportRequest>(value).is_err());
     }
 }

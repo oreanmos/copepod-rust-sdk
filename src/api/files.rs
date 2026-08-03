@@ -9,6 +9,7 @@ use crate::models::ImageTransformRequest;
 
 impl CopepodClient {
     /// Upload a file to a record field.
+    #[allow(clippy::too_many_arguments)]
     pub async fn upload_file(
         &self,
         org_id: &str,

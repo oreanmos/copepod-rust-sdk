@@ -2,6 +2,7 @@ use serde_json::Value;
 
 use crate::client::CopepodClient;
 use crate::error::Result;
+use crate::models::{RotateSecretsRequest, SecretRotationResponse, SecretRotationStatusResponse};
 
 impl CopepodClient {
     // -- Platform settings --
@@ -14,6 +15,22 @@ impl CopepodClient {
     /// Update platform-wide settings (admin).
     pub async fn update_platform_settings(&self, body: &impl serde::Serialize) -> Result<Value> {
         self.put("api/platform/settings", body).await
+    }
+
+    /// Inspect the staged envelope-encryption root-key rotation.
+    pub async fn get_secret_rotation_status(&self) -> Result<SecretRotationStatusResponse> {
+        self.get("api/platform/settings/rotate").await
+    }
+
+    /// Rotate or retire the previous envelope-encryption root key.
+    ///
+    /// Key material is configured on every server replica and is never sent
+    /// through this API.
+    pub async fn rotate_secrets(
+        &self,
+        request: &RotateSecretsRequest,
+    ) -> Result<SecretRotationResponse> {
+        self.post("api/platform/settings/rotate", request).await
     }
 
     // -- Per-app email sender --

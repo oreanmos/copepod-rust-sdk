@@ -1,10 +1,14 @@
 use crate::client::CopepodClient;
 use crate::error::Result;
-use crate::models::{EventSubscription, ListResult, OutboundWebhook, WebhookDelivery};
+use crate::models::{
+    EventSubscription, EventSubscriptionCreate, ItemsResponse, OutboundWebhook,
+    OutboundWebhookCreate, OutboundWebhookCreated, OutboundWebhookTestResponse,
+    OutboundWebhookUpdate, WebhookDelivery,
+};
 
 impl CopepodClient {
     /// List outbound webhooks for an app.
-    pub async fn list_webhooks(&self, app_id: &str) -> Result<ListResult<OutboundWebhook>> {
+    pub async fn list_webhooks(&self, app_id: &str) -> Result<ItemsResponse<OutboundWebhook>> {
         self.get(&format!("api/platform/apps/{}/webhooks", app_id))
             .await
     }
@@ -13,8 +17,8 @@ impl CopepodClient {
     pub async fn create_webhook(
         &self,
         app_id: &str,
-        body: &impl serde::Serialize,
-    ) -> Result<OutboundWebhook> {
+        body: &OutboundWebhookCreate,
+    ) -> Result<OutboundWebhookCreated> {
         self.post(&format!("api/platform/apps/{}/webhooks", app_id), body)
             .await
     }
@@ -24,7 +28,7 @@ impl CopepodClient {
         &self,
         app_id: &str,
         webhook_id: &str,
-        body: &impl serde::Serialize,
+        body: &OutboundWebhookUpdate,
     ) -> Result<OutboundWebhook> {
         self.patch(
             &format!("api/platform/apps/{}/webhooks/{}", app_id, webhook_id),
@@ -43,7 +47,11 @@ impl CopepodClient {
     }
 
     /// Test a webhook by sending a test payload.
-    pub async fn test_webhook(&self, app_id: &str, webhook_id: &str) -> Result<serde_json::Value> {
+    pub async fn test_webhook(
+        &self,
+        app_id: &str,
+        webhook_id: &str,
+    ) -> Result<OutboundWebhookTestResponse> {
         self.post(
             &format!("api/platform/apps/{}/webhooks/{}/test", app_id, webhook_id),
             &serde_json::json!({}),
@@ -56,7 +64,7 @@ impl CopepodClient {
         &self,
         app_id: &str,
         webhook_id: &str,
-    ) -> Result<ListResult<WebhookDelivery>> {
+    ) -> Result<ItemsResponse<WebhookDelivery>> {
         self.get(&format!(
             "api/platform/apps/{}/webhooks/{}/deliveries",
             app_id, webhook_id
@@ -68,7 +76,7 @@ impl CopepodClient {
     pub async fn list_event_subscriptions(
         &self,
         app_id: &str,
-    ) -> Result<ListResult<EventSubscription>> {
+    ) -> Result<ItemsResponse<EventSubscription>> {
         self.get(&format!(
             "api/platform/apps/{}/events/subscriptions",
             app_id
@@ -80,7 +88,7 @@ impl CopepodClient {
     pub async fn create_event_subscription(
         &self,
         app_id: &str,
-        body: &impl serde::Serialize,
+        body: &EventSubscriptionCreate,
     ) -> Result<EventSubscription> {
         self.post(
             &format!("api/platform/apps/{}/events/subscriptions", app_id),
