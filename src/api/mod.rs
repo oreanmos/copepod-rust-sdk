@@ -20,6 +20,7 @@ pub mod feature_flags;
 pub mod feature_grants;
 pub mod files;
 pub mod governance;
+pub mod health;
 pub mod iam;
 pub mod import_backup;
 pub mod instance_administration;

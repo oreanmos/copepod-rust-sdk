@@ -18,6 +18,45 @@ fn test_builder_missing_base_url() {
 }
 
 #[tokio::test]
+async fn serving_health_exposes_success_and_stable_election_error() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/api/platform/health/serving"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": "serving"
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let client = CopepodClient::builder()
+        .base_url(server.uri())
+        .auto_refresh(false)
+        .build()
+        .unwrap();
+    assert_eq!(client.health_serving().await.unwrap().status, "serving");
+
+    server.reset().await;
+    Mock::given(method("GET"))
+        .and(path("/api/platform/health/serving"))
+        .respond_with(ResponseTemplate::new(503).set_body_json(json!({
+            "status": 503,
+            "code": "raft_leader_unavailable",
+            "message": "Raft leader unavailable; retry shortly"
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let error = client.health_serving().await.unwrap_err();
+    assert!(error.is_raft_leader_unavailable());
+    assert_eq!(
+        error.raft_retry_after(),
+        Some(std::time::Duration::from_secs(1))
+    );
+}
+
+#[tokio::test]
 async fn app_user_plan_change_preview_uses_auth_context() {
     let server = MockServer::start().await;
 

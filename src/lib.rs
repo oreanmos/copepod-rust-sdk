@@ -8,6 +8,6 @@ pub mod realtime;
 pub mod scoped;
 
 pub use client::{CopepodClient, CopepodClientBuilder};
-pub use error::CopepodError;
+pub use error::{CopepodError, RAFT_LEADER_UNAVAILABLE_CODE};
 pub use models::*;
 pub use scoped::*;
