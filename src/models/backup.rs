@@ -2,8 +2,26 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BackupInfo {
+    #[serde(default)]
+    pub id: String,
     pub filename: String,
     pub size_bytes: u64,
+    #[serde(default)]
+    pub status: String,
+    #[serde(default)]
+    pub trigger: String,
+    #[serde(default)]
+    pub destination: String,
+    #[serde(default)]
+    pub destination_meta: serde_json::Value,
+    #[serde(default)]
+    pub shard_count: i64,
+    #[serde(default)]
+    pub file_count: i64,
+    #[serde(default)]
+    pub created: String,
+    #[serde(default)]
+    pub completed_at: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -12,15 +30,65 @@ pub struct BackupStatus {
     pub snapshots: Vec<BackupInfo>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct CreateBackupRequest {
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub destination_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub destination_ids: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RestoreRequest {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub backup_id: Option<String>,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
     pub snapshot_name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateBackupResponse {
+    pub status: String,
+    pub backup_id: String,
+    pub filename: String,
+    pub destination: serde_json::Value,
+    pub shard_count: i64,
+    pub file_count: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AppBackupPolicy {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default)]
+    pub interval_hours: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub interval_minutes: Option<u32>,
+    #[serde(default)]
+    pub retention_days: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub destination_id: Option<String>,
+    #[serde(default)]
+    pub destination_ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AppBackupHealth {
+    pub status: String,
+    pub enabled: bool,
+    pub target_rpo_minutes: u32,
+    pub latest_recovery_point_at: Option<String>,
+    pub age_minutes: Option<i64>,
+    pub required_destinations: usize,
+    pub successful_destinations: usize,
+    #[serde(default)]
+    pub required_destination_ids: Vec<String>,
+    #[serde(default)]
+    pub successful_destination_ids: Vec<String>,
+    pub latest_attempt_at: Option<String>,
+    pub latest_attempt_status: Option<String>,
+    pub latest_attempt_reason: Option<String>,
+    pub reason: Option<String>,
 }
 
 /// Status of a durable managed-database backup or restore job.
@@ -207,7 +275,7 @@ pub struct SignedUrlResponse {
 
 #[cfg(test)]
 mod tests {
-    use super::{RestoreDatabaseBackupRequest, VolumeBackupStatus};
+    use super::{CreateBackupRequest, RestoreDatabaseBackupRequest, VolumeBackupStatus};
 
     #[test]
     fn managed_database_status_and_confirmation_match_the_wire_contract() {
@@ -218,5 +286,19 @@ mod tests {
         let request = RestoreDatabaseBackupRequest::confirmed("backup-1", "safety-2");
         assert_eq!(request.confirmation, "restore:backup-1");
         assert_eq!(request.safety_backup_id, "safety-2");
+    }
+
+    #[test]
+    fn app_backup_request_serializes_the_exact_destination_set() {
+        let request = CreateBackupRequest {
+            destination_id: None,
+            destination_ids: vec!["primary-s3".to_string(), "secondary-sftp".to_string()],
+        };
+        let value = serde_json::to_value(request).unwrap();
+        assert!(value.get("destination_id").is_none());
+        assert_eq!(
+            value["destination_ids"],
+            serde_json::json!(["primary-s3", "secondary-sftp"])
+        );
     }
 }

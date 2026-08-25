@@ -1,6 +1,6 @@
 use crate::client::CopepodClient;
 use crate::error::Result;
-use crate::models::{DashboardStats, GraphData, ResourceInfo};
+use crate::models::{DashboardStats, GraphData, OperationsSummary, ResourceInfo};
 
 impl CopepodClient {
     /// Get high-level dashboard statistics.
@@ -26,5 +26,10 @@ impl CopepodClient {
     /// Get server resource usage information.
     pub async fn get_resources(&self) -> Result<ResourceInfo> {
         self.get("api/platform/dashboard/resources").await
+    }
+
+    /// Get the durable production-operations cockpit summary.
+    pub async fn get_operations_summary(&self) -> Result<OperationsSummary> {
+        self.get("api/platform/dashboard/operations").await
     }
 }

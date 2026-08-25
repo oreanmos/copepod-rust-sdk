@@ -2,8 +2,9 @@ use crate::client::CopepodClient;
 use crate::error::Result;
 use crate::models::{
     AddRaftLearnerRequest, CreateShardGroupRequest, CreateShardRequest, MoveShardRequest,
-    MoveShardResponse, PromoteRaftLearnerRequest, RaftMembershipResponse, RemoveRaftMemberRequest,
-    ShardGroup, ShardResponse,
+    MoveShardResponse, PromoteRaftLearnerRequest, RaftMembershipResponse,
+    RebalanceExecutionResponse, RemoveRaftMemberRequest, ShardGroup, ShardMoveJob, ShardMovePage,
+    ShardResponse,
 };
 
 impl CopepodClient {
@@ -101,6 +102,49 @@ impl CopepodClient {
         body: &MoveShardRequest,
     ) -> Result<MoveShardResponse> {
         self.move_shard(shard_id, body).await
+    }
+
+    /// List a bounded page of durable shard move jobs.
+    pub async fn list_shard_moves(&self, limit: u32, offset: u32) -> Result<ShardMovePage> {
+        self.get(&format!(
+            "api/platform/cluster/moves?limit={}&offset={}",
+            limit.clamp(1, 100),
+            offset
+        ))
+        .await
+    }
+
+    /// Get a durable shard move job by ID.
+    pub async fn get_shard_move(&self, move_id: &str) -> Result<ShardMoveJob> {
+        self.get(&format!("api/platform/cluster/moves/{move_id}"))
+            .await
+    }
+
+    /// Wake the coordinator for a non-terminal shard move.
+    pub async fn resume_shard_move(&self, move_id: &str) -> Result<ShardMoveJob> {
+        self.post(
+            &format!("api/platform/cluster/moves/{move_id}/resume"),
+            &serde_json::json!({}),
+        )
+        .await
+    }
+
+    /// Cancel a move before target installation starts.
+    pub async fn cancel_shard_move(&self, move_id: &str) -> Result<ShardMoveJob> {
+        self.post(
+            &format!("api/platform/cluster/moves/{move_id}/cancel"),
+            &serde_json::json!({}),
+        )
+        .await
+    }
+
+    /// Queue the current Raft rebalance suggestions as independent jobs.
+    pub async fn execute_rebalance(&self) -> Result<RebalanceExecutionResponse> {
+        self.post(
+            "api/platform/cluster/rebalance/execute",
+            &serde_json::json!({}),
+        )
+        .await
     }
 
     /// Manually create/register a shard.
