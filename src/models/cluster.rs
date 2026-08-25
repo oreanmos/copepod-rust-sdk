@@ -151,14 +151,59 @@ pub struct MoveShardRequest {
     pub expected_assignment_epoch: u64,
 }
 
-/// Completed shard assignment cutover.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MoveShardResponse {
+/// Durable shard move job returned when a move is queued or inspected.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ShardMoveJob {
     pub move_id: String,
     pub shard_id: String,
+    /// Legacy completed-response target identifier. Queued jobs expose the
+    /// stable numeric `target_group` while this field remains empty.
     pub target_group_id: String,
+    /// Legacy completed-response epoch. Queued jobs use
+    /// `expected_assignment_epoch` until cutover completes.
     pub assignment_epoch: u64,
+    pub source_group: u64,
+    pub target_group: u64,
+    pub expected_assignment_epoch: u64,
+    pub phase: String,
     pub status: String,
+    pub message: String,
+    pub snapshot_sha256: Option<String>,
+    pub snapshot_bytes: Option<u64>,
+    pub source_barrier_log_index: Option<u64>,
+    pub target_install_log_index: Option<u64>,
+    pub started_at: String,
+    pub updated_at: String,
+    pub completed_at: Option<String>,
+    #[serde(default)]
+    pub attempts: u32,
+    pub last_error: Option<String>,
+}
+
+/// Backward-compatible name for the durable move response.
+pub type MoveShardResponse = ShardMoveJob;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ShardMovePage {
+    pub moves: Vec<ShardMoveJob>,
+    pub limit: u32,
+    pub offset: u32,
+    pub next_offset: Option<u32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RebalanceSkippedMove {
+    pub shard_id: String,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RebalanceExecutionResponse {
+    pub accepted: usize,
+    pub move_ids: Vec<String>,
+    pub skipped: Vec<RebalanceSkippedMove>,
+    pub message: String,
 }
 
 /// Request to manually register a shard database.

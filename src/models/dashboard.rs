@@ -49,3 +49,54 @@ pub struct DiskUsage {
     pub used: u64,
     pub available: u64,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OperationsBackupSummary {
+    pub total: u64,
+    pub protected: u64,
+    pub degraded: u64,
+    pub critical: u64,
+    pub disabled: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OperationsDeploymentSummary {
+    pub total: u64,
+    pub running: u64,
+    pub pending: u64,
+    pub failed: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OperationsClusterSummary {
+    pub groups: u64,
+    pub active_groups: u64,
+    pub active_moves: u64,
+    pub ambiguous_moves: u64,
+    pub critical_moves: u64,
+    pub stale_after_minutes: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OperationsRecoverySummary {
+    pub break_glass_configured: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OperationsAction {
+    pub severity: String,
+    pub title: String,
+    pub detail: String,
+    pub href: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OperationsSummary {
+    pub status: String,
+    pub generated_at: String,
+    pub backup: OperationsBackupSummary,
+    pub deployments: OperationsDeploymentSummary,
+    pub cluster: OperationsClusterSummary,
+    pub recovery: OperationsRecoverySummary,
+    pub actions: Vec<OperationsAction>,
+}
