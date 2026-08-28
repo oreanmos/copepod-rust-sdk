@@ -1168,6 +1168,7 @@ async fn test_deploy_queued_returns_queue_metadata() {
     Mock::given(method("POST"))
         .and(path("/api/platform/orgs/o1/deployments/d1/deploy"))
         .and(header("Authorization", "Bearer tok"))
+        .and(body_json(json!({ "mode": "force" })))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "queued": true,
             "app_id": "d1",
@@ -1189,6 +1190,39 @@ async fn test_deploy_queued_returns_queue_metadata() {
     assert!(queued.queued);
     assert_eq!(queued.log_id, "l1");
     assert_eq!(queued.action, "deploy");
+}
+
+#[tokio::test]
+async fn test_deploy_if_image_changed_uses_update_check_mode() {
+    let server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/api/platform/orgs/o1/deployments/d1/deploy"))
+        .and(header("Authorization", "Bearer tok"))
+        .and(body_json(json!({ "mode": "if_image_changed" })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "queued": true,
+            "app_id": "d1",
+            "log_id": "l2",
+            "action": "redeploy",
+            "status": "pending"
+        })))
+        .mount(&server)
+        .await;
+
+    let client = CopepodClient::builder()
+        .base_url(server.uri())
+        .token("tok")
+        .auto_refresh(false)
+        .build()
+        .unwrap();
+
+    let queued = client
+        .deploy_if_image_changed_queued("o1", "d1")
+        .await
+        .unwrap();
+    assert_eq!(queued.log_id, "l2");
+    assert_eq!(queued.action, "redeploy");
 }
 
 #[tokio::test]

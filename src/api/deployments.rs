@@ -73,7 +73,31 @@ impl CopepodClient {
                 "api/platform/orgs/{}/deployments/{}/deploy",
                 org_id, deploy_id
             ),
-            &serde_json::json!({}),
+            &serde_json::json!({ "mode": "force" }),
+        )
+        .await
+    }
+
+    /// Resolve the configured image selector and deploy only when its digest
+    /// differs from the healthy running image.
+    pub async fn deploy_if_image_changed(&self, org_id: &str, deploy_id: &str) -> Result<()> {
+        self.deploy_if_image_changed_queued(org_id, deploy_id)
+            .await
+            .map(|_| ())
+    }
+
+    /// Run an image update check and return queue metadata.
+    pub async fn deploy_if_image_changed_queued(
+        &self,
+        org_id: &str,
+        deploy_id: &str,
+    ) -> Result<DeploymentQueueAck> {
+        self.post(
+            &format!(
+                "api/platform/orgs/{}/deployments/{}/deploy",
+                org_id, deploy_id
+            ),
+            &serde_json::json!({ "mode": "if_image_changed" }),
         )
         .await
     }
