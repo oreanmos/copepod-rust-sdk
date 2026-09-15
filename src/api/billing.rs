@@ -190,6 +190,38 @@ impl CopepodClient {
         .await
     }
 
+    /// Create or recover an intent using a caller-persisted operation key.
+    /// Reuse the key and unchanged body after response loss. A different body
+    /// with the same key returns an API conflict; this method never retries it.
+    pub async fn create_app_billing_intent_idempotent(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        idempotency_key: &str,
+        body: &BillingIntentCreate,
+    ) -> Result<BillingIntentResponse> {
+        if idempotency_key.is_empty()
+            || idempotency_key.len() > 160
+            || !idempotency_key
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | ':'))
+        {
+            return Err(crate::CopepodError::InvalidArgument(
+                "Idempotency key must be 1–160 ASCII letters, digits, '.', ':', '_' or '-'".into(),
+            ));
+        }
+        let response = self
+            .request(
+                Method::POST,
+                &format!("api/platform/orgs/{org_id}/apps/{app_id}/billing/intents"),
+            )
+            .header("Idempotency-Key", idempotency_key)
+            .json(body)
+            .send()
+            .await?;
+        CopepodClient::handle_response_pub(response).await
+    }
+
     /// Fetch a public pre-registration billing intent.
     pub async fn get_app_billing_intent(
         &self,
