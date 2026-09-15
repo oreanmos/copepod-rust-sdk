@@ -13,6 +13,10 @@ conflict and never automatically retries or substitutes a new key.
 The server must support this contract before a client relies on it. The legacy
 `create_app_billing_intent` method remains available and unchanged.
 
-Validation: 86 SDK tests passed, zero failed or ignored; strict all-target Clippy
+Validation: 87 SDK tests passed, zero failed or ignored; strict all-target Clippy
 passed. Server-side durable replay, concurrent creation, and tenant isolation are
 validated separately in Copepod. No payment provider call is made by SDK tests.
+
+The recovery method calls the distinct `/billing/intents/recoverable` endpoint.
+An older server returns 404/405 before intent creation. The SDK never falls back
+to the legacy endpoint, whose old implementation may ignore request keys.

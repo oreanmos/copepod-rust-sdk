@@ -19,7 +19,9 @@ fn body() -> BillingIntentCreate {
 async fn repeated_calls_send_the_same_public_request_key_without_credentials() {
     let server = MockServer::start().await;
     Mock::given(method("POST"))
-        .and(path("/api/platform/orgs/org/apps/app/billing/intents"))
+        .and(path(
+            "/api/platform/orgs/org/apps/app/billing/intents/recoverable",
+        ))
         .and(header("idempotency-key", "stable-operation"))
         .and(body_json(serde_json::to_value(body()).unwrap()))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
@@ -92,4 +94,33 @@ async fn invalid_keys_fail_before_sending() {
         ));
     }
     assert!(server.received_requests().await.unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn old_server_rejection_never_falls_back_to_legacy_creation() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path(
+            "/api/platform/orgs/org/apps/app/billing/intents/recoverable",
+        ))
+        .respond_with(ResponseTemplate::new(404))
+        .expect(1)
+        .mount(&server)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/api/platform/orgs/org/apps/app/billing/intents"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(0)
+        .mount(&server)
+        .await;
+    let client = CopepodClient::builder()
+        .base_url(server.uri())
+        .build()
+        .unwrap();
+    assert!(matches!(
+        client
+            .create_app_billing_intent_idempotent("org", "app", "key", &body())
+            .await,
+        Err(CopepodError::Api { status: 404, .. })
+    ));
 }

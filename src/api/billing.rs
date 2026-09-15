@@ -213,7 +213,7 @@ impl CopepodClient {
         let response = self
             .request(
                 Method::POST,
-                &format!("api/platform/orgs/{org_id}/apps/{app_id}/billing/intents"),
+                &format!("api/platform/orgs/{org_id}/apps/{app_id}/billing/intents/recoverable"),
             )
             .header("Idempotency-Key", idempotency_key)
             .json(body)
