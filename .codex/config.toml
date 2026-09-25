@@ -1,0 +1,18 @@
+# Codex settings for the Oiko repos (oikonotes, copepod, copepod-rust-sdk).
+# Codex applies them only after you trust the repository. The main session
+# plans and orchestrates; subagents (.codex/agents/) implement, review and scout.
+model = "gpt-6-sol"
+model_reasoning_effort = "max"
+
+# Cross-repo builds create worktrees in the sibling repos.
+[sandbox_workspace_write]
+writable_roots = [
+    "/var/home/cesarli/Development/oikonotes",
+    "/var/home/cesarli/Development/copepod",
+    "/var/home/cesarli/Development/copepod-rust-sdk",
+    "/var/home/cesarli/.cache/oiko-agents",
+]
+
+[agents]
+default_subagent_model = "gpt-6-luna"
+default_subagent_reasoning_effort = "xhigh"

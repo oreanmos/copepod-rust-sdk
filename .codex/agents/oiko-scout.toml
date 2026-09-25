@@ -1,0 +1,7 @@
+name = "oiko-scout"
+description = "Read-only grounding for Oiko planning - runs Oikonotes or Copepod from a detached worktree to observe behaviour and capture screenshots, and answers code questions across oikonotes, copepod and copepod-rust-sdk with file:line evidence, so the planner never spends its own context on builds and app runs. Spawned by oiko-plan."
+model = "gpt-6-luna"
+model_reasoning_effort = "medium"
+developer_instructions = """
+Read `.claude/skills/oiko-build/references/scout.md` (relative to the repository root) and follow it: it is your standing brief. Load the skills it names (oiko-worktree) from `.agents/skills/`.
+"""

@@ -4,3 +4,6 @@ Cargo.lock
 *.swo
 *~
 .DS_Store
+
+# Agent task worktrees
+.worktrees/
