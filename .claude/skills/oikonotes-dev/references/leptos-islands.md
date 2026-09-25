@@ -66,7 +66,7 @@ and run `make app-ssr` and `make app-hydrate` after each subtree.
 
 ## Islands router navigation
 
-Full design: `docs/plans/2026-06-22-islands-navigation-architecture.md`.
+Full design: `docs/plans/archive/2026-06-22-islands-navigation-architecture.md`.
 
 - `OIKO_ISLANDS_ROUTER` (compile-time, read via `option_env!`;
   `ISLANDS_ROUTER_ENABLED` in `crates/app/src/app_shell/document.rs`) enables
