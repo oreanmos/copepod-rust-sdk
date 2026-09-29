@@ -24,9 +24,9 @@ pub enum CopepodError {
         message: String,
     },
 
-    /// API error whose body carried a structured `details` object, such as the
-    /// deploy endpoint's `rollout_needs_outage` conflict. Errors without
-    /// `details` stay [`CopepodError::Api`]; use [`CopepodError::api_status`],
+    /// The deploy endpoint's `rollout_needs_outage` / `rollout_needs_capacity`
+    /// conflict with its structured `details`. Every other error, with or
+    /// without details, stays [`CopepodError::Api`]; use [`CopepodError::api_status`],
     /// [`CopepodError::api_code`] and [`CopepodError::api_details`] to read
     /// both shapes uniformly.
     #[error("API error {status}: {message}")]

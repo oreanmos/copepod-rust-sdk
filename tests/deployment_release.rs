@@ -234,3 +234,49 @@ async fn status_new_fields_are_optional_and_parsed_when_present() {
     assert_eq!(new.rollout.unwrap().total, 2);
     assert_eq!(new.release.unwrap().phase, ReleasePhase::RollingOut);
 }
+
+async fn error_for(status: u16, body: serde_json::Value) -> CopepodError {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path(format!("{BASE}/deploy")))
+        .respond_with(ResponseTemplate::new(status).set_body_json(body))
+        .mount(&server)
+        .await;
+    client(&server)
+        .deploy_with_options("org_1", "dep_1", DeployOptions::default())
+        .await
+        .unwrap_err()
+}
+
+#[tokio::test]
+async fn record_validation_error_with_details_stays_api() {
+    let err = error_for(
+        422,
+        json!({"status": 422, "error": "immutable_field", "code": "immutable_field",
+               "message": "field 'owner' cannot be changed", "field": "owner",
+               "details": {"field": "owner"}}),
+    )
+    .await;
+    assert!(matches!(
+        err,
+        CopepodError::Api { status: 422, code: Some(ref c), .. } if c == "immutable_field"
+    ));
+    assert!(err.api_details().is_none());
+}
+
+#[tokio::test]
+async fn quota_error_with_details_stays_api() {
+    let err = error_for(
+        422,
+        json!({"status": 422, "error": "storage_quota_exceeded", "code": "storage_quota_exceeded",
+               "message": "Storage quota exceeded: 5 GB of 5 GB used.",
+               "used_bytes": 5, "limit_bytes": 5, "file_bytes": 1,
+               "details": {"used_bytes": 5}}),
+    )
+    .await;
+    assert!(matches!(
+        err,
+        CopepodError::Api { status: 422, code: Some(ref c), .. } if c == "storage_quota_exceeded"
+    ));
+    assert!(err.api_details().is_none());
+}

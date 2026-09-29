@@ -35,9 +35,10 @@ match client.deploy_with_options(org, id, DeployOptions::default()).await {
 
 ## Error accessors
 
-Errors whose body has a `details` object are `CopepodError::ApiWithDetails`;
-all others stay `CopepodError::Api`, so existing `Api { status, .. }` matches
-keep working for them. Use `api_status()`, `api_code()` and `api_details()` to
+`CopepodError::ApiWithDetails` is used only for the `rollout_needs_outage` and
+`rollout_needs_capacity` conflicts. Every other error, including other coded
+errors that carry details (record validation, storage quota), stays
+`CopepodError::Api`, so existing `Api { status, .. }` matches keep working. Use `api_status()`, `api_code()` and `api_details()` to
 handle both. `is_raft_leader_unavailable()` covers both.
 
 ## Status
