@@ -1,11 +1,11 @@
 use crate::client::CopepodClient;
 use crate::error::Result;
 use crate::models::{
-    Deployment, DeploymentBuildDetails, DeploymentBuildJob, DeploymentBuildList,
+    DeployOptions, Deployment, DeploymentBuildDetails, DeploymentBuildJob, DeploymentBuildList,
     DeploymentBuildTriggerResponse, DeploymentDomain, DeploymentEnvVar, DeploymentGitSource,
     DeploymentGitSourceCreateResponse, DeploymentHistoryEntry, DeploymentLogs, DeploymentMetrics,
-    DeploymentQueueAck, DeploymentRuntimeStatus, DeploymentVolume, DeploymentWebhook,
-    SourceDetectionResult,
+    DeploymentQueueAck, DeploymentRelease, DeploymentRuntimeStatus, DeploymentVolume,
+    DeploymentWebhook, SourceDetectionResult,
 };
 
 impl CopepodClient {
@@ -75,6 +75,51 @@ impl CopepodClient {
             ),
             &serde_json::json!({ "mode": "force" }),
         )
+        .await
+    }
+
+    /// Trigger a deploy with explicit options.
+    ///
+    /// Sends `mode` (default `force`) and, when set, `allow_outage: true`.
+    /// A single replica with no room to roll is refused with `409`
+    /// `rollout_needs_outage` (blue-green: `rollout_needs_capacity`); inspect
+    /// it with [`crate::CopepodError::api_code`] and
+    /// [`crate::CopepodError::rollout_capacity_details`], then repeat with
+    /// `allow_outage` to accept the outage. Older servers ignore the field.
+    pub async fn deploy_with_options(
+        &self,
+        org_id: &str,
+        deploy_id: &str,
+        options: DeployOptions,
+    ) -> Result<DeploymentQueueAck> {
+        let mut body = serde_json::json!({
+            "mode": options.mode.as_deref().unwrap_or("force"),
+        });
+        if options.allow_outage {
+            body["allow_outage"] = serde_json::Value::Bool(true);
+        }
+        self.post(
+            &format!(
+                "api/platform/orgs/{}/deployments/{}/deploy",
+                org_id, deploy_id
+            ),
+            &body,
+        )
+        .await
+    }
+
+    /// Fetch the side-effect-free release payload: what serves, what is
+    /// rolling out and how the last deploy ended. Poll every 2 s while the
+    /// phase is `building` or `rolling_out`, otherwise every 15 s.
+    pub async fn get_deployment_release(
+        &self,
+        org_id: &str,
+        deploy_id: &str,
+    ) -> Result<DeploymentRelease> {
+        self.get(&format!(
+            "api/platform/orgs/{}/deployments/{}/release",
+            org_id, deploy_id
+        ))
         .await
     }
 

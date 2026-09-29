@@ -432,10 +432,30 @@ impl CopepodClient {
     async fn map_error<T>(status: StatusCode, resp: reqwest::Response) -> Result<T> {
         let bytes = resp.bytes().await.unwrap_or_default();
         let (code, message) = decode_error_body(&bytes);
-        Err(CopepodError::Api {
-            status: status.as_u16(),
-            code,
-            message,
+        // Only the rollout capacity conflicts get the dedicated variant; every
+        // other error keeps the `Api` shape consumers already match on.
+        let details = matches!(
+            code.as_deref(),
+            Some(
+                crate::error::ROLLOUT_NEEDS_OUTAGE_CODE | crate::error::ROLLOUT_NEEDS_CAPACITY_CODE
+            )
+        )
+        .then(|| serde_json::from_slice::<serde_json::Value>(&bytes).ok())
+        .flatten()
+        .and_then(|value| value.get("details").cloned())
+        .filter(|details| !details.is_null());
+        Err(match details {
+            Some(details) => CopepodError::ApiWithDetails {
+                status: status.as_u16(),
+                code,
+                message,
+                details,
+            },
+            None => CopepodError::Api {
+                status: status.as_u16(),
+                code,
+                message,
+            },
         })
     }
 }
