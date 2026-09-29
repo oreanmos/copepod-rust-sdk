@@ -1,6 +1,8 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+use super::deployment_release::{DeploymentRelease, RolloutStatus};
+
 /// A deployed application (container workload managed by the PaaS layer).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Deployment {
@@ -203,6 +205,16 @@ pub struct DeploymentRuntimeStatus {
     pub desired_replicas: u32,
     pub message: String,
     pub db_status: DeploymentStatus,
+    /// Ready pods of any revision. Absent on older servers.
+    #[serde(default)]
+    pub serving_replicas: Option<u32>,
+    /// Operator's evaluation of the target revision; `None` for older
+    /// operators or servers.
+    #[serde(default)]
+    pub rollout: Option<RolloutStatus>,
+    /// The release payload, when the server includes it.
+    #[serde(default)]
+    pub release: Option<DeploymentRelease>,
 }
 
 /// Result from source detection for git-backed deployments and launchpads.

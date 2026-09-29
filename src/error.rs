@@ -3,6 +3,12 @@ use thiserror::Error;
 /// Stable Copepod error code returned while no Raft leader can serve a request.
 pub const RAFT_LEADER_UNAVAILABLE_CODE: &str = "raft_leader_unavailable";
 
+/// Deploy refused with 409: a single replica has no room; retry with `allow_outage`.
+pub const ROLLOUT_NEEDS_OUTAGE_CODE: &str = "rollout_needs_outage";
+
+/// Deploy refused with 409: a blue-green rollout has no room on the cluster.
+pub const ROLLOUT_NEEDS_CAPACITY_CODE: &str = "rollout_needs_capacity";
+
 /// Errors returned by the Copepod SDK.
 #[derive(Debug, Error)]
 pub enum CopepodError {
@@ -16,6 +22,19 @@ pub enum CopepodError {
         status: u16,
         code: Option<String>,
         message: String,
+    },
+
+    /// API error whose body carried a structured `details` object, such as the
+    /// deploy endpoint's `rollout_needs_outage` conflict. Errors without
+    /// `details` stay [`CopepodError::Api`]; use [`CopepodError::api_status`],
+    /// [`CopepodError::api_code`] and [`CopepodError::api_details`] to read
+    /// both shapes uniformly.
+    #[error("API error {status}: {message}")]
+    ApiWithDetails {
+        status: u16,
+        code: Option<String>,
+        message: String,
+        details: serde_json::Value,
     },
 
     /// Authentication error (missing token, expired, etc.).
@@ -52,8 +71,47 @@ impl CopepodError {
                 status: 503,
                 code: Some(code),
                 ..
+            } | Self::ApiWithDetails {
+                status: 503,
+                code: Some(code),
+                ..
             } if code == RAFT_LEADER_UNAVAILABLE_CODE
         )
+    }
+
+    /// HTTP status of an API error.
+    pub fn api_status(&self) -> Option<u16> {
+        match self {
+            Self::Api { status, .. } | Self::ApiWithDetails { status, .. } => Some(*status),
+            _ => None,
+        }
+    }
+
+    /// The server's stable machine-readable error code, when it sent one.
+    pub fn api_code(&self) -> Option<&str> {
+        match self {
+            Self::Api { code, .. } | Self::ApiWithDetails { code, .. } => code.as_deref(),
+            _ => None,
+        }
+    }
+
+    /// The server's structured `details` object, when the error carried one.
+    pub fn api_details(&self) -> Option<&serde_json::Value> {
+        match self {
+            Self::ApiWithDetails { details, .. } => Some(details),
+            _ => None,
+        }
+    }
+
+    /// Typed capacity details of a deploy refused with `rollout_needs_outage`
+    /// or `rollout_needs_capacity`.
+    pub fn rollout_capacity_details(&self) -> Option<crate::models::RolloutCapacityDetails> {
+        match self.api_code() {
+            Some(ROLLOUT_NEEDS_OUTAGE_CODE | ROLLOUT_NEEDS_CAPACITY_CODE) => {
+                serde_json::from_value(self.api_details()?.clone()).ok()
+            }
+            _ => None,
+        }
     }
 
     /// Server-advertised retry delay for a Raft leader election.
