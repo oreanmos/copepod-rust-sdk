@@ -59,10 +59,16 @@ checked in CI with `--manifest-path`).
 
 `crates/copepod-ui` is CSR only: no SSR, no islands, no `#[server]`. HTTP via
 `gloo-net` with same-origin credentials. `leptos_daisyui::prelude::*`
-components, Tailwind 4 + daisyUI 5, mobile-first. Served at `/_/`
+components, Tailwind 4 + daisyUI 5, mobile-first. Themes are `ingrained` and
+`ingrained-light` in `style/themes.css`, contrast-checked by
+`node scripts/ui-theme-contrast.mjs --check`; pages use only daisyUI semantic
+colours (`python3 scripts/check-ui-semantic-colors.py --check`). Fonts are
+self-hosted IBM Plex in `crates/copepod-ui/fonts/`. Served at `/_/`
 (`Trunk.toml`). After UI dependency changes run
 `scripts/check-ui-css-versions.sh`. Verify UI changes in a browser (Playwright:
-`npm run test:e2e:admin-ui`, `:launchpad`, `:webhook`).
+`npm run test:e2e:admin-ui`, `:launchpad`, `:webhook`). New routes and
+components need an entry in `docs/design-review/inventory.json`
+(`python3 scripts/check-design-inventory.py --add-missing`, then `--write-md`).
 
 ## Size cap
 
@@ -86,10 +92,12 @@ cargo run -p copepod -- serve [--host H --port P]   # local server
 scripts/validate-p0-release-gates.sh    # release-impacting changes
 ```
 
-CI (`.github/workflows/ci.yml`) also runs deployment-safety scripts, the
-Kubernetes feature clippy (`-p copepod --features kubernetes,remote-sftp`),
-operator/harness checks, `npm audit`, and a Playwright launchpad job. Deploys:
-GitHub `deploy.yml` (manual, DigitalOcean) and Forgejo `staging` pushes. Never
+CI is Forgejo only (`.forgejo/workflows/`; GitHub Actions were removed
+2026-09-30). `scripts/validate-p0-release-gates.sh` runs in the production
+`release-gates` job and covers the deployment-safety scripts, the Kubernetes
+feature clippy (`-p copepod --features kubernetes,remote-sftp`), operator and
+harness checks and `npm audit`. Deploys: Forgejo `staging` and production
+pushes. There is no PR gate and no scheduled audit or uptime probe. Never
 push or deploy unless asked. If a gate cannot run, report the command, reason
 and residual risk.
 
