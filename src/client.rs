@@ -103,6 +103,10 @@ impl CopepodClientBuilder {
 
     /// Provide a pre-configured `reqwest::Client` for connection pooling.
     /// When set, the builder skips creating its own HTTP client.
+    ///
+    /// The default client negotiates gzip (`Accept-Encoding: gzip`) and decodes
+    /// responses transparently; a custom client must enable reqwest's `gzip`
+    /// option itself to keep that behaviour.
     pub fn http_client(mut self, client: reqwest::Client) -> Self {
         self.http_client = Some(client);
         self
