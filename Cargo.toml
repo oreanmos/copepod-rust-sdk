@@ -9,7 +9,7 @@ description = "Official Rust SDK for the Copepod BaaS platform"
 [workspace]
 
 [dependencies]
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream", "multipart"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream", "multipart", "gzip"] }
 bytes = "1"
 tokio = { version = "1", features = ["sync"] }
 serde = { version = "1", features = ["derive"] }
@@ -24,3 +24,4 @@ tracing = "0.1"
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 wiremock = "0.6"
+flate2 = "1"
