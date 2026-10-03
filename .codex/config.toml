@@ -4,14 +4,10 @@
 model = "gpt-6-sol"
 model_reasoning_effort = "max"
 
-# Cross-repo builds create worktrees in the sibling repos.
+# Cross-repo builds create worktrees in the sibling repos. Their absolute paths
+# are machine-specific, so setup-machine.sh writes them (writable_roots, project
+# trust) into ~/.codex/config.toml.
 [sandbox_workspace_write]
-writable_roots = [
-    "/var/home/cesarli/Development/oikonotes",
-    "/var/home/cesarli/Development/copepod",
-    "/var/home/cesarli/Development/copepod-rust-sdk",
-    "/var/home/cesarli/.cache/oiko-agents",
-]
 # Copepod tests bind fake services on 127.0.0.1 (fake Mollie, NUT); without
 # network access every such run needed an owner-approved escalation.
 network_access = true

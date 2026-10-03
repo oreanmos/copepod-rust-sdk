@@ -1,11 +1,5 @@
 {
   "permissions": {
-    "additionalDirectories": [
-      "/var/home/cesarli/Development/oikonotes",
-      "/var/home/cesarli/Development/copepod",
-      "/var/home/cesarli/Development/copepod-rust-sdk",
-      "/var/home/cesarli/.cache/oiko-agents"
-    ],
     "allow": [
       "Bash(git worktree add:*)",
       "Bash(git worktree list:*)",
@@ -51,7 +45,8 @@
       "Bash(npm run build:ui:css)",
       "Bash(bash .claude/skills/oiko-build/scripts/sync-agent-kit.sh:*)",
       "Read(~/.cache/oiko-agents/**)",
-      "Edit(~/.cache/oiko-agents/**)"
+      "Edit(~/.cache/oiko-agents/**)",
+      "Bash(bash .claude/skills/oiko-build/scripts/setup-machine.sh)"
     ]
   }
 }

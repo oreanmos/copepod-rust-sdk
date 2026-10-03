@@ -11,7 +11,13 @@ work out of theirs.
 
 ## The repos
 
-All three are siblings under `~/Development/` and share one layout:
+All three are siblings under `~/Development/` and share one layout. On a new
+machine, clone them side by side and run
+`bash .claude/skills/oiko-build/scripts/setup-machine.sh` once: it fetches the
+shared agent state (build logs, Claude memory, Pi config) into
+`~/.cache/oiko-agents` and writes the machine's absolute paths into untracked
+local settings. Pull that state repo before resuming a build on another
+machine, and commit and push it when you stop.
 
 | Repo | Base branch | Task worktrees | Notes |
 |---|---|---|---|

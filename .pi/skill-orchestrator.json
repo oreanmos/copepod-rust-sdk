@@ -1,0 +1,98 @@
+{
+  "$comment": [
+    "skill-orchestrator map for the Oikonotes / Copepod / copepod-rust-sdk flow.",
+    "Applies to any pi session started in this repo, including dispatches into",
+    "copepod worktrees (the session's repo decides the map).",
+    "Scheme: zai-glm-5-3 at alternating effort levels for the thinking roles",
+    "(planning high, review high, scout medium), gpt-6-luna for implementing",
+    "(medium, matching .codex/agents; bump for heavyweight slices) and grunt work (medium).",
+    "glm-5-3 is text-only: scouts capture screenshots via scripts and report",
+    "them as paths; if you ever want the scout or reviewer to LOOK at pictures,",
+    "add \"image\" to their requires and switch them to a vision model",
+    "(openai-codex/gpt-6-luna or mistral/mistral-medium-latest)."
+  ],
+  "roles": {
+    "planning": {
+      "model": "mistral/zai-glm-5-3",
+      "thinking": "high",
+      "requires": [
+        "reasoning"
+      ]
+    },
+    "implementation": {
+      "model": "openai-codex/gpt-6-luna",
+      "thinking": "medium",
+      "requires": [
+        "reasoning"
+      ]
+    },
+    "grunt": {
+      "model": "openai-codex/gpt-6-luna",
+      "thinking": "medium",
+      "requires": []
+    },
+    "review": {
+      "model": "mistral/zai-glm-5-3",
+      "thinking": "high",
+      "requires": [
+        "reasoning"
+      ]
+    },
+    "scout": {
+      "model": "mistral/zai-glm-5-3",
+      "thinking": "medium",
+      "requires": []
+    },
+    "orchestration": {
+      "model": null,
+      "thinking": null,
+      "requires": []
+    }
+  },
+  "skills": {
+    "oiko-plan": {
+      "role": "planning"
+    },
+    "oiko-contract": {
+      "role": "planning"
+    },
+    "oiko-build": {
+      "role": "orchestration"
+    },
+    "oiko-implement": {
+      "role": "implementation"
+    },
+    "oiko-review": {
+      "role": "review"
+    },
+    "oiko-worktree": {
+      "role": "orchestration"
+    },
+    "oikonotes-dev": {
+      "role": "grunt"
+    },
+    "copepod-dev": {
+      "role": "grunt"
+    },
+    "copepod-sdk-dev": {
+      "role": "grunt"
+    }
+  },
+  "agents": {
+    "oiko-implementer": {
+      "role": "implementation",
+      "tools": "read,edit,write,bash,ls,find,grep"
+    },
+    "oiko-reviewer": {
+      "role": "review",
+      "tools": "read,bash,ls,find,grep"
+    },
+    "oiko-scout": {
+      "role": "scout",
+      "tools": "read,bash,ls,find,grep"
+    }
+  },
+  "roleHints": {
+    "grunt": "-dev$"
+  }
+}

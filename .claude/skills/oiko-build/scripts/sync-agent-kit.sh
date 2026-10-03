@@ -11,7 +11,7 @@ set -euo pipefail
 SKILLS=(oiko-plan oiko-build oiko-implement oiko-review oiko-worktree oiko-contract
         oikonotes-dev copepod-dev copepod-sdk-dev)
 AGENTS=(oiko-implementer oiko-reviewer oiko-scout)
-FILES=(.claude/settings.json .codex/config.toml)
+FILES=(.claude/settings.json .codex/config.toml .pi/skill-orchestrator.json)
 REPOS=(oikonotes copepod copepod-rust-sdk)
 
 mode="${1:-sync}"
