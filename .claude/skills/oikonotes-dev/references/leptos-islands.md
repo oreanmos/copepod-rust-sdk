@@ -97,7 +97,8 @@ Full design: `docs/plans/archive/2026-06-22-islands-navigation-architecture.md`.
 - Persistent shell UI (sidebar, breadcrumbs, route-gated actions) may take the
   SSR pathname as an initial seed only; afterwards it reads `window.location`
   and resyncs on `oiko-location-changed` (`LOCATION_CHANGE_SCRIPT`).
-  `SIDEBAR_ACTIVE_SCRIPT` reapplies `aria-current="page"`. Do not use
+  `sidebar_active_script()` (`ui/sidebar/scripts.rs`, active paths generated
+  from `ui/sidebar/model.rs`) reapplies `aria-current="page"`. Do not use
   `use_location`/`use_navigate` in shell islands, and there is no
   `leptos:navigate` event.
 - Navigation changes need browser coverage that asserts the navigation mode:
