@@ -19,7 +19,7 @@ spec does not cover, or a push.
 | Work | Path |
 |---|---|
 | Docs, specs, agent instructions only | edit directly on the base branch; no subagents, no Cargo gate |
-| A clear fix in one repo | one-slice build from a fix brief; reviewer only if users will see the change |
+| A clear fix in one repo | one-slice build from a fix brief; reviewer if users will see the change or it touches auth, user data, billing or isolation |
 | An approved spec | slices in order, then `oiko-reviewer` acceptance |
 | Anything with open product decisions or several repos and no spec | `oiko-plan` first |
 
@@ -51,6 +51,14 @@ play each role in turn with the same briefs and checks.
 - Build log: `~/.cache/oiko-agents/<slug>/build-log.md` — each slice's repo,
   status, worktree, branch, commits, evidence paths, decisions and next step.
   After compaction or a pause, resume from the log, not from memory.
+- One orchestrator session per spec. When the spec is accepted, or the session
+  has run about a day, finish with the log up to date and continue in a fresh
+  session: a long session re-reads its whole context on every turn, and the
+  three longest of 2026-09-26..10-03 used about a third of all tokens. One
+  orchestrator per repo at a time: if `git worktree list` shows another
+  session's branch for your next slice, stop and ask the owner.
+- A notification that an agent is still running needs a one-line reply and no
+  tool calls.
 
 ## Each slice, in order
 
@@ -77,7 +85,10 @@ machine. Read-only lookups can run alongside.
    read `git -C <worktree> diff <base>...HEAD` against the slice goal; open the
    gate logs and confirm each exit status; confirm a test that failed before the
    change; for UI, open the screenshots; for API slices, confirm the contract
-   artifacts the slice owes (see `oiko-contract`).
+   artifacts the slice owes (see `oiko-contract`). Do not re-run the gate, and
+   do not ask a reviewer to, when the base moved only by commits outside what
+   the gate covers (the Cadence rules in `oiko-implement`); re-gate only when
+   the evidence is missing, red, or predates an overlapping change.
 4. **Gaps:** `SendMessage` the implementer with specifics (it keeps its
    context). After two rounds without resolution, log a blocker and brief a
    fresh implementer with what the first learned.
@@ -102,7 +113,10 @@ After the last slice of a spec, spawn `oiko-reviewer` against the merged base
 branches and the spec. Each defect becomes a fix slice through the same loop;
 review again. Done when the reviewer accepts or the owner accepts a listed
 exception. For a fix, your step-3 check is the acceptance unless users will see
-the change.
+the change or it touches auth, user data, billing or isolation. Do not skip
+acceptance for UI-only specs: the 2026-10 media/records privacy exposure shipped
+from a UI build that had no reviewer, and every High finding of that week came
+from a reviewer, not from a gate.
 
 ## The owner
 

@@ -60,8 +60,10 @@ in `/tmp` or a session scratchpad: those are RAM-backed on this machine.
 
 Stage explicit paths, never `git add -A` (Playwright output, `test-results/`,
 screenshots and `.env` must not be committed). Before handing back, merge the
-base into your branch inside the worktree, resolve conflicts there without
-filtering the output, and re-run the pre-merge gate on the integrated tree.
+base into your branch inside the worktree and resolve conflicts there without
+filtering the output. Re-run the pre-merge gate on the integrated tree when the
+merge brought in code the gate covers; `oiko-implement` (Cadence) says when an
+earlier green gate still stands.
 
 ## Merge and prune
 

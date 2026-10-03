@@ -48,6 +48,10 @@ repos the change touched.
    - no secrets in code, docs, logs or fixtures.
 6. **Regressions next door:** run the tests and Playwright specs covering the
    touched surfaces; compare with the base commit before blaming the feature.
+   Spend your time on reading and probing, not on repeating the gate: read the
+   implementer's gate logs, and re-run the full gate only when they are missing,
+   red, or older than a change to code they cover. A clean-tree run of the
+   focused tests is cheap and catches flakes.
 7. **UI:** screenshots at desktop (1280×800) and mobile (390×844); keyboard
    focus, labels, no horizontal overflow (`docs/mobile-conventions.md`).
 

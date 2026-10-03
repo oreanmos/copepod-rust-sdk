@@ -12,7 +12,15 @@ writable_roots = [
     "/var/home/cesarli/Development/copepod-rust-sdk",
     "/var/home/cesarli/.cache/oiko-agents",
 ]
+# Copepod tests bind fake services on 127.0.0.1 (fake Mollie, NUT); without
+# network access every such run needed an owner-approved escalation.
+network_access = true
+
+# sccache cannot start inside the sandbox; an empty RUSTC_WRAPPER makes cargo
+# compile directly instead of failing.
+[shell_environment_policy]
+set = { RUSTC_WRAPPER = "" }
 
 [agents]
 default_subagent_model = "gpt-6-luna"
-default_subagent_reasoning_effort = "xhigh"
+default_subagent_reasoning_effort = "medium"
