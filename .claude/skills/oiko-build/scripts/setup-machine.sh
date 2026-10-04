@@ -8,7 +8,8 @@
 #      beside the code repos (moving an old ~/.cache/oiko-agents checkout there
 #      and leaving that path as a symlink, which older specs and logs use):
 #      build logs, reviews and reports, plus _home/ (Claude memory, Pi config);
-#   2. links each repo's Claude memory and the Pi skill-orchestrator into it;
+#   2. links each repo's Claude memory (also ingrained-2.0's) and the Pi
+#      skill-orchestrator into it;
 #   3. writes this machine's absolute paths where tools need them, outside
 #      tracked files: .claude/settings.local.json in each repo, and a managed
 #      block in ~/.codex/config.toml (project trust, sandbox writable roots).
@@ -20,6 +21,8 @@ set -euo pipefail
 STATE_REMOTE="${OIKO_STATE_REMOTE:-https://github.com/oreanmos/agent-state.git}"
 LEGACY_STATE="$HOME/.cache/oiko-agents"
 REPOS=(oikonotes copepod copepod-rust-sdk)
+# Other repos whose agents share the state repo (claims, notes, Claude memory).
+SHARED_REPOS=(ingrained-2.0)
 
 here="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"
 main_checkout="$(git -C "$here" worktree list --porcelain | sed -n '1s/^worktree //p')"
@@ -71,7 +74,7 @@ else
 fi
 
 # 2. Claude memory per repo (Claude names the project dir after its path) and Pi.
-for repo in "${REPOS[@]}"; do
+for repo in "${REPOS[@]}" "${SHARED_REPOS[@]}"; do
     path="$dev/$repo"
     [[ -d "$path" ]] || { warn "skip $repo: $path missing"; continue; }
     store="$STATE/_home/claude-memory/$repo"
