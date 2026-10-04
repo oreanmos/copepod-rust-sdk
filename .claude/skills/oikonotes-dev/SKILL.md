@@ -62,6 +62,7 @@ make test-affected FAST_TEST_FILTER=<name>
 make fmt | fmt-check | clippy | test
 make ci                       # full pre-merge set
 make test-ui-focused E2E_SPEC=e2e/<spec>.spec.ts
+scripts/devx/e2e-env.sh up --build | test <args> | down   # agents: per-worktree e2e server
 npm run build:css             # Tailwind 4: npx @tailwindcss/cli -i crates/app/style/input.css -o crates/app/style/output.css --minify
 ```
 

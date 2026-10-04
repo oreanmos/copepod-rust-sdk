@@ -56,8 +56,10 @@ Every repo builds with `CARGO_TARGET_DIR=target/local`. It is relative, so each
 worktree gets its own `target/local`, removed with the worktree. Never point two
 checkouts at one target dir: Cargo judges freshness by mtime and will reuse the
 other checkout's artifacts, producing phantom errors and false passes. The first
-build in a new worktree is slow; later ones are incremental. Builds serialize on
-Cargo's lock, so do not fan out parallel building agents.
+build in a new worktree is slow; later ones are incremental. Wrap builds and
+gates in `~/Development/agent-state/bin/heavy`, so parallel agents queue for the
+machine's two build slots instead of thrashing it. A worktree's `target/local`
+grows to 20–85 GB: remove worktrees as soon as they merge.
 
 Evidence, logs and screenshots go under `~/Development/agent-state/<slug>/`. Never
 in `/tmp` or a session scratchpad: those are RAM-backed on this machine.
@@ -87,8 +89,10 @@ git -C <repo> branch -d <branch>
 git -C <repo> worktree prune
 ```
 
-Stop any process still running from the worktree first (`cargo leptos watch`,
-dev servers, Playwright). If removal refuses because the worktree is dirty,
+Stop any process still running from the worktree first:
+`scripts/devx/e2e-env.sh down` for its e2e server, anything else by its
+recorded PID. Never `pkill`, `killall` or kill by name or port; other sessions'
+processes share the machine. If removal refuses because the worktree is dirty,
 inspect and report; never force it or delete tracked files to make it succeed.
 
 After merging, push `main:next` (next section) and report

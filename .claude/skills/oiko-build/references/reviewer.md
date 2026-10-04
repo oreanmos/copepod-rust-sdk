@@ -16,4 +16,7 @@ read `.claude/skills/oiko-review/SKILL.md`).
   neither is a feature that needs a manual step.
 - Report the verdict table and ranked defects as the skill describes. Phrase
   each defect so it can become a fix slice (repo, files, smallest fix).
-- Stop every process you started before you finish.
+- Build through `~/Development/agent-state/bin/heavy` and run the app with
+  `scripts/devx/e2e-env.sh up --build` / `test` in your review worktree. Stop
+  every process you started before you finish (`e2e-env.sh down`, others by
+  recorded PID); never kill by name or port.

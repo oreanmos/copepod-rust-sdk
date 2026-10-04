@@ -20,8 +20,9 @@
 
 Every page, island and shell component follows `docs/mobile-conventions.md`
 (breakpoints, scroll containers, no horizontal overflow, tap targets, modals,
-safe-area insets). Validate with
-`make test-ui-focused E2E_SPEC=e2e/mobile-responsive.spec.ts`.
+safe-area insets). Validate the touched routes with
+`scripts/devx/e2e-env.sh test e2e/mobile-responsive.spec.ts -g "<route>"`; the
+full spec runs at acceptance.
 
 ## Performance
 

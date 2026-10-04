@@ -72,9 +72,12 @@ play each role in turn with the same briefs and checks.
 
 ## Each slice, in order
 
-One implementer at a time per machine: builds of these workspaces are heavy and
-share the machine. Read-only lookups can run alongside. Another machine running
-its own claimed build is fine.
+Up to three builds run per machine: `claim take` refuses a fourth, and any new
+build under 100 GB free disk (`--override "<reason>"` only on the owner's word).
+Heavy commands queue in `~/Development/agent-state/bin/heavy` (two slots), so
+parallel agents overlap their thinking, not their compiles. Within one build,
+run one implementer at a time unless slices are independent and share no files.
+Read-only lookups can run alongside.
 
 1. **Worktree.** Make sure the slice's repo base branch has what the slice needs
    committed. Create the worktree per `oiko-worktree`:
@@ -124,7 +127,9 @@ its own claimed build is fine.
 After the last slice of a spec, spawn `oiko-reviewer` against the merged base
 branches and the spec. Each defect becomes a fix slice through the same loop;
 review again. Done when the reviewer accepts or the owner accepts a listed
-exception. For a fix, your step-3 check is the acceptance unless users will see
+exception. For specs with layout changes, the reviewer runs the full
+`e2e/mobile-responsive.spec.ts` through `scripts/devx/e2e-env.sh` in its review
+worktree; slices ran only their touched routes. For a fix, your step-3 check is the acceptance unless users will see
 the change or it touches auth, user data, billing or isolation. Do not skip
 acceptance for UI-only specs: the 2026-10 media/records privacy exposure shipped
 from a UI build that had no reviewer, and every High finding of that week came

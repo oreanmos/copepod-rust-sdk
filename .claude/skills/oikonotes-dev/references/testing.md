@@ -19,9 +19,13 @@ Release methodology, fixtures and product contract:
 | `playwright.canary.config.ts` | `e2e-canary/` smoke against a deployed environment |
 | `playwright.seed.config.ts`, `playwright.candidate-seed.config.ts` | seed data from `e2e-seed/` |
 
-- One spec during development:
-  `make test-ui-focused E2E_SPEC=e2e/<spec>.spec.ts` (chromium, no deps).
-- Needs a running app (`make dev`) with a working `.env`.
+- Agents: `scripts/devx/e2e-env.sh up --build` gives the worktree its own
+  desktop-mode server (port 3300–3399, data under `target/e2e-run/`);
+  `e2e-env.sh test <args>` runs chromium with `--no-deps --max-failures=3`
+  against it (single test: `e2e/<spec>.spec.ts:<line>`, reruns:
+  `--last-failed`); `e2e-env.sh down` stops it. `status` says whether it is up.
+- By hand: `make test-ui-focused E2E_SPEC=e2e/<spec>.spec.ts` against `make dev`
+  (port 3000, needs a working `.env`).
 - `test-results/`, `e2e-report/`, `e2e-results/` and snapshot folders are
   output; never commit them unless the change is an intended snapshot update.
 

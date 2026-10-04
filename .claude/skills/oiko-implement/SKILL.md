@@ -48,8 +48,15 @@ Run each check as its own command with output to a log in the evidence
 directory and the status recorded:
 
 ```bash
-cd <worktree> && <command> > <evidence>/<name>.log 2>&1; echo "exit=$?"
+cd <worktree> && ~/Development/agent-state/bin/heavy <command> > <evidence>/<name>.log 2>&1; echo "exit=$?"
 ```
+
+`heavy` queues the command for one of the machine's two build slots, so up to
+three builds share a machine without thrashing it. Use it for every Cargo build,
+check, test and clippy, `make ci`/`check-*`/`app-*`/`tauri-check`/`test*`,
+`cargo leptos build`, and the copepod and SDK gates. Edits, reads, git and
+Playwright against an already-built server do not need it. A wait prints
+`heavy: waiting for a build slot`, which is expected.
 
 Never pipe a check into `tail`/`grep`/`head` (you would read the filter's
 status). Start long checks with `run_in_background` and end your turn; the
@@ -61,8 +68,8 @@ agents most of their wall time. Every repo uses
 
 ### Cadence
 
-The full gate is expensive (oikonotes `make ci` 12–24 min, copepod P0 about
-10 min) and independent of diff size, so run it **once**, on the integrated
+The full gate is expensive (oikonotes `make ci` about 4 min warm and far
+longer in a fresh worktree, copepod P0 10–20 min) and independent of diff size, so run it **once**, on the integrated
 tree, just before reporting. Find compile errors and failing tests with the
 focused checks.
 
@@ -77,12 +84,27 @@ focused checks.
   `crates/copepod-ui`, UI CSS or e2e runs the admin-UI row, not workspace
   clippy and tests. Oikonotes keeps every surface check (`make ci`): it is what
   holds desktop parity.
-- **Playwright.** Run the specs for the pages you touched, your new spec, and
-  `e2e/mobile-responsive.spec.ts` for layout changes, not every earlier page
-  spec; the full suite runs once, at acceptance. Capture "before" screenshots
-  only for a visible change. If most tests of a run fail, stop it and debug one
-  spec: that is an environment problem, not data. Run e2e on the base commit
-  only to classify a failure you already saw, never up front.
+- **Playwright** (oikonotes) runs against your worktree's own server, never
+  `make dev`, `cargo leptos serve`/`watch` or a restart loop:
+  `scripts/devx/e2e-env.sh up --build` once (builds through `heavy`, picks a
+  free port in 3300–3399, its own data and vault), then
+  `scripts/devx/e2e-env.sh test <args>`, which adds `--project=chromium
+  --no-deps --max-failures=3` and your base URL.
+  1. Reproduce with the single test (`e2e/<spec>.spec.ts:<line>` or
+     `-g "<name>"`).
+  2. Iterate with `--last-failed`.
+  3. Before reporting, run the spec files you touched or added and, for layout
+     changes, the touched routes of `e2e/mobile-responsive.spec.ts`
+     (`-g "<route>"`). The full mobile and e2e suites run once, at acceptance.
+  4. Connection refused, or most tests failing, is your environment: check
+     `e2e-env.sh status` and fix the server; never re-run unchanged.
+  5. `scripts/devx/e2e-env.sh down` before you report.
+
+  Capture "before" screenshots only for a visible change. Run e2e on the base
+  commit only to classify a failure you already saw, never up front.
+- **Processes.** Other agents' builds and servers run on this machine. Record
+  the PID of anything you start and stop only that PID. Never `pkill`,
+  `killall`, `fuser -k`, or kill by name or port.
 - **A failed check.** Read the output and classify it (code, flaky, environment,
   pre-existing) before running anything again; never re-run it unchanged.
 - **Sandboxed harnesses (Codex).** Build and run focused tests inside the
@@ -97,7 +119,7 @@ focused checks.
 |---|---|
 | While editing | `make check-affected`, or the surface you touched: `make app-ssr` (server, server fns, shared UI), `make app-hydrate` (islands, client), `make app-csr` + `make tauri-check` (desktop-visible UI/API); `make test-affected FAST_TEST_FILTER=<name>` |
 | Each commit | `make fmt-check`, the surface checks above, focused tests |
-| Before reporting (integrated tree) | `make ci` (preflight, clippy, workspace tests, all app surfaces, tauri) · `scripts/check-state-pool-boundary.sh` · `scripts/check-no-committed-credentials.sh` · UI changes: `make test-ui-focused E2E_SPEC=e2e/<spec>.spec.ts` plus `e2e/mobile-responsive.spec.ts` for layout |
+| Before reporting (integrated tree) | `make ci` (preflight, clippy, workspace tests, all app surfaces, tauri) · `scripts/check-state-pool-boundary.sh` · `scripts/check-no-committed-credentials.sh` · UI changes: the scoped Playwright runs above, through `scripts/devx/e2e-env.sh test` |
 
 In a fresh oikonotes worktree run `make prepare-tauri-frontend-dist` before
 any direct `cargo` test or clippy; Make targets do it for you, and without it
