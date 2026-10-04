@@ -91,6 +91,29 @@ Stop any process still running from the worktree first (`cargo leptos watch`,
 dev servers, Playwright). If removal refuses because the worktree is dirty,
 inspect and report; never force it or delete tracked files to make it succeed.
 
-**Pushing is outward-facing: only when the owner asks** (the build asks once for
-the SDK push that an Oikonotes pin needs). After merging, report
+After merging, push `main:next` (next section) and report
 `git -C <repo> status -sb`.
+
+## Two machines
+
+The owner works on a desktop and a laptop. Claude Code, Codex, OpenCode and Pi
+sessions can run on both at once. Two things keep them apart:
+
+- **Claims** in the state repo (`~/.cache/oiko-agents/bin/claim`; see
+  `oiko-build`, Before starting). They say who builds what.
+- **`origin/next`** in each of the three repos carries merged work between
+  machines. `origin/main` is what is deployed: pushing copepod `main` deploys
+  prod, and pushing oikonotes `main` builds the release container. No workflow
+  runs on `next`.
+
+| When | Do |
+|---|---|
+| Before claiming or starting a slice | `git -C <repo> fetch origin`. If `origin/next` is ahead, `git -C <repo> merge --ff-only origin/next` on `main` |
+| Local `main` and `origin/next` both moved | `git -C <repo> merge --no-ff origin/next -m "merge: next from <machine>"`. Never rebase: it rewrites the `--no-ff` merges. Re-gate only if the merged code overlaps yours (Cadence in `oiko-implement`) |
+| After every merge into `main` | `git -C <repo> push origin main:next`. If it is rejected, integrate `origin/next` as in the row above, then push again |
+| Release or deploy | Only when the owner asks: `git -C <repo> push origin next:main`, from one machine at a time, after integrating `origin/next` |
+
+Pushing is outward-facing. The owner has pre-authorized two pushes: `main:next` in
+these repos, and the state repo, both of which deploy nothing. Every other push
+waits for the owner to ask, including `main`, `staging`, tags and feature branches.
+Never force-push `next`.

@@ -21,6 +21,12 @@ change and the Oikonotes pin bump), `copepod-dev`, `oikonotes-dev`,
 (see `oiko-build`). Implement in the main session only when the harness has no
 subagents or the owner asks.
 
+Parallel work: Claude Code, Codex, OpenCode and Pi sessions run on two machines
+at once. Before starting a build, sync from `origin/next` and claim it with
+`~/.cache/oiko-agents/bin/claim`; push `main:next` after each merge (pre-authorized,
+deploys nothing). Never take claimed work. One implementer per machine. See
+`oiko-build`, `oiko-worktree` (Two machines) and `oikonotes/docs/agents.md`.
+
 ## Invariants
 
 - The SDK mirrors the server's documented API (`copepod/docs/api-integration-reference.md`);

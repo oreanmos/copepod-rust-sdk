@@ -65,8 +65,10 @@ full commit SHA) and its tests are wiremock-only.
 
 Oikonotes resolves `copepod-sdk` from
 `https://github.com/oreanmos/copepod-rust-sdk.git` at a pinned `rev`, so the SDK
-commit must be on `origin` before Oikonotes can commit a pin to it. Pushing is
-the owner's call: ask once, naming the rev.
+commit must be on `origin` before Oikonotes can commit a pin to it. Pushing
+the merged SDK `main` to `origin/next` is pre-authorized (`oiko-worktree`, Two
+machines). A rev on `next` resolves like any other, so pin it. Pushing SDK
+`main` stays the owner's call.
 
 Before the push, an Oikonotes worktree can compile against a local SDK checkout
 with a command-line patch (no tracked file changes except `Cargo.lock`):

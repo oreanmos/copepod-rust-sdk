@@ -54,16 +54,27 @@ play each role in turn with the same briefs and checks.
 - One orchestrator session per spec. When the spec is accepted, or the session
   has run about a day, finish with the log up to date and continue in a fresh
   session: a long session re-reads its whole context on every turn, and the
-  three longest of 2026-09-26..10-03 used about a third of all tokens. One
-  orchestrator per repo at a time: if `git worktree list` shows another
-  session's branch for your next slice, stop and ask the owner.
+  three longest of 2026-09-26..10-03 used about a third of all tokens.
+- **Sync and claim.** Several machines and harnesses build at once. In each
+  repo the work touches, `git fetch origin` and bring `main` up to
+  `origin/next` (`oiko-worktree`, Two machines). Then run
+  `~/.cache/oiko-agents/bin/claim list`. Do not start work if its slug is
+  claimed, if a step it depends on is claimed or is not yet on `next`, or if its
+  areas overlap an active claim. In those cases, pick other work or ask the
+  owner. Otherwise run
+  `claim take <slug> --step "<task-order step / spec>" --repos <r1,r2>
+  --areas "<dirs>" --agent <claude-code|codex|opencode|pi>`. A refused `take`
+  means another session has the work. Resuming your own claimed build needs no
+  new claim. If `git worktree list` shows another session's branch for your
+  next slice, stop and ask the owner.
 - A notification that an agent is still running needs a one-line reply and no
   tool calls.
 
 ## Each slice, in order
 
-One implementer at a time: builds of these workspaces are heavy and share the
-machine. Read-only lookups can run alongside.
+One implementer at a time per machine: builds of these workspaces are heavy and
+share the machine. Read-only lookups can run alongside. Another machine running
+its own claimed build is fine.
 
 1. **Worktree.** Make sure the slice's repo base branch has what the slice needs
    committed. Create the worktree per `oiko-worktree`:
@@ -94,16 +105,16 @@ machine. Read-only lookups can run alongside.
    context). After two rounds without resolution, log a blocker and brief a
    fresh implementer with what the first learned.
 5. **Merge** per `oiko-worktree` (`--no-ff`, evidence in the message), prune,
-   update the log, go straight to the next slice.
+   push `main:next`, run `claim update <slug> "S<n> merged"` (it pushes the state
+   repo), update the log, and go straight to the next slice.
 
 ## Cross-repo handoffs
 
-- **SDK → Oikonotes needs a push.** Oikonotes pins `copepod-sdk` by git rev on
-  GitHub, so the SDK commit must be on `origin` before the Oikonotes slice can
-  commit its pin bump. After the SDK slice merges, ask the owner once:
-  "Push copepod-rust-sdk main (<rev>) so Oikonotes can pin it?" If they hold,
-  the Oikonotes implementer may verify against the local SDK with the cargo
-  patch override in `oiko-contract`, but the pin bump waits; log it as blocked.
+- **SDK → Oikonotes needs the rev on GitHub.** Oikonotes pins `copepod-sdk`
+  by git rev, so the SDK commit must be on `origin` before the Oikonotes slice
+  can commit its pin bump. The push of SDK `main:next` after its merge (step 5)
+  puts it there, which is pre-authorized. Pin that rev. Pushing SDK `main` stays
+  the owner's call, as for every repo.
 - **Deploy order.** An Oikonotes release that uses a new endpoint needs the
   Copepod server deployed first. Record this in the finish report; do not
   deploy unless asked.
@@ -126,6 +137,9 @@ settles, when the spec is wrong, or before any push or deploy. Use
 `AskUserQuestion`, recommendation first. Technical choices stay yours; log them.
 
 ## Finish
+
+When the build is accepted, abandoned or handed back to the owner, run `claim release
+<slug>`. Then commit and push the state repo, so the build log reaches the other machine.
 
 Report, briefly: each slice with repo, merge commit and key evidence; the
 acceptance verdict (or the fix evidence); owner decisions taken; deferred items;

@@ -92,9 +92,11 @@ the recommended option. Revise until approved.
 ## 6. Record approval and build
 
 Set the status to `approved YYYY-MM-DD`, commit only the spec on the base branch
-(`git add docs/plans/<file>` then `git commit -m "docs(plans): <slug> spec"`).
+(`git add docs/plans/<file>` then `git commit -m "docs(plans): <slug> spec"`),
+and push `main:next` so the other machine sees it (`oiko-worktree`, Two machines).
 Load `oiko-build` and start the first slice in the same turn, unless the owner
-said to hold.
+said to hold; its claim step runs first. When you propose what to build next,
+check `~/.cache/oiko-agents/bin/claim list` and leave out claimed work.
 
 ## Investigations
 
