@@ -34,6 +34,11 @@ deprecation plan). SDK method signature. Deploy order.
 Store trait, collection names, record shape, local SQLite migration, and what
 happens to data users already have.
 
+## Identity
+Oikonotes specs that change what users see or what AI does: answer the seven
+charter-check questions in `docs/product-identity.md` (yes/no, one line each).
+A "no" needs an owner decision below. Omit for platform-only work.
+
 ## Decisions
 ### Owner
 - <question> → <answer>

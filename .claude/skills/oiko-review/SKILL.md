@@ -41,6 +41,10 @@ repos the change touched.
      (web mode wipes it on restart); every new domain has a store trait with
      both Copepod and local implementations;
    - no silent AI writes: suggestions stay explicit apply/reject;
+   - Oikonotes: the spec's Identity answers hold in the built code
+     (`docs/product-identity.md` charter check) — privacy flags excluded from
+     every AI, recall and publishing path; permanent and index notes stay
+     prompt-only; provenance survives apply;
    - platform auth and app-user auth never mix; every query scoped by org, app
      and user;
    - route content is never an `#[island]`; pages load data with
