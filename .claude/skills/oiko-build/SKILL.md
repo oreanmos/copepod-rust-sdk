@@ -82,8 +82,9 @@ machine. Read-only lookups can run alongside.
 
    End your turn; the completion notification resumes you.
 3. **Check the report yourself before merging** — never merge on a summary:
-   read `git -C <worktree> diff <base>...HEAD` against the slice goal; open the
-   gate logs and confirm each exit status; confirm a test that failed before the
+   read `git -C <worktree> diff <base>...HEAD` against the slice goal, and its
+   `--stat` file count (build output such as `crates/target/` must never be
+   committed); open the gate logs and map every `.status` to its check by name; confirm a test that failed before the
    change; for UI, open the screenshots; for API slices, confirm the contract
    artifacts the slice owes (see `oiko-contract`). Do not re-run the gate, and
    do not ask a reviewer to, when the base moved only by commits outside what
