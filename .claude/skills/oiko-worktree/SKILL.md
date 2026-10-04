@@ -89,8 +89,8 @@ git -C <repo> branch -d <branch>
 git -C <repo> worktree prune
 ```
 
-Stop any process still running from the worktree first:
-`scripts/devx/e2e-env.sh down` for its e2e server, anything else by its
+Stop any process still running from the worktree first: in oikonotes,
+`scripts/devx/e2e-env.sh down` for its e2e server; anything else by its
 recorded PID. Never `pkill`, `killall` or kill by name or port; other sessions'
 processes share the machine. If removal refuses because the worktree is dirty,
 inspect and report; never force it or delete tracked files to make it succeed.

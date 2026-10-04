@@ -56,7 +56,9 @@ three builds share a machine without thrashing it. Use it for every Cargo build,
 check, test and clippy, `make ci`/`check-*`/`app-*`/`tauri-check`/`test*`,
 `cargo leptos build`, and the copepod and SDK gates. Edits, reads, git and
 Playwright against an already-built server do not need it. A wait prints
-`heavy: waiting for a build slot`, which is expected.
+`heavy: waiting for a build slot`, which is expected. Environment assignments
+may follow `heavy` (`heavy CARGO_TARGET_DIR=target/local cargo test -p x`).
+`heavy a && b` wraps only `a`: write `heavy bash -c 'a && b'`.
 
 Never pipe a check into `tail`/`grep`/`head` (you would read the filter's
 status). Start long checks with `run_in_background` and end your turn; the
@@ -86,8 +88,9 @@ focused checks.
   holds desktop parity.
 - **Playwright** (oikonotes) runs against your worktree's own server, never
   `make dev`, `cargo leptos serve`/`watch` or a restart loop:
-  `scripts/devx/e2e-env.sh up --build` once (builds through `heavy`, picks a
-  free port in 3300–3399, its own data and vault), then
+  `scripts/devx/e2e-env.sh up --build` (builds through `heavy`, picks a free
+  port in 3300–3399, its own data and vault; run it again after every code
+  change, since it rebuilds and restarts the server), then
   `scripts/devx/e2e-env.sh test <args>`, which adds `--project=chromium
   --no-deps --max-failures=3` and your base URL.
   1. Reproduce with the single test (`e2e/<spec>.spec.ts:<line>` or
@@ -112,6 +115,10 @@ focused checks.
   escalation only for a check that needs it (loopback-binding tests, `git
   commit`), never to find out whether code compiles: an escalated command waits
   for the owner, and in B1 S2 those waits were half the slice's active time.
+  Codex runs each command in its own PID namespace, so a server started by one
+  command dies when that command ends: run oikonotes e2e as one command,
+  `scripts/devx/e2e-env.sh up --build && scripts/devx/e2e-env.sh test <args>;
+  scripts/devx/e2e-env.sh down`.
 
 **oikonotes** (Make targets already set the target dir)
 

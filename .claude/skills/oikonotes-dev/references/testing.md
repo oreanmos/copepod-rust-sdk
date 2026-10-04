@@ -24,6 +24,9 @@ Release methodology, fixtures and product contract:
   `e2e-env.sh test <args>` runs chromium with `--no-deps --max-failures=3`
   against it (single test: `e2e/<spec>.spec.ts:<line>`, reruns:
   `--last-failed`); `e2e-env.sh down` stops it. `status` says whether it is up.
+  Run `up --build` again after each code change: it rebuilds and restarts. In
+  Codex's sandbox the server dies with the command that started it, so run
+  `up --build && test <args>; down` as one command.
 - By hand: `make test-ui-focused E2E_SPEC=e2e/<spec>.spec.ts` against `make dev`
   (port 3000, needs a working `.env`).
 - `test-results/`, `e2e-report/`, `e2e-results/` and snapshot folders are

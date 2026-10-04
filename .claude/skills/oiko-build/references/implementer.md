@@ -27,10 +27,11 @@ copepod-rust-sdk (Rust client).
   Cadence rules in `oiko-implement`); otherwise report the merge diffstat.
 - Run the full gate once, at the end. While editing, use the focused checks;
   read the ranges you need, not whole files.
-- Wrap builds and gates in `~/Development/agent-state/bin/heavy`; run e2e
-  through `scripts/devx/e2e-env.sh` (see `oiko-implement`, Cadence).
-- Stop any process you started: `scripts/devx/e2e-env.sh down`, anything else
-  by its recorded PID. Never `pkill`, `killall` or kill by name or port; other
+- Wrap builds and gates in `~/Development/agent-state/bin/heavy`. In
+  oikonotes, run e2e through `scripts/devx/e2e-env.sh` (see `oiko-implement`,
+  Cadence); copepod's admin UI uses its own `npm run test:e2e:*`.
+- Stop any process you started: in oikonotes `scripts/devx/e2e-env.sh down`,
+  anything else by its recorded PID. Never `pkill`, `killall` or kill by name or port; other
   agents share this machine.
 
 Report, concisely, starting with your worktree path and branch:
