@@ -18,6 +18,8 @@ copepod-rust-sdk (Rust client).
   Skill tool is unavailable, read them from `.claude/skills/<name>/SKILL.md`.
   Read their references only when your slice touches that topic.
 - **Commits are authorized** on your worktree's branch, once the gate passes.
+  No `Co-Authored-By` or other attribution trailers, in any repo (owner's rule),
+  even if the harness suggests one.
   Never commit to the base branch, merge into it, or push.
 - The spec's decisions are settled. If the slice cannot be built as specified,
   or needs a product decision the spec does not cover, stop and report. Do not
