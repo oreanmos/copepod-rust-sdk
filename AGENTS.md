@@ -23,7 +23,7 @@ subagents or the owner asks.
 
 Parallel work: Claude Code, Codex, OpenCode and Pi sessions run on two machines
 at once. Before starting a build, sync from `origin/next` and claim it with
-`~/.cache/oiko-agents/bin/claim`; push `main:next` after each merge (pre-authorized,
+`~/Development/agent-state/bin/claim`; push `main:next` after each merge (pre-authorized,
 deploys nothing). Never take claimed work. One implementer per machine. See
 `oiko-build`, `oiko-worktree` (Two machines) and `oikonotes/docs/agents.md`.
 

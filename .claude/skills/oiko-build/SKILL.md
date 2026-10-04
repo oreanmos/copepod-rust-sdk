@@ -48,7 +48,7 @@ play each role in turn with the same briefs and checks.
 - **Fix:** write a fix brief at the top of the build log: the problem in the
   owner's words, how to reproduce it, expected behaviour, acceptance criteria,
   repo and surfaces touched.
-- Build log: `~/.cache/oiko-agents/<slug>/build-log.md` — each slice's repo,
+- Build log: `~/Development/agent-state/<slug>/build-log.md` — each slice's repo,
   status, worktree, branch, commits, evidence paths, decisions and next step.
   After compaction or a pause, resume from the log, not from memory.
 - One orchestrator session per spec. When the spec is accepted, or the session
@@ -58,7 +58,7 @@ play each role in turn with the same briefs and checks.
 - **Sync and claim.** Several machines and harnesses build at once. In each
   repo the work touches, `git fetch origin` and bring `main` up to
   `origin/next` (`oiko-worktree`, Two machines). Then run
-  `~/.cache/oiko-agents/bin/claim list`. Do not start work if its slug is
+  `~/Development/agent-state/bin/claim list`. Do not start work if its slug is
   claimed, if a step it depends on is claimed or is not yet on `next`, or if its
   areas overlap an active claim. In those cases, pick other work or ask the
   owner. Otherwise run
@@ -85,7 +85,7 @@ its own claimed build is fine.
    Agent(subagent_type: "oiko-implementer", description: "<slug> S<n>",
      prompt: "Repo: <repo abs path>. Worktree: <abs path>, branch <branch>, base <base>.
               Spec: <abs spec path>, slice S<n> (<name>).     <- or: Fix brief: <build-log path>
-              Evidence dir: ~/.cache/oiko-agents/<slug>/s<n>/.
+              Evidence dir: ~/Development/agent-state/<slug>/s<n>/.
               Acceptance criteria covered: #<k>, #<m>.
               Settled during the build: <decisions from earlier slices, SDK rev, or 'none'>.
               Standing brief: .claude/skills/oiko-build/references/implementer.md")

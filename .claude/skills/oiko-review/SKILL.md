@@ -17,7 +17,7 @@ In a harness with subagents, the main session does not review itself: it spawns
 Build or run what is judged from a detached worktree of the merged base
 (`git -C <repo> worktree add --detach <repo>/.worktrees/<slug>-review <base>`);
 remove it and stop your processes when done. Evidence goes under
-`~/.cache/oiko-agents/<slug>/review/`. Load a repo's dev skill only for the
+`~/Development/agent-state/<slug>/review/`. Load a repo's dev skill only for the
 repos the change touched.
 
 ## Acceptance against a spec

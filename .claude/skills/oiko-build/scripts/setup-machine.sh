@@ -4,7 +4,9 @@
 #   setup-machine.sh
 #
 # Expects oikonotes, copepod and copepod-rust-sdk cloned as siblings. It:
-#   1. clones (or fast-forwards) the agent state repo into ~/.cache/oiko-agents:
+#   1. clones (or fast-forwards) the agent state repo into <dev>/agent-state,
+#      beside the code repos (moving an old ~/.cache/oiko-agents checkout there
+#      and leaving that path as a symlink, which older specs and logs use):
 #      build logs, reviews and reports, plus _home/ (Claude memory, Pi config);
 #   2. links each repo's Claude memory and the Pi skill-orchestrator into it;
 #   3. writes this machine's absolute paths where tools need them, outside
@@ -16,12 +18,13 @@
 set -euo pipefail
 
 STATE_REMOTE="${OIKO_STATE_REMOTE:-https://github.com/oreanmos/agent-state.git}"
-STATE="$HOME/.cache/oiko-agents"
+LEGACY_STATE="$HOME/.cache/oiko-agents"
 REPOS=(oikonotes copepod copepod-rust-sdk)
 
 here="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"
 main_checkout="$(git -C "$here" worktree list --porcelain | sed -n '1s/^worktree //p')"
 dev="$(dirname "$main_checkout")"
+STATE="$dev/agent-state"
 stamp="$(date +%Y%m%d%H%M%S)"
 
 say() { printf '==> %s\n' "$*"; }
@@ -47,6 +50,10 @@ link() {
 }
 
 # 1. State repo.
+if [[ ! -e "$STATE" && -d "$LEGACY_STATE/.git" && ! -L "$LEGACY_STATE" ]]; then
+    mv "$LEGACY_STATE" "$STATE"
+    say "moved $LEGACY_STATE to $STATE"
+fi
 if [[ -d "$STATE/.git" ]]; then
     git -C "$STATE" pull --ff-only --quiet || warn "state repo did not fast-forward; resolve in $STATE"
 elif [[ ! -e "$STATE" || -z "$(ls -A "$STATE")" ]]; then
@@ -55,6 +62,12 @@ elif [[ ! -e "$STATE" || -z "$(ls -A "$STATE")" ]]; then
 else
     warn "$STATE exists and is not a git checkout; move it aside and re-run"
     exit 1
+fi
+if [[ -L "$LEGACY_STATE" || ! -e "$LEGACY_STATE" ]]; then
+    mkdir -p "$(dirname "$LEGACY_STATE")"
+    ln -sfn "$STATE" "$LEGACY_STATE"
+else
+    warn "$LEGACY_STATE is a real directory; move its contents into $STATE and re-run"
 fi
 
 # 2. Claude memory per repo (Claude names the project dir after its path) and Pi.

@@ -44,6 +44,8 @@
       "Bash(npm run build:css)",
       "Bash(npm run build:ui:css)",
       "Bash(bash .claude/skills/oiko-build/scripts/sync-agent-kit.sh:*)",
+      "Read(~/Development/agent-state/**)",
+      "Edit(~/Development/agent-state/**)",
       "Read(~/.cache/oiko-agents/**)",
       "Edit(~/.cache/oiko-agents/**)",
       "Bash(bash .claude/skills/oiko-build/scripts/setup-machine.sh)"

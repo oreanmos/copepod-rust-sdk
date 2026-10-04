@@ -11,7 +11,7 @@ read `.claude/skills/oiko-review/SKILL.md`).
   to build or run what is being judged, create a detached worktree
   (`git -C <repo> worktree add --detach <repo>/.worktrees/<slug>-review <base>`),
   work there, and remove it when done. Evidence goes under
-  `~/.cache/oiko-agents/<slug>/review/`.
+  `~/Development/agent-state/<slug>/review/`.
 - Judge the way a user or API consumer would. "Untestable" is not a pass, and
   neither is a feature that needs a manual step.
 - Report the verdict table and ranked defects as the skill describes. Phrase

@@ -4,7 +4,7 @@
 They may build and run code from worktrees but must never change oikonotes,
 copepod or copepod-rust-sdk. This refuses (exit 2, reason on stderr) any Edit,
 Write or NotebookEdit whose target is inside the main checkout or any worktree
-of those three repos. Evidence under ~/.cache/oiko-agents/ stays writable.
+of those three repos. Evidence under ~/Development/agent-state/ stays writable.
 """
 
 import json
@@ -58,7 +58,7 @@ def main() -> int:
         if target == root or root in target.parents:
             print(
                 f"Refused: {target} is inside {root}, and this agent is read-only. "
-                "Put evidence under ~/.cache/oiko-agents/<slug>/.",
+                "Put evidence under ~/Development/agent-state/<slug>/.",
                 file=sys.stderr,
             )
             return 2

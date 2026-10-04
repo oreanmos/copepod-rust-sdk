@@ -15,7 +15,7 @@ All three are siblings under `~/Development/` and share one layout. On a new
 machine, clone them side by side and run
 `bash .claude/skills/oiko-build/scripts/setup-machine.sh` once: it fetches the
 shared agent state (build logs, Claude memory, Pi config) into
-`~/.cache/oiko-agents` and writes the machine's absolute paths into untracked
+`~/Development/agent-state` and writes the machine's absolute paths into untracked
 local settings. Pull that state repo before resuming a build on another
 machine, and commit and push it when you stop.
 
@@ -59,7 +59,7 @@ other checkout's artifacts, producing phantom errors and false passes. The first
 build in a new worktree is slow; later ones are incremental. Builds serialize on
 Cargo's lock, so do not fan out parallel building agents.
 
-Evidence, logs and screenshots go under `~/.cache/oiko-agents/<slug>/`. Never
+Evidence, logs and screenshots go under `~/Development/agent-state/<slug>/`. Never
 in `/tmp` or a session scratchpad: those are RAM-backed on this machine.
 
 ## Commit and integrate
@@ -99,7 +99,7 @@ After merging, push `main:next` (next section) and report
 The owner works on a desktop and a laptop. Claude Code, Codex, OpenCode and Pi
 sessions can run on both at once. Two things keep them apart:
 
-- **Claims** in the state repo (`~/.cache/oiko-agents/bin/claim`; see
+- **Claims** in the state repo (`~/Development/agent-state/bin/claim`; see
   `oiko-build`, Before starting). They say who builds what.
 - **`origin/next`** in each of the three repos carries merged work between
   machines. `origin/main` is what is deployed: pushing copepod `main` deploys

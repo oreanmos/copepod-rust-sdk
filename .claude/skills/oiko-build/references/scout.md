@@ -9,7 +9,7 @@ build time, app runs and code reading so the planner gets conclusions and
 evidence paths, not logs.
 
 - Read-only: never modify a repository (a guard refuses edits inside them).
-  Evidence goes under `~/.cache/oiko-agents/<slug>/grounding/`.
+  Evidence goes under `~/Development/agent-state/<slug>/grounding/`.
 - Code questions: read code and tests, cite `file:line`. Load the repo's dev
   skill (`oikonotes-dev`, `copepod-dev`, `copepod-sdk-dev`) only if you need its
   map to find things.

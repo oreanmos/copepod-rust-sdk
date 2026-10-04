@@ -96,7 +96,7 @@ Set the status to `approved YYYY-MM-DD`, commit only the spec on the base branch
 and push `main:next` so the other machine sees it (`oiko-worktree`, Two machines).
 Load `oiko-build` and start the first slice in the same turn, unless the owner
 said to hold; its claim step runs first. When you propose what to build next,
-check `~/.cache/oiko-agents/bin/claim list` and leave out claimed work.
+check `~/Development/agent-state/bin/claim list` and leave out claimed work.
 
 ## Investigations
 

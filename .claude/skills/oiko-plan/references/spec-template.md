@@ -18,7 +18,7 @@ What the owner wants, in their words, and why it matters.
 
 ## Baseline
 What happens today, with evidence: file:line references, screenshots under
-~/.cache/oiko-agents/<slug>/, test output.
+~/Development/agent-state/<slug>/, test output.
 
 ## Behaviour
 Step by step, what the user sees and does when done: web and desktop, loading,
