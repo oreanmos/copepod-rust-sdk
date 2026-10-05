@@ -16,10 +16,11 @@ Signed-in app users use the app-user bearer token (never the API key).
   422 `billing_interval_unavailable`, `billing_country_not_supported`,
   `discount_code_invalid`, `discount_code_exhausted`; 409 `subscription_active`
   (paid subscription already active or in grace); 409 when the key was already
-  used with a different body; 409 when an open checkout exists (see the server
-  docs for its code); 400 when `redirect_url` is not an absolute HTTPS URL
+  used with a different body; 409 `checkout_pending` when the user has an open
+  checkout younger than 15 minutes (a replay with the same key and body still
+  returns the original response); 400 when `redirect_url` is not an absolute HTTPS URL
   (`http` is accepted for localhost only). Current servers require
-  `redirect_url` (missing or empty is 400); the SDK keeps it `Option<String>`
+  `redirect_url` (missing or empty is 400 `bad_request`); the SDK keeps it `Option<String>`
   for older servers, so always send it. `promo_code` and unset optional fields are omitted
   from the body when `None`. A bad key or blank `redirect_url` fails offline
   with `InvalidArgument`.

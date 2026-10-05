@@ -36,14 +36,15 @@ impl CopepodClient {
     /// bearer token and an `Idempotency-Key` (1-160 ASCII letters, digits,
     /// `.:_-`); reuse the key and unchanged body to recover a lost response.
     /// A present `redirect_url` must be non-empty; current servers require it
-    /// (missing or empty is 400), and it must be an absolute HTTPS URL (400
+    /// (missing or empty is 400 `bad_request`), and it must be an absolute HTTPS URL (400
     /// otherwise; plain `http` only for localhost). Errors: 422
     /// `billing_interval_unavailable`, `billing_country_not_supported`,
     /// `discount_code_invalid`, `discount_code_exhausted`; 409
     /// `subscription_active` (a paid subscription is already active or in
     /// grace); 409 when the `Idempotency-Key` was already used with a
-    /// different body; 409 when an open checkout already exists (see the
-    /// server docs for its code). Invalid arguments fail offline. Older
+    /// different body; 409 `checkout_pending` when the user has an open checkout
+    /// younger than 15 minutes (a replay with the same key and body still
+    /// returns the original response). Invalid arguments fail offline. Older
     /// servers return 404.
     pub async fn me_start_checkout(
         &self,
