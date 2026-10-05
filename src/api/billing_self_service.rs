@@ -161,7 +161,7 @@ impl CopepodClient {
     /// One of the caller's receipts as a standalone HTML page.
     ///
     /// `GET .../me/billing/receipts/{receipt_id}` with the app-user bearer
-    /// token. `receipt_id` must be non-empty and contain no `/`. Errors: 404
+    /// token. `receipt_id` must be non-empty and use only `[A-Za-z0-9_-]`. Errors: 404
     /// `receipt_not_found` (also for another user's or app's receipt). Older
     /// servers return 404 without that code.
     pub async fn me_get_receipt_html(
@@ -171,9 +171,14 @@ impl CopepodClient {
         collection: &str,
         receipt_id: &str,
     ) -> Result<String> {
-        if receipt_id.is_empty() || receipt_id.contains('/') {
+        if receipt_id.is_empty()
+            || !receipt_id
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_'))
+        {
             return Err(CopepodError::InvalidArgument(
-                "receipt_id must be non-empty and contain no '/'".into(),
+                "receipt_id must be non-empty and use only ASCII letters, digits, '-' or '_'"
+                    .into(),
             ));
         }
         let resp = self
