@@ -5,6 +5,7 @@ pub mod app_users;
 pub mod apps;
 pub mod audit_logs;
 pub mod billing;
+pub mod billing_self_service;
 pub mod buckets;
 pub mod cache;
 pub mod cdn;

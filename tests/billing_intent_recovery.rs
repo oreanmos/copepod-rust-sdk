@@ -12,6 +12,7 @@ fn body() -> BillingIntentCreate {
         success_url: None,
         cancel_url: None,
         collection: None,
+        ..Default::default()
     }
 }
 

@@ -1,6 +1,8 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+use super::billing_self_service::{AppBillingSignupPolicy, BillingEvidence};
+
 /// A billing subscription.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Subscription {
@@ -52,6 +54,9 @@ pub struct AppBillingCatalog {
     pub addons: Vec<AppBillingAddon>,
     #[serde(default)]
     pub discounts: Vec<AppBillingDiscount>,
+    /// Public signup policy; absent on servers that predate it.
+    #[serde(default)]
+    pub signup: Option<AppBillingSignupPolicy>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -104,7 +109,7 @@ pub struct AppBillingDiscount {
     pub ends_at: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct BillingIntentCreate {
     pub email: String,
     pub plan_slug: String,
@@ -118,6 +123,15 @@ pub struct BillingIntentCreate {
     pub cancel_url: Option<String>,
     #[serde(default)]
     pub collection: Option<String>,
+    /// Recurring interval, `month` or `year`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub billing_interval: Option<String>,
+    /// ISO 3166-1 alpha-2 billing country.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub billing_country: Option<String>,
+    /// Optional country evidence.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub evidence: Option<BillingEvidence>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -161,6 +175,9 @@ pub struct BillingIntentResponse {
     pub discount_code: Option<String>,
     #[serde(default)]
     pub expires_at: Option<String>,
+    /// Recurring interval selected for the intent, when the server reports it.
+    #[serde(default)]
+    pub billing_interval: Option<String>,
     pub created: String,
     pub updated: String,
 }
@@ -192,6 +209,17 @@ pub struct AppBillingSettings {
     pub trial_authorization_amount_cents: i64,
     #[serde(default)]
     pub trial_grace_days: i32,
+    #[serde(default)]
+    pub allowed_billing_countries: Vec<String>,
+    /// Defaults to `true` (card required) when the server omits it.
+    #[serde(default = "default_true")]
+    pub trial_requires_payment_method: bool,
+    #[serde(default)]
+    pub trial_plan_slug: Option<String>,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
