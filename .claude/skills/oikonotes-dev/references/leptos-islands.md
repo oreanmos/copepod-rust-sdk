@@ -91,6 +91,14 @@ Full design: `docs/plans/archive/2026-06-22-islands-navigation-architecture.md`.
   `editor_save_queue.rs`). Fetched route scripts are not executed. When
   navigation is unsure, do a full reload, never a partial guess. The
   navigation-off build must stay correct.
+- **Inside an island, `<Suspense>`/`<Transition>` may wait only on client-side
+  sources** (`LocalResource`, `AsyncData`, `spawn_local` signals). Keep server
+  `Resource`/`OnceResource`/`Await` in route components, and pass their data to
+  islands as props. Islands swapped in by navigation hydrate under a fresh
+  context that treats every island Suspense as pending on the server
+  (`install_late_hydration_context` in
+  `ui/navigation_coordinator/island_bridge.rs`). A server-resolved Suspense
+  inside an island would mis-hydrate and tachys panics with `unreachable`.
 - Prefer router `<A>` for internal links. Links inside `<details><summary>` stay
   plain same-origin `<a href>` with no router hooks, `prevent_default` or
   `stop_propagation`.
