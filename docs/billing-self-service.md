@@ -20,7 +20,7 @@ Signed-in app users use the app-user bearer token (never the API key).
   checkout younger than 15 minutes (a replay with the same key and body still
   returns the original response); 400 when `redirect_url` is not an absolute HTTPS URL
   (`http` is accepted for localhost only). Current servers require
-  `redirect_url` (missing or empty is 400 `bad_request`); the SDK keeps it `Option<String>`
+  `redirect_url` (missing or empty is a 400 with no error code); the SDK keeps it `Option<String>`
   for older servers, so always send it. `promo_code` and unset optional fields are omitted
   from the body when `None`. A bad key or blank `redirect_url` fails offline
   with `InvalidArgument`.

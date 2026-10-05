@@ -36,7 +36,7 @@ impl CopepodClient {
     /// bearer token and an `Idempotency-Key` (1-160 ASCII letters, digits,
     /// `.:_-`); reuse the key and unchanged body to recover a lost response.
     /// A present `redirect_url` must be non-empty; current servers require it
-    /// (missing or empty is 400 `bad_request`), and it must be an absolute HTTPS URL (400
+    /// (missing or empty is a 400 with no error code), and it must be an absolute HTTPS URL (400
     /// otherwise; plain `http` only for localhost). Errors: 422
     /// `billing_interval_unavailable`, `billing_country_not_supported`,
     /// `discount_code_invalid`, `discount_code_exhausted`; 409
