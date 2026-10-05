@@ -38,3 +38,36 @@ Signed-in app users use the app-user bearer token (never the API key).
   pass an `AppRegisterRequest` as the body.
 - Older servers return 404 for both `me/subscription` routes and omit the new
   fields; the SDK does not fall back.
+
+## Billing page, receipts and payment recovery
+
+All four calls use the app-user bearer token (never the API key) and live under
+`api/platform/orgs/{org}/apps/{app}/auth/{collection}/me/billing`. Older servers
+return 404 for all of them; the SDK does not fall back. A token from another app
+is a 401.
+
+### Billing page
+
+`me_billing_summary` returns `MeBillingSummary`: `status` (`none`, `trialing`,
+`active`, `past_due`, `cancelled`, `expired`) plus plan, period, cancel-at-period-end,
+pending plan change and, when past due, `past_due` (amount, grace end,
+`recovery_checkout_open`). `next_charge` is null unless a Mollie subscription
+exists. `MePaymentMethod.method` is Mollie's value or `None`.
+
+### Receipts
+
+`me_list_receipts(limit, offset)` returns `MeReceiptList`, newest first. `limit`
+must be 1-100 and `offset` 0 or more; the SDK rejects others offline with
+`InvalidArgument` (the server answers 400), and sends a parameter only when `Some`.
+`me_get_receipt_html(receipt_id)` returns the standalone HTML page as a `String`;
+an unknown or foreign receipt is 404 `receipt_not_found`.
+
+### Payment recovery
+
+`me_start_payment_recovery(key, body)` sends an `Idempotency-Key` (same rules as
+checkout) and `redirect_url` (non-empty), and returns the checkout for the
+outstanding amount (`payment_id`, `checkout_url`, `amount_cents`, `currency`,
+`grace_ends_at`). Errors: 409 `not_past_due`, `recovery_unavailable`,
+`recovery_processing` (poll `me_billing_summary` until active), 422
+`redirect_url_not_allowed`. While past due, `me_start_checkout` answers 409
+`subscription_past_due`; use recovery instead.
