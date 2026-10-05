@@ -2,7 +2,7 @@ use serde::Serialize;
 
 use crate::client::CopepodClient;
 use crate::error::Result;
-use crate::models::{AppLoginResult, AuthResponse, MfaEnrollResponse};
+use crate::models::{AppLoginResult, AppRegisterResponse, AuthResponse, MfaEnrollResponse};
 
 /// App auth helpers bound to a specific auth collection.
 #[derive(Debug, Clone)]
@@ -47,7 +47,7 @@ impl<'a> ScopedAppAuthClient<'a> {
     }
 
     /// Register a new app user.
-    pub async fn register(&self, body: &impl Serialize) -> Result<AuthResponse> {
+    pub async fn register(&self, body: &impl Serialize) -> Result<AppRegisterResponse> {
         self.client
             .app_register(&self.org_id, &self.app_id, &self.collection, body)
             .await

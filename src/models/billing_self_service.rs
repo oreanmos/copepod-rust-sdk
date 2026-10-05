@@ -80,3 +80,16 @@ pub struct AppRegisterRequest {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub evidence: Option<BillingEvidence>,
 }
+
+/// Successful app-user registration: tokens, the created record and the
+/// no-card trial the server started, if any.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AppRegisterResponse {
+    pub token: String,
+    pub refresh_token: String,
+    /// The created user record, as the server returns it.
+    pub record: serde_json::Value,
+    /// Present when registration started a no-card trial.
+    #[serde(default)]
+    pub trial: Option<TrialStartSummary>,
+}
