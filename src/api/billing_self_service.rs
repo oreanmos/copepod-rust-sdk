@@ -41,10 +41,14 @@ impl CopepodClient {
     /// `billing_interval_unavailable`, `billing_country_not_supported`,
     /// `discount_code_invalid`, `discount_code_exhausted`; 409
     /// `subscription_active` (a paid subscription is already active or in
-    /// grace); 409 when the `Idempotency-Key` was already used with a
-    /// different body; 409 `checkout_pending` when the user has an open checkout
-    /// younger than 15 minutes (a replay with the same key and body still
-    /// returns the original response). Invalid arguments fail offline. Older
+    /// grace, or the user has a live Mollie subscription, including a card
+    /// trial); 409 when the `Idempotency-Key` was already used with a
+    /// different body; 409 `checkout_pending` while an earlier checkout is open
+    /// and its Mollie payment has not expired (a replay with the same key and
+    /// body still returns the original response). The `checkout_pending` body
+    /// carries `checkout_url` (nullable) and `expires_at` at its top level;
+    /// read them with [`CopepodError::checkout_pending_details`].
+    /// Invalid arguments fail offline. Older
     /// servers return 404.
     pub async fn me_start_checkout(
         &self,

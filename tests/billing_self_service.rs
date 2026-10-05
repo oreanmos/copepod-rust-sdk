@@ -327,3 +327,58 @@ async fn app_register_without_trial_deserializes() {
         .unwrap();
     assert!(resp.trial.is_none());
 }
+
+#[tokio::test]
+async fn me_start_checkout_surfaces_checkout_pending_details() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path(
+            "/api/platform/orgs/org/apps/app/auth/users/me/subscription/checkout",
+        ))
+        .respond_with(ResponseTemplate::new(409).set_body_json(json!({
+            "status": 409,
+            "code": "checkout_pending",
+            "error": "checkout_pending",
+            "message": "an earlier checkout is still open; complete it or wait for it to expire",
+            "checkout_url": "https://checkout.example.invalid/open",
+            "expires_at": "2026-10-05T10:14:00Z"
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let err = client(&server)
+        .me_start_checkout("org", "app", "users", "checkout-1", &checkout_body(None))
+        .await
+        .unwrap_err();
+
+    // Matching on status and code keeps working for either error shape.
+    assert_eq!(err.api_status(), Some(409));
+    assert_eq!(err.api_code(), Some("checkout_pending"));
+    let details = err.checkout_pending_details().expect("typed details");
+    assert_eq!(
+        details.checkout_url.as_deref(),
+        Some("https://checkout.example.invalid/open")
+    );
+    assert_eq!(details.expires_at, "2026-10-05T10:14:00Z");
+}
+
+#[tokio::test]
+async fn me_start_checkout_pending_without_url_has_none_checkout_url() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path(
+            "/api/platform/orgs/org/apps/app/auth/users/me/subscription/checkout",
+        ))
+        .respond_with(ResponseTemplate::new(409).set_body_json(json!({
+            "status": 409, "code": "checkout_pending", "error": "checkout_pending",
+            "message": "open", "checkout_url": null, "expires_at": "2026-10-05T10:14:00Z"
+        })))
+        .mount(&server)
+        .await;
+    let err = client(&server)
+        .me_start_checkout("org", "app", "users", "checkout-1", &checkout_body(None))
+        .await
+        .unwrap_err();
+    assert_eq!(err.checkout_pending_details().unwrap().checkout_url, None);
+}

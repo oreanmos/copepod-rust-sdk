@@ -15,10 +15,16 @@ Signed-in app users use the app-user bearer token (never the API key).
   subscription becomes active when the payment webhook is processed. Codes:
   422 `billing_interval_unavailable`, `billing_country_not_supported`,
   `discount_code_invalid`, `discount_code_exhausted`; 409 `subscription_active`
-  (paid subscription already active or in grace); 409 when the key was already
-  used with a different body; 409 `checkout_pending` when the user has an open
-  checkout younger than 15 minutes (a replay with the same key and body still
-  returns the original response); 400 when `redirect_url` is not an absolute HTTPS URL
+  (paid subscription already active or in grace, or a live Mollie subscription
+  including a card trial); 409 when the key was already used with a different
+  body; 409 `checkout_pending` while an earlier checkout is open and its Mollie
+  payment has not expired (a replay with the same key and body still returns the
+  original response). The `checkout_pending` body has `checkout_url` (nullable)
+  and `expires_at` (RFC 3339: the payment's Mollie `expiresAt`, or the session's
+  created time plus 6 h) at the top level; the error is
+  `CopepodError::ApiWithDetails` and `err.checkout_pending_details()` returns
+  `CheckoutPending { checkout_url, expires_at }` so the app can send the user
+  back to the open payment. `api_code()` and `api_status()` work as before; 400 when `redirect_url` is not an absolute HTTPS URL
   (`http` is accepted for localhost only). Current servers require
   `redirect_url` (missing or empty is a 400 with no error code); the SDK keeps it `Option<String>`
   for older servers, so always send it. `promo_code` and unset optional fields are omitted
