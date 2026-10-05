@@ -2,6 +2,7 @@ use crate::auth::TokenPair;
 use crate::client::CopepodClient;
 use crate::error::Result;
 use crate::models::auth::{AppLoginResult, AuthResponse, MfaChallenge};
+use crate::models::AppRegisterResponse;
 
 impl CopepodClient {
     /// Log in as an app user. Returns MFA challenge if 2FA is enabled.
@@ -44,13 +45,17 @@ impl CopepodClient {
     }
 
     /// Register a new app user.
+    ///
+    /// `body` is typically an [`AppRegisterRequest`](crate::AppRegisterRequest).
+    /// The server answers with `token`, `refresh_token`, the created `record`
+    /// and the no-card `trial` it started, if any.
     pub async fn app_register(
         &self,
         org_id: &str,
         app_id: &str,
         collection: &str,
         body: &impl serde::Serialize,
-    ) -> Result<AuthResponse> {
+    ) -> Result<AppRegisterResponse> {
         let path = format!(
             "api/platform/orgs/{}/apps/{}/auth/{}/register",
             org_id, app_id, collection

@@ -1,6 +1,6 @@
 use copepod_sdk::{
-    AppBillingCatalog, AppBillingSettings, BillingEvidence, BillingIntentCreate, CopepodClient,
-    CopepodError, MeCheckoutRequest, MeTrialStartRequest,
+    AppBillingCatalog, AppBillingSettings, AppRegisterRequest, BillingEvidence,
+    BillingIntentCreate, CopepodClient, CopepodError, MeCheckoutRequest, MeTrialStartRequest,
 };
 use serde_json::{json, Value};
 use wiremock::matchers::{body_json, header, method, path};
@@ -276,4 +276,54 @@ async fn me_start_checkout_rejects_blank_redirect_offline() {
         Err(CopepodError::InvalidArgument(_))
     ));
     assert!(server.received_requests().await.unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn app_register_returns_record_and_trial_from_the_server_body() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path(
+            "/api/platform/orgs/org1/apps/app1/auth/users/register",
+        ))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "token": "t",
+            "refresh_token": "r",
+            "record": {"id": "u1", "email": "a@b.co"},
+            "trial": {"plan_slug": "pro", "trial_ends_at": "2026-10-19T00:00:00Z"}
+        })))
+        .mount(&server)
+        .await;
+    let body = AppRegisterRequest {
+        email: "a@b.co".into(),
+        password: "secret-password".into(),
+        name: None,
+        billing_country: Some("GB".into()),
+        evidence: None,
+    };
+    let resp = client(&server)
+        .app_register("org1", "app1", "users", &body)
+        .await
+        .unwrap();
+    assert_eq!(resp.token, "t");
+    assert_eq!(resp.record["id"], "u1");
+    assert_eq!(resp.trial.unwrap().plan_slug, "pro");
+}
+
+#[tokio::test]
+async fn app_register_without_trial_deserializes() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path(
+            "/api/platform/orgs/org1/apps/app1/auth/users/register",
+        ))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "token": "t", "refresh_token": "r", "record": {"id": "u1"}, "trial": null
+        })))
+        .mount(&server)
+        .await;
+    let resp = client(&server)
+        .app_register("org1", "app1", "users", &json!({"email": "a@b.co"}))
+        .await
+        .unwrap();
+    assert!(resp.trial.is_none());
 }
