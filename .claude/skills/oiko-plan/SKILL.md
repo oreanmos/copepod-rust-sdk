@@ -85,6 +85,12 @@ implementer on a smaller model can build each slice from the spec alone: files
 and symbols, endpoint paths and shapes, decisions taken, tests to add, and the
 evidence each acceptance criterion needs.
 
+**Spec review.** When the spec has two or more slices, or touches UI, auth,
+user data, billing or isolation, spawn `oiko-reviewer` on the draft before the
+owner sees it (`oiko-review`, Spec review): no build, no worktree. Fold its
+findings in. A defect found here costs a paragraph; the same defect found at
+acceptance costs a fix slice, a gate and another review.
+
 Show the owner a short summary (behaviour, owner decisions, expert decisions,
 slices by repo, how acceptance is checked) and ask with "Approve and build" as
 the recommended option. Revise until approved.

@@ -95,19 +95,29 @@ Read-only lookups can run alongside.
    ```
 
    End your turn; the completion notification resumes you.
-3. **Check the report yourself before merging** — never merge on a summary:
-   read `git -C <worktree> diff <base>...HEAD` against the slice goal, and its
+3. **Review before the gate.** The implementer's first report is
+   *review-ready*: committed, focused checks green, no full gate yet. Read
+   `git -C <worktree> diff <base>...HEAD` against the slice goal, and its
    `--stat` file count (build output such as `crates/target/` must never be
-   committed); open the gate logs and map every `.status` to its check by name; confirm a test that failed before the
-   change; for UI, open the screenshots; for API slices, confirm the contract
-   artifacts the slice owes (see `oiko-contract`). Do not re-run the gate, and
-   do not ask a reviewer to, when the base moved only by commits outside what
-   the gate covers (the Cadence rules in `oiko-implement`); re-gate only when
-   the evidence is missing, red, or predates an overlapping change.
-4. **Gaps:** `SendMessage` the implementer with specifics (it keeps its
-   context). After two rounds without resolution, log a blocker and brief a
-   fresh implementer with what the first learned.
-5. **Merge** per `oiko-worktree` (`--no-ff`, evidence in the message), prune,
+   committed); confirm a test that failed before the change; for UI, open every
+   screenshot. Then spawn `oiko-reviewer` for a branch review of that diff
+   (`oiko-review`, Branch review: read-only, nothing heavier than a focused
+   test), with the spec path, the slice and the worktree path. `SendMessage`
+   its findings and your own to the same implementer (it keeps its context and
+   its warm worktree), which fixes them, integrates the base and runs the full
+   gate once. Reviewers found every High defect of 2026-09-26..10-03 and the
+   gates found none, so the gate runs on reviewed code, not before it.
+4. **Check the gated report before merging** — never merge on a summary: read
+   the diff since the review; open the gate logs and map every `.status` to its
+   check by name; for API slices, confirm the contract artifacts the slice owes
+   (see `oiko-contract`). Do not re-run the gate, and do not ask a reviewer to,
+   when the base moved only by commits outside what the gate covers (the
+   Cadence rules in `oiko-implement`); re-gate only when the evidence is
+   missing, red, or predates an overlapping change.
+5. **Gaps:** `SendMessage` the implementer with specifics. After two rounds
+   without resolution, log a blocker and brief a fresh implementer with what
+   the first learned.
+6. **Merge** per `oiko-worktree` (`--no-ff`, evidence in the message), prune,
    push `main:next`, run `claim update <slug> "S<n> merged"` (it pushes the state
    repo), update the log, and go straight to the next slice.
 
@@ -115,7 +125,7 @@ Read-only lookups can run alongside.
 
 - **SDK → Oikonotes needs the rev on GitHub.** Oikonotes pins `copepod-sdk`
   by git rev, so the SDK commit must be on `origin` before the Oikonotes slice
-  can commit its pin bump. The push of SDK `main:next` after its merge (step 5)
+  can commit its pin bump. The push of SDK `main:next` after its merge (step 6)
   puts it there, which is pre-authorized. Pin that rev. Pushing SDK `main` stays
   the owner's call, as for every repo.
 - **Deploy order.** An Oikonotes release that uses a new endpoint needs the
@@ -125,11 +135,13 @@ Read-only lookups can run alongside.
 ## Acceptance
 
 After the last slice of a spec, spawn `oiko-reviewer` against the merged base
-branches and the spec. Each defect becomes a fix slice through the same loop;
-review again. Done when the reviewer accepts or the owner accepts a listed
+branches and the spec. The slices' code was already read, so acceptance spends
+its time exercising the merged feature as a user would. All defects of one
+review round go into one fix slice per repo, through the same loop; review
+again. Done when the reviewer accepts or the owner accepts a listed
 exception. For specs with layout changes, the reviewer runs the full
 `e2e/mobile-responsive.spec.ts` through `scripts/devx/e2e-env.sh` in its review
-worktree; slices ran only their touched routes. For a fix, your step-3 check is the acceptance unless users will see
+worktree; slices ran only their touched routes. For a fix, the step-3 review and your step-4 check are the acceptance unless users will see
 the change or it touches auth, user data, billing or isolation. Do not skip
 acceptance for UI-only specs: the 2026-10 media/records privacy exposure shipped
 from a UI build that had no reviewer, and every High finding of that week came

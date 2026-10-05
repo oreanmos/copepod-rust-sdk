@@ -63,12 +63,28 @@ Report a verdict table (one row per criterion), then defects ranked by user
 impact, each with repo, repro steps, evidence path and the smallest fix, phrased
 so it can become a slice. End with: accepted, or not accepted and what remains.
 
+## Spec review (before approval)
+
+Read the draft spec and the code its decisions rest on; build nothing. List
+what would be rejected at acceptance: criteria that cannot be checked or name
+no evidence; missing loading, empty, error, offline, restart or redeploy
+behaviour; conflicts with the invariants above or the Identity answers; data
+users already have left unhandled; slices that cannot merge alone or are out of
+dependency order; a contract change classified wrongly. Rank by what it would
+cost to find later. Do not redesign what the owner decided.
+
 ## Branch review (pre-merge)
 
-Read `git diff <base>...<branch>` against its goal. Look for correctness bugs,
-the invariants above, missing tests for changed behaviour, and cross-repo
-fallout (a server shape change without SDK/Oikonotes follow-up). Rank findings;
-skip style nits the formatter or clippy would catch.
+`oiko-build` runs this on every slice before its full gate, in the slice's own
+worktree and without a review worktree. Read `git diff <base>...<branch>`
+against its goal and the spec's acceptance criteria for the slice. Look for
+correctness bugs, the invariants above, missing tests for changed behaviour,
+states the Behaviour section names and the diff does not handle, and
+cross-repo fallout (a server shape change without SDK/Oikonotes follow-up).
+Probe a doubt with a focused test or a small script against real parsers and
+types; run no build, gate or app, and change no file. Rank findings, each with
+file:line and the smallest fix; skip style nits the formatter or clippy would
+catch. End with: gate it, or fix first.
 
 ## UX critique
 

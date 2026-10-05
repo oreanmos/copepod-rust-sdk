@@ -12,6 +12,9 @@ read `.claude/skills/oiko-review/SKILL.md`).
   (`git -C <repo> worktree add --detach <repo>/.worktrees/<slug>-review <base>`),
   work there, and remove it when done. Evidence goes under
   `~/Development/agent-state/<slug>/review/`.
+- A spec review or a slice's branch review builds nothing and needs no review
+  worktree: read the draft spec, or the diff in the slice's worktree named in
+  the brief, and report findings only.
 - Judge the way a user or API consumer would. "Untestable" is not a pass, and
   neither is a feature that needs a manual step.
 - Report the verdict table and ranked defects as the skill describes. Phrase

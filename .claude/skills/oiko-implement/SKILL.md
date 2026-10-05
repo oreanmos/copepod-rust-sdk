@@ -72,8 +72,9 @@ agents most of their wall time. Every repo uses
 
 The full gate is expensive (oikonotes `make ci` about 4 min warm and far
 longer in a fresh worktree, copepod P0 10–20 min) and independent of diff size, so run it **once**, on the integrated
-tree, just before reporting. Find compile errors and failing tests with the
-focused checks.
+tree, after the slice review's findings are fixed and just before the final
+report (`oiko-build`, Review before the gate). Find compile errors and failing
+tests with the focused checks.
 
 - **Integrating the base.** Note `HEAD` before merging the base, then read
   `git diff --stat <pre-merge HEAD> HEAD -- . ':!docs'`. Re-run the full gate
