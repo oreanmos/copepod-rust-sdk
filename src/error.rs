@@ -9,6 +9,10 @@ pub const ROLLOUT_NEEDS_OUTAGE_CODE: &str = "rollout_needs_outage";
 /// Deploy refused with 409: a blue-green rollout has no room on the cluster.
 pub const ROLLOUT_NEEDS_CAPACITY_CODE: &str = "rollout_needs_capacity";
 
+/// Checkout refused with 409: an earlier checkout is still open. The body
+/// carries `checkout_url` and `expires_at` at its top level.
+pub const CHECKOUT_PENDING_CODE: &str = "checkout_pending";
+
 /// Errors returned by the Copepod SDK.
 #[derive(Debug, Error)]
 pub enum CopepodError {
@@ -25,7 +29,9 @@ pub enum CopepodError {
     },
 
     /// The deploy endpoint's `rollout_needs_outage` / `rollout_needs_capacity`
-    /// conflict with its structured `details`. Every other error, with or
+    /// conflict with its structured `details`, and the billing
+    /// `checkout_pending` conflict, whose `details` is the whole response body
+    /// (its fields sit at the top level). Every other error, with or
     /// without details, stays [`CopepodError::Api`]; use [`CopepodError::api_status`],
     /// [`CopepodError::api_code`] and [`CopepodError::api_details`] to read
     /// both shapes uniformly.
@@ -110,6 +116,14 @@ impl CopepodError {
             Some(ROLLOUT_NEEDS_OUTAGE_CODE | ROLLOUT_NEEDS_CAPACITY_CODE) => {
                 serde_json::from_value(self.api_details()?.clone()).ok()
             }
+            _ => None,
+        }
+    }
+
+    /// Typed details of a checkout refused with 409 `checkout_pending`.
+    pub fn checkout_pending_details(&self) -> Option<crate::models::CheckoutPending> {
+        match self.api_code() {
+            Some(CHECKOUT_PENDING_CODE) => serde_json::from_value(self.api_details()?.clone()).ok(),
             _ => None,
         }
     }

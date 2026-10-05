@@ -60,6 +60,19 @@ pub struct MeCheckoutRequest {
     pub redirect_url: Option<String>,
 }
 
+/// Details of a `409 checkout_pending` error from `me_start_checkout`: the
+/// earlier open checkout to send the user back to. Read it with
+/// `CopepodError::checkout_pending_details`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutPending {
+    /// The open payment's checkout URL, when the server still has one.
+    #[serde(default)]
+    pub checkout_url: Option<String>,
+    /// RFC 3339 expiry: the payment's Mollie `expiresAt`, or the session's
+    /// creation time plus 6 hours.
+    pub expires_at: String,
+}
+
 /// Payment redirect and billing-period anchor for app-user checkout.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MeCheckoutResponse {
