@@ -122,12 +122,20 @@ async fn me_start_checkout_sends_idempotency_key_and_body() {
         .await;
 
     let result = client(&server)
-        .me_start_checkout("org", "app", "users", "checkout-1", &checkout_body(Some("BETA50")))
+        .me_start_checkout(
+            "org",
+            "app",
+            "users",
+            "checkout-1",
+            &checkout_body(Some("BETA50")),
+        )
         .await
         .unwrap();
 
     assert_eq!(result.payment_id, "payment-1");
-    assert!(result.checkout_url.starts_with("https://checkout.example.invalid/"));
+    assert!(result
+        .checkout_url
+        .starts_with("https://checkout.example.invalid/"));
     let requests = server.received_requests().await.unwrap();
     assert_eq!(requests.len(), 1);
     assert!(!requests[0].headers.contains_key("x-api-key"));
@@ -254,4 +262,18 @@ fn settings_default_trial_requires_payment_method_true() {
     assert!(settings.trial_requires_payment_method);
     let serialized: Value = serde_json::to_value(settings).unwrap();
     assert_eq!(serialized["trial_requires_payment_method"], true);
+}
+
+#[tokio::test]
+async fn me_start_checkout_rejects_blank_redirect_offline() {
+    let server = MockServer::start().await;
+    let mut body = checkout_body(None);
+    body.redirect_url = Some("  ".into());
+    assert!(matches!(
+        client(&server)
+            .me_start_checkout("org", "app", "users", "checkout-1", &body)
+            .await,
+        Err(CopepodError::InvalidArgument(_))
+    ));
+    assert!(server.received_requests().await.unwrap().is_empty());
 }
