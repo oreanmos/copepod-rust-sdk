@@ -84,7 +84,8 @@ cross-repo fallout (a server shape change without SDK/Oikonotes follow-up).
 Probe a doubt with a focused test or a small script against real parsers and
 types; run no build, gate or app, and change no file. Rank findings, each with
 file:line and the smallest fix; skip style nits the formatter or clippy would
-catch. End with: gate it, or fix first.
+catch. Write the report as `summary.md` in the evidence directory as well as
+returning it. End with: gate it, or fix first.
 
 ## UX critique
 

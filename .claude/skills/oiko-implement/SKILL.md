@@ -73,12 +73,14 @@ expected, not an error.
 ### Cadence
 
 The full gate is independent of diff size and costs what the build directory
-makes it cost: oikonotes `make ci` was 1127 s in a fresh worktree and 144 s on
-a reused slot (2026-10-06); copepod clippy + workspace tests about 14 min warm,
-P0 10–20 min. Worktree slots keep that directory, so start the gate as soon as
-the slice is review-ready, and re-run it on the fixed, integrated tree if the
-review found something (`oiko-build`, Review alongside the gate). Find compile
-errors and failing tests with the focused checks.
+makes it cost (2026-10-06): oikonotes `make ci` 882–1127 s cold, about 144 s
+on a reused slot when `crates/app` is untouched, 7–11 min when it is (the app
+crate's test target alone is 5 min); copepod clippy + workspace tests about
+14 min warm, P0 10–20 min. Run it **once**, on the integrated tree, after the
+slice review's findings are fixed (`oiko-build`, Review before the gate): the
+review has found something in every slice so far, so a gate started earlier
+would run twice. Find compile errors and failing tests with the focused
+checks.
 
 - **Integrating the base.** Note `HEAD` before merging the base, then read
   `git diff --stat <pre-merge HEAD> HEAD -- . ':!docs'`. Re-run the full gate

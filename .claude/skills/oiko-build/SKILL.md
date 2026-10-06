@@ -97,10 +97,8 @@ Read-only lookups can run alongside.
    ```
 
    End your turn; the completion notification resumes you.
-3. **Review alongside the gate.** The implementer's first report is
-   *review-ready*: committed, focused checks green, and the full gate just
-   started in the background on that commit (a warm slot makes it cheap, so
-   it no longer waits for the review). Read
+3. **Review before the gate.** The implementer's first report is
+   *review-ready*: committed, focused checks green, no full gate yet. Read
    `git -C <worktree> diff <base>...HEAD` against the slice goal, and its
    `--stat` file count (build output such as `crates/target/` must never be
    committed); confirm a test that failed before the change; for UI, open every
@@ -108,10 +106,10 @@ Read-only lookups can run alongside.
    (`oiko-review`, Branch review: read-only, nothing heavier than a focused
    test), with the spec path, the slice and the worktree path. `SendMessage`
    its findings and your own to the same implementer (it keeps its context and
-   its warm slot), which fixes them, integrates the base and re-runs the gate
-   on the fixed tree; with no findings, the gate already running is the gate.
-   Reviewers found every High defect of 2026-09-26..10-03 and the gates found
-   none, so no slice merges unreviewed.
+   its warm slot), which fixes them, integrates the base and runs the full
+   gate once. Reviewers found every High defect of 2026-09-26..10-03 and the
+   gates found none, and the slice reviews of 2026-10-06 sent fixes back on
+   five slices out of five, so the gate runs on reviewed code, not before it.
 4. **Check the gated report before merging** — never merge on a summary: read
    the diff since the review; open the gate logs and map every `.status` to its
    check by name; for API slices, confirm the contract artifacts the slice owes

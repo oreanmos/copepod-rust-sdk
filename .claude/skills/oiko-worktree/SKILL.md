@@ -34,8 +34,10 @@ spec slice, `<type>/<slug>-s<n>`. Commits: conventional
 
 Worktrees are a pool of slots per repo that keep their build directory between
 tasks. Cargo reuses a build only at the same path, so reusing the directory is
-what turns a 20-minute cold gate into a 2-minute warm one (measured 2026-10-06:
-oikonotes `make ci` 1127 s in a fresh worktree, 144 s on a reused slot).
+what keeps third-party crates built. Measured 2026-10-06 on oikonotes
+`make ci`: 882–1127 s cold (quiet machine), about 144 s on a reused slot when
+`crates/app` is untouched, about 7–11 min for an edit inside `crates/app`
+(653 s measured, 5 min of it the app crate's test target).
 
 ```bash
 ~/Development/agent-state/bin/wt take <repo> <slug> --branch <branch> [--base <rev>] --agent <claude-code|codex|opencode|pi>
@@ -72,8 +74,11 @@ queues for the machine's two build slots, sets the Cargo job count and test
 threads, and waits while the load average is above 1.5 × cores, so parallel
 agents cannot push the machine into thrashing. In an oikonotes slot always run
 `scripts/devx/e2e-env.sh up --build`, never bare `up`: the previous task's
-server binary is still there. `wt` deletes a slot's `target/local` over 70 GB
-on take.
+server binary is still there. On take, a slot's `target/local` over 70 GB is
+trimmed: first the workspace crates' own artifacts (third-party crates stay
+built, so the next gate rebuilds only the workspace, about 10 min for
+oikonotes), then files untouched for two days, and only then everything.
+Oikonotes reaches the cap every two or three slices.
 
 Evidence, logs and screenshots go under `~/Development/agent-state/<slug>/`. Never
 in `/tmp` or a session scratchpad: those are RAM-backed on this machine.
