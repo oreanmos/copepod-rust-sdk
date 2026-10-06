@@ -2,6 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(git worktree add:*)",
+      "Bash(~/Development/agent-state/bin/wt:*)",
+      "Bash(~/Development/agent-state/bin/heavy:*)",
       "Bash(git worktree list:*)",
       "Bash(git worktree remove:*)",
       "Bash(git worktree prune)",
