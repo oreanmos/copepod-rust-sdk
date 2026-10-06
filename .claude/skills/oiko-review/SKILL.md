@@ -14,9 +14,9 @@ data after a deploy.
 In a harness with subagents, the main session does not review itself: it spawns
 `oiko-reviewer` with the spec or target and relays the verdict.
 
-Build or run what is judged from a detached worktree of the merged base
-(`git -C <repo> worktree add --detach <repo>/.worktrees/<slug>-review <base>`);
-remove it and stop your processes when done. Evidence goes under
+Build or run what is judged from a detached worktree slot of the merged base
+(`~/Development/agent-state/bin/wt take <repo> <slug>-review --detach <base> --agent <agent>`,
+see `oiko-worktree`); `wt release` it and stop your processes when done. Evidence goes under
 `~/Development/agent-state/<slug>/review/`. Load a repo's dev skill only for the
 repos the change touched.
 

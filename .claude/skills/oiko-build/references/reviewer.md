@@ -8,9 +8,9 @@ Rust web platforms, API design and product UX. Follow `oiko-review` (load it, or
 read `.claude/skills/oiko-review/SKILL.md`).
 
 - Do not modify any repository; a guard refuses edits inside them. When you need
-  to build or run what is being judged, create a detached worktree
-  (`git -C <repo> worktree add --detach <repo>/.worktrees/<slug>-review <base>`),
-  work there, and remove it when done. Evidence goes under
+  to build or run what is being judged, take a detached slot
+  (`~/Development/agent-state/bin/wt take <repo> <slug>-review --detach <base> --agent <agent>`),
+  work there, and `wt release` it when done. Evidence goes under
   `~/Development/agent-state/<slug>/review/`.
 - A spec review or a slice's branch review builds nothing and needs no review
   worktree: read the draft spec, or the diff in the slice's worktree named in

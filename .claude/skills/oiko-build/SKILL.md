@@ -80,8 +80,10 @@ run one implementer at a time unless slices are independent and share no files.
 Read-only lookups can run alongside.
 
 1. **Worktree.** Make sure the slice's repo base branch has what the slice needs
-   committed. Create the worktree per `oiko-worktree`:
-   `git -C <repo> worktree add -b <type>/<slug>-s<n> <repo>/.worktrees/<slug>-s<n> <base>`.
+   committed. Take a slot per `oiko-worktree`:
+   `~/Development/agent-state/bin/wt take <repo> <slug> --branch <type>/<slug>-s<n> --agent <agent>`,
+   and brief the implementer with the path it prints. All slots held: finish
+   or release what you hold, or wait; do not create a worktree by hand.
 2. **Delegate** to `oiko-implementer` in the background:
 
    ```text
@@ -95,8 +97,10 @@ Read-only lookups can run alongside.
    ```
 
    End your turn; the completion notification resumes you.
-3. **Review before the gate.** The implementer's first report is
-   *review-ready*: committed, focused checks green, no full gate yet. Read
+3. **Review alongside the gate.** The implementer's first report is
+   *review-ready*: committed, focused checks green, and the full gate just
+   started in the background on that commit (a warm slot makes it cheap, so
+   it no longer waits for the review). Read
    `git -C <worktree> diff <base>...HEAD` against the slice goal, and its
    `--stat` file count (build output such as `crates/target/` must never be
    committed); confirm a test that failed before the change; for UI, open every
@@ -104,9 +108,10 @@ Read-only lookups can run alongside.
    (`oiko-review`, Branch review: read-only, nothing heavier than a focused
    test), with the spec path, the slice and the worktree path. `SendMessage`
    its findings and your own to the same implementer (it keeps its context and
-   its warm worktree), which fixes them, integrates the base and runs the full
-   gate once. Reviewers found every High defect of 2026-09-26..10-03 and the
-   gates found none, so the gate runs on reviewed code, not before it.
+   its warm slot), which fixes them, integrates the base and re-runs the gate
+   on the fixed tree; with no findings, the gate already running is the gate.
+   Reviewers found every High defect of 2026-09-26..10-03 and the gates found
+   none, so no slice merges unreviewed.
 4. **Check the gated report before merging** — never merge on a summary: read
    the diff since the review; open the gate logs and map every `.status` to its
    check by name; for API slices, confirm the contract artifacts the slice owes
@@ -117,8 +122,8 @@ Read-only lookups can run alongside.
 5. **Gaps:** `SendMessage` the implementer with specifics. After two rounds
    without resolution, log a blocker and brief a fresh implementer with what
    the first learned.
-6. **Merge** per `oiko-worktree` (`--no-ff`, evidence in the message), prune,
-   push `main:next`, run `claim update <slug> "S<n> merged"` (it pushes the state
+6. **Merge** per `oiko-worktree` (`--no-ff`, evidence in the message), `wt
+   release` the slot, delete the branch, push `main:next`, run `claim update <slug> "S<n> merged"` (it pushes the state
    repo), update the log, and go straight to the next slice.
 
 ## Cross-repo handoffs

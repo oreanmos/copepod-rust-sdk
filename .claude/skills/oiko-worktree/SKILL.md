@@ -5,9 +5,9 @@ description: The worktree, commit and merge lifecycle for Oikonotes, Copepod and
 
 # Oiko Worktree Lifecycle
 
-Implement in a worktree, merge back with `--no-ff`, then prune. Claude, Codex
-and the owner work in these repos at the same time; most rules below keep your
-work out of theirs.
+Implement in a worktree slot, merge back with `--no-ff`, then release the slot.
+Claude, Codex and the owner work in these repos at the same time; most rules
+below keep your work out of theirs.
 
 ## The repos
 
@@ -21,9 +21,9 @@ machine, and commit and push it when you stop.
 
 | Repo | Base branch | Task worktrees | Notes |
 |---|---|---|---|
-| `oikonotes` | `main` | `oikonotes/.worktrees/<slug>` | no `Co-Authored-By` trailers (owner's rule); older sibling worktrees `../oikonotes-*` belong to earlier tasks, leave them |
-| `copepod` | `main` | `copepod/.worktrees/<slug>` | also has `staging` and `dev` remote branches; never merge into them unless asked |
-| `copepod-rust-sdk` | `main` | `copepod-rust-sdk/.worktrees/<slug>` | small standalone crate; no CI, no tags |
+| `oikonotes` | `main` | `oikonotes/.worktrees/slot-<n>` | no `Co-Authored-By` trailers (owner's rule); older sibling worktrees `../oikonotes-*` belong to earlier tasks, leave them |
+| `copepod` | `main` | `copepod/.worktrees/slot-<n>` | also has `staging` and `dev` remote branches; never merge into them unless asked |
+| `copepod-rust-sdk` | `main` | `copepod-rust-sdk/.worktrees/slot-<n>` | small standalone crate; no CI, no tags |
 
 `.worktrees/` is gitignored in each. Branches: `feat/<scope>-<desc>`,
 `fix/<scope>-<desc>`, `chore/<scope>-<desc>`, `refactor/<scope>-<desc>`; for a
@@ -32,15 +32,24 @@ spec slice, `<type>/<slug>-s<n>`. Commits: conventional
 
 ## Create
 
-Inspect `git -C <repo> status --porcelain` and `git -C <repo> worktree list`.
-Record the base branch and commit. A worktree starts from committed `HEAD`;
-uncommitted changes do not follow it. Use a slug no existing or pruned worktree
-used. Never adopt another session's worktree or branch unless the owner hands
-it to you.
+Worktrees are a pool of slots per repo that keep their build directory between
+tasks. Cargo reuses a build only at the same path, so reusing the directory is
+what turns a 20-minute cold gate into a 2-minute warm one (measured 2026-10-06:
+oikonotes `make ci` 1127 s in a fresh worktree, 144 s on a reused slot).
 
 ```bash
-git -C <repo> worktree add -b <branch> <repo>/.worktrees/<slug> <base>
+~/Development/agent-state/bin/wt take <repo> <slug> --branch <branch> [--base <rev>] --agent <claude-code|codex|opencode|pi>
+~/Development/agent-state/bin/wt take <repo> <slug> --detach <rev> --agent <agent>     # reviewers
+~/Development/agent-state/bin/wt list
 ```
+
+`take` prints the slot's absolute path (`<repo>/.worktrees/slot-<n>`) on the
+new branch, started from `<base>` (default `main`). With every slot held it
+exits 3 and lists the holders: wait for a release or pick other work; never
+take a slot another session holds, and never create a worktree by hand. Record
+the base commit. A slot starts from committed `HEAD`; uncommitted changes in
+the main checkout do not follow it. Worktrees made the old way
+(`<repo>/.worktrees/<slug>`) finish the old way and are removed at merge.
 
 A session started inside a harness-made worktree (`claude --worktree`, Codex)
 uses that one; do not nest another.
@@ -53,13 +62,18 @@ worktree only for runtime checks and never stage it.
 ## Build directory
 
 Every repo builds with `CARGO_TARGET_DIR=target/local`. It is relative, so each
-worktree gets its own `target/local`, removed with the worktree. Never point two
-checkouts at one target dir: Cargo judges freshness by mtime and will reuse the
-other checkout's artifacts, producing phantom errors and false passes. The first
-build in a new worktree is slow; later ones are incremental. Wrap builds and
-gates in `~/Development/agent-state/bin/heavy`, so parallel agents queue for the
-machine's two build slots instead of thrashing it. A worktree's `target/local`
-grows to 20–85 GB: remove worktrees as soon as they merge.
+slot has its own `target/local`, which stays when the slot is released. Never
+point two checkouts at one target dir: Cargo judges freshness by mtime and will
+reuse the other checkout's artifacts, producing phantom errors and false
+passes. A new slot is seeded with a copy-on-write copy of the main checkout's
+`target/local` (1–2 s, no disk until it diverges); later builds are
+incremental. Wrap builds and gates in `~/Development/agent-state/bin/heavy`: it
+queues for the machine's two build slots, sets the Cargo job count and test
+threads, and waits while the load average is above 1.5 × cores, so parallel
+agents cannot push the machine into thrashing. In an oikonotes slot always run
+`scripts/devx/e2e-env.sh up --build`, never bare `up`: the previous task's
+server binary is still there. `wt` deletes a slot's `target/local` over 70 GB
+on take.
 
 Evidence, logs and screenshots go under `~/Development/agent-state/<slug>/`. Never
 in `/tmp` or a session scratchpad: those are RAM-backed on this machine.
@@ -73,9 +87,9 @@ filtering the output. Re-run the pre-merge gate on the integrated tree when the
 merge brought in code the gate covers; `oiko-implement` (Cadence) says when an
 earlier green gate still stands.
 
-## Merge and prune
+## Merge and release
 
-From the main checkout of that repo, with the worktree committed and clean:
+From the main checkout of that repo, with the slot committed and clean:
 
 - **Uncommitted changes in files your merge touches:** stop and report them. Do
   not stash, commit, restage or discard another session's work, even
@@ -84,16 +98,19 @@ From the main checkout of that repo, with the worktree committed and clean:
 
 ```bash
 git -C <repo> merge --no-ff <branch> -m "<type>(<scope>): <summary>" -m "<evidence: key checks, spec slice>"
-git -C <repo> worktree remove <repo>/.worktrees/<slug>
+~/Development/agent-state/bin/wt release <repo>/.worktrees/slot-<n>
 git -C <repo> branch -d <branch>
-git -C <repo> worktree prune
 ```
 
-Stop any process still running from the worktree first: in oikonotes,
-`scripts/devx/e2e-env.sh down` for its e2e server; anything else by its
-recorded PID. Never `pkill`, `killall` or kill by name or port; other sessions'
-processes share the machine. If removal refuses because the worktree is dirty,
-inspect and report; never force it or delete tracked files to make it succeed.
+In that order: a branch checked out in a slot cannot be deleted. `release`
+stops the slot's e2e server, refuses while uncommitted or untracked files
+remain or the server is still up, detaches `HEAD`, removes ignored files
+(`.env`, test output) and keeps `target/local`. Stop anything else you started
+by its recorded PID. Never `pkill`, `killall` or kill by name or port; other
+sessions' processes share the machine. If `release` refuses, inspect and
+report; never delete tracked files to make it succeed. Release a slot as soon
+as its branch merges or is abandoned: three slots per repo serve every session
+on the machine.
 
 After merging, push `main:next` (next section) and report
 `git -C <repo> status -sb`.

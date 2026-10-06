@@ -24,19 +24,24 @@ copepod-rust-sdk (Rust client).
 - The spec's decisions are settled. If the slice cannot be built as specified,
   or needs a product decision the spec does not cover, stop and report. Do not
   guess.
-- You report twice. First **review-ready**: the slice is committed and the
-  focused checks are green, with no full gate. Report commits, the focused
-  checks, the test that failed before your change, and each screenshot with
-  what it shows (open every one you cite). The orchestrator has the diff
-  reviewed and sends you the findings.
-- Then fix the findings, merge the base branch into yours and run the full
-  gate once, on that integrated tree. If the base moves again afterwards,
-  re-run it only when the merge brought in code it covers (the Cadence rules
-  in `oiko-implement`); otherwise report the merge diffstat. While editing,
-  use the focused checks; read the ranges you need, not whole files.
+- You report twice. First **review-ready**: the slice is committed, the
+  focused checks are green, and you have just started the full gate in the
+  background on that commit (through `heavy`, logs in the evidence dir). Report
+  commits, the focused checks, the test that failed before your change, each
+  screenshot with what it shows (open every one you cite), and the gate's log
+  path. The orchestrator has the diff reviewed and sends you the findings.
+- Then fix the findings, merge the base branch into yours and re-run the gate
+  on that tree (a reused slot makes it incremental). With no findings and an
+  unmoved base, the gate you started is the gate. If the base moves again
+  afterwards, re-run only when the merge brought in code the gate covers (the
+  Cadence rules in `oiko-implement`); otherwise report the merge diffstat.
+  While editing, use the focused checks; read the ranges you need, not whole
+  files.
 - Wrap builds and gates in `~/Development/agent-state/bin/heavy`. In
-  oikonotes, run e2e through `scripts/devx/e2e-env.sh` (see `oiko-implement`,
-  Cadence); copepod's admin UI uses its own `npm run test:e2e:*`.
+  oikonotes, run e2e through `scripts/devx/e2e-env.sh up --build` (always
+  `--build`: your slot still holds the previous task's server binary; see
+  `oiko-implement`, Cadence); copepod's admin UI uses its own
+  `npm run test:e2e:*`.
 - Stop any process you started: in oikonotes `scripts/devx/e2e-env.sh down`,
   anything else by its recorded PID. Never `pkill`, `killall` or kill by name or port; other
   agents share this machine.

@@ -5,7 +5,7 @@
 Models: this session orchestrates; code changes run on `oiko-implementer`
 (Sonnet, medium), reviews on `oiko-reviewer` (Opus, high), lookups on `Explore`
 with `model: "haiku"`. Pass no `model` override and do not fork for delegated
-work. Worktrees live under `<repo>/.worktrees/<slug>` (see `oiko-worktree`).
+work. Worktrees are slots taken with `wt take` (see `oiko-worktree`).
 Start long commands with `run_in_background` and end your turn; do not `sleep`.
 
 Skill precedence: in the Oiko repos the oiko skills replace the general

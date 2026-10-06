@@ -65,16 +65,20 @@ status). Start long checks with `run_in_background` and end your turn; the
 notification resumes you. Never wait in a loop (`until`, `sleep`, re-reading a
 log): a loop hits the 10-minute tool cap and re-runs, which cost the U2 sweep
 agents most of their wall time. Every repo uses
-`CARGO_TARGET_DIR=target/local` (relative, so each worktree gets its own; never
-`/tmp`).
+`CARGO_TARGET_DIR=target/local` (relative, so each slot keeps its own; never
+`/tmp`). `heavy` sets `CARGO_BUILD_JOBS` and `RUST_TEST_THREADS` and waits while
+the machine is over its load budget; a `heavy: waiting for load` line is
+expected, not an error.
 
 ### Cadence
 
-The full gate is expensive (oikonotes `make ci` about 4 min warm and far
-longer in a fresh worktree, copepod P0 10–20 min) and independent of diff size, so run it **once**, on the integrated
-tree, after the slice review's findings are fixed and just before the final
-report (`oiko-build`, Review before the gate). Find compile errors and failing
-tests with the focused checks.
+The full gate is independent of diff size and costs what the build directory
+makes it cost: oikonotes `make ci` was 1127 s in a fresh worktree and 144 s on
+a reused slot (2026-10-06); copepod clippy + workspace tests about 14 min warm,
+P0 10–20 min. Worktree slots keep that directory, so start the gate as soon as
+the slice is review-ready, and re-run it on the fixed, integrated tree if the
+review found something (`oiko-build`, Review alongside the gate). Find compile
+errors and failing tests with the focused checks.
 
 - **Integrating the base.** Note `HEAD` before merging the base, then read
   `git diff --stat <pre-merge HEAD> HEAD -- . ':!docs'`. Re-run the full gate
@@ -89,9 +93,10 @@ tests with the focused checks.
   holds desktop parity.
 - **Playwright** (oikonotes) runs against your worktree's own server, never
   `make dev`, `cargo leptos serve`/`watch` or a restart loop:
-  `scripts/devx/e2e-env.sh up --build` (builds through `heavy`, picks a free
-  port in 3300–3399, its own data and vault; run it again after every code
-  change, since it rebuilds and restarts the server), then
+  `scripts/devx/e2e-env.sh up --build` (always `--build`: a reused slot still
+  holds the previous task's server binary; it builds through `heavy`, picks a
+  free port in 3300–3399, its own data and vault; run it again after every
+  code change, since it rebuilds and restarts the server), then
   `scripts/devx/e2e-env.sh test <args>`, which adds `--project=chromium
   --no-deps --max-failures=3` and your base URL.
   1. Reproduce with the single test (`e2e/<spec>.spec.ts:<line>` or
