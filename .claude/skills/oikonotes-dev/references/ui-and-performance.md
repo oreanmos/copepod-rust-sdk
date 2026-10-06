@@ -35,5 +35,12 @@ full spec runs at acceptance.
 - WASM size: the Docker build uses the `wasm-release` profile for the library
   (`opt-level = "z"`, LTO, one codegen unit, `panic = "abort"`) and may use
   `ci-release` for the server binary; never switch the library to a speed
-  profile. Assets are built with `--precompress`. `--split` stays off until
-  the repo has `#[lazy]` islands.
+  profile. Assets are built with `--precompress` and `--split`.
+- Lazy islands: write the pair
+  `#[cfg_attr(feature = "client", island(lazy))]` +
+  `#[cfg_attr(not(feature = "client"), island)]`, never a bare
+  `#[island(lazy)]`. leptos_macro emits the lazy loader in every build, so a
+  bare one compiles each island body twice in SSR; 125 of them took the
+  ssr-web lib-test rustc from 8.5 to 19.5 GiB and OOM'd the 14 GiB release CI
+  job (2026-10-06). `scripts/check-lazy-island-cfg.sh` (in `make ci`
+  preflight) rejects a bare one.
