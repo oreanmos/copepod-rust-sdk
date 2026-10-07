@@ -5,7 +5,7 @@
 - Build UI from `leptos_daisyui::prelude::*`; write a project wrapper only when
   composition is insufficient. Component and prop list:
   `docs/leptos-daisy-reference.md`; source at `~/Development/leptos-daisy`.
-- `leptos-daisyui` is pinned by `rev` in `crates/app/Cargo.toml` (HTTPS URL,
+- `leptos-daisyui` is pinned by `rev` in the root `Cargo.toml` `[workspace.dependencies]` (HTTPS URL,
   never `branch`). To move it: change the rev, `cargo update -p leptos-daisyui`,
   then `make pin-check` and the app surface checks. Work on the library itself
   in its own repo and worktree.

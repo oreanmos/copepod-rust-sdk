@@ -84,10 +84,10 @@ afterwards and never commit it (CI uses `--locked`).
 
 ### 4. Oikonotes slice
 
-1. Set the new full SHA in `crates/app/Cargo.toml` (`copepod-sdk = { git = …,
-   rev = "<sha>", optional = true }`), then
+1. Set the new full SHA in the root `Cargo.toml` (`[workspace.dependencies]`,
+   `copepod-sdk = { git = …, rev = "<sha>" }`; the app crates inherit it), then
    `CARGO_TARGET_DIR=target/local cargo update -p copepod-sdk` and `make app-ssr`.
-2. Call the SDK only through `CopepodBridge` (`crates/app/src/ssr/copepod.rs`
+2. Call the SDK only through `CopepodBridge` (`crates/app-kit/src/ssr/copepod.rs`
    and `ssr/copepod/`); map errors through the existing `From<CopepodError>`.
 3. Consume it in the store (`ssr/copepod_store/`), keep the local store
    (`ssr/local_store/`) behaviour coherent for desktop mode, and expose it to UI
@@ -104,5 +104,5 @@ order in the build's finish report; deploy only when the owner asks.
 
 Compare the three views of one endpoint: the route and handler in copepod, the
 path/body/auth in the SDK method and its wiremock test, and the pinned rev in
-`oikonotes/crates/app/Cargo.toml` (`git -C copepod-rust-sdk log --oneline <rev>..main`
+`oikonotes/Cargo.toml` `[workspace.dependencies]` (`git -C copepod-rust-sdk log --oneline <rev>..main`
 shows what Oikonotes is missing).

@@ -4,7 +4,7 @@ The desktop app renders the same Leptos UI as CSR inside Tauri and talks to the
 backend over IPC instead of HTTP.
 
 - Route/page and shared UI code calls the backend only through `crate::api::*`
-  (`crates/app/src/api.rs`): it re-exports `crate::server::<domain>` under
+  (`crates/app-shell/src/api.rs`): it re-exports `crate::server::<domain>` under
   `ssr`/`hydrate` and `crate::tauri_ipc::<domain>` under `csr`. Never import
   `crate::server::*` directly from shared UI.
 - A new server domain used by pages needs every layer: `server/<domain>`,

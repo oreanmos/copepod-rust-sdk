@@ -25,7 +25,7 @@
 The server streams out of order (`leptos_axum::render_app_to_stream` in
 `crates/app/src/main.rs`): a `Resource` inside `<Suspense>` does not block the
 HTML response, even for slow Copepod calls. Reference implementation:
-`crates/app/src/pages/inbox.rs`.
+`crates/app-shell/src/pages/inbox.rs`.
 
 ```rust
 #[component]
@@ -69,7 +69,7 @@ and run `make app-ssr` and `make app-hydrate` after each subtree.
 Full design: `docs/plans/archive/2026-06-22-islands-navigation-architecture.md`.
 
 - `OIKO_ISLANDS_ROUTER` (compile-time, read via `option_env!`;
-  `ISLANDS_ROUTER_ENABLED` in `crates/app/src/app_shell/document.rs`) enables
+  `ISLANDS_ROUTER_ENABLED` in `crates/app-shell/src/app_shell/document.rs`) enables
   SPA navigation. The Dockerfile sets it in the `build-tools` stage so both the
   WASM and server builds see it, and this is what production runs today.
 - The newer islands-preserving coordinator (`ui/navigation.rs`,

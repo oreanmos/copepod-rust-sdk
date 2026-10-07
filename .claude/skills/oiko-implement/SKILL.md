@@ -96,7 +96,8 @@ checks.
 - **Playwright** (oikonotes) runs against your worktree's own server, never
   `make dev`, `cargo leptos serve`/`watch` or a restart loop:
   `scripts/devx/e2e-env.sh up --build` (always `--build`: a reused slot still
-  holds the previous task's server binary; it builds through `heavy`, picks a
+  holds the previous task's server binary; it builds through `heavy` itself, so
+  never prefix it with `heavy` — that deadlocks the slots; it picks a
   free port in 3300–3399, its own data and vault; run it again after every
   code change, since it rebuilds and restarts the server), then
   `scripts/devx/e2e-env.sh test <args>`, which adds `--project=chromium

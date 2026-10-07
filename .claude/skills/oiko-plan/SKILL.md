@@ -39,7 +39,7 @@ owner anything.
 - **Oikonotes only** — most product features. Copepod's generic collections,
   records, files and realtime already cover ordinary persistence: a new data
   domain is a new store trait plus a `CopepodXStore` over a collection, not a
-  server change. Check `crates/app/src/ssr/copepod_store/` for a similar domain
+  server change. Check `crates/app-shell/src/ssr/copepod_store/` for a similar domain
   first.
 - **Copepod + SDK + Oikonotes** — only when the platform lacks a capability:
   a new endpoint, auth flow, billing/email/ticket behaviour, server-side

@@ -40,6 +40,8 @@ copepod-rust-sdk (Rust client).
   `--build`: your slot still holds the previous task's server binary; see
   `oiko-implement`, Cadence); copepod's admin UI uses its own
   `npm run test:e2e:*`.
+  Never wrap `e2e-env.sh` in `heavy`: it already builds through `heavy`, and
+  the outer wrapper would hold a slot its own build waits for (deadlock).
 - Stop any process you started: in oikonotes `scripts/devx/e2e-env.sh down`,
   anything else by its recorded PID. Never `pkill`, `killall` or kill by name or port; other
   agents share this machine.

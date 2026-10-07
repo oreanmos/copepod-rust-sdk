@@ -2,7 +2,7 @@
 
 ## Modes
 
-`AppState` (`crates/app/src/ssr/state/mod.rs`) holds `Arc<dyn XStore>` trait
+`AppState` (`crates/app-kit/src/ssr/state/mod.rs`; the mode wiring is `crates/app-shell/src/ssr/state/{web,desktop}.rs`) holds `Arc<dyn XStore>` trait
 objects chosen by `AppMode`:
 
 - **Web mode** — `init_web_state` (`ssr/state/web.rs`): Copepod stores.
@@ -21,10 +21,10 @@ rejects new direct pool access; its baseline only shrinks.
 ## Adding a persistent data domain
 
 1. Trait in `crates/core/src/store/<domain>.rs`.
-2. `CopepodXStore` in `crates/app/src/ssr/copepod_store/<domain>.rs` over a
+2. `CopepodXStore` in `crates/app-shell/src/ssr/copepod_store/<domain>.rs` over a
    Copepod collection (look at a similar domain first, e.g. `tasks.rs`,
    `shopping_lists.rs`).
-3. `LocalXStore` in `crates/app/src/ssr/local_store/`, with a migration in
+3. `LocalXStore` in `crates/app-shell/src/ssr/local_store/`, with a migration in
    `crates/db/migrations/` if it needs tables.
 4. `pub x: Arc<dyn XStore>` on `AppState`; wire both init functions.
 5. Server functions use `state.x`; UI reaches them through `crate::api`.
@@ -33,10 +33,10 @@ rejects new direct pool access; its baseline only shrinks.
 
 ## Copepod bridge
 
-- `copepod-sdk` is pinned by full `rev` in `crates/app/Cargo.toml` (optional,
-  behind `ssr`). Changing the pin or needing a new endpoint: load
+- `copepod-sdk` is pinned by full `rev` in the root `Cargo.toml` `[workspace.dependencies]`
+  (optional in the crates that use it, behind `ssr`). Changing the pin or needing a new endpoint: load
   `oiko-contract`.
-- All SDK use goes through `CopepodBridge` (`ssr/copepod.rs` + `ssr/copepod/`:
+- All SDK use goes through `CopepodBridge` (`crates/app-kit/src/ssr/copepod.rs` + `ssr/copepod/`:
   auth, attachments, billing, email, files, tickets, objects, …). Never call
   `copepod_sdk::CopepodClient` from server functions or components. Keep the
   root file thin; add a submodule instead.
