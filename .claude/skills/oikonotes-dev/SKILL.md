@@ -22,6 +22,7 @@ Package names are `oikonotes-<dir>` (tauri-app → `oikonotes-tauri`).
 | `ai` | `LlmProvider` abstraction (Mistral, Anthropic, OpenAI, Ollama) |
 | `app` | thin composition root: server binary, router (`app_shell/routes`), hydrate/csr entry points, re-exports of the shell at the old paths, `cdylib` for cargo-leptos |
 | `app-shell` | everything not in a domain crate: Leptos UI, pages, server functions, AI pipeline, stores |
+| `app-budget` | the budget domain: server functions, Tauri IPC, pages, settings card, stores, vault sync; depends on the kit only, registers its hooks (`register_hooks`) |
 | `app-kit` | what every app crate imports: `AppState`, config, errors, session, rate limiters, Copepod client, `Database`, `delegate_to_ssr!`, shared UI helpers; no domain code |
 | `app-support` | small shared helpers (errors) for feature crates |
 | `budget`, `investing`, `travel` | pure domain logic per product area |
@@ -38,7 +39,7 @@ When compile times regress, extract framework-free logic into a small crate
 rather than growing `app-shell`. See `docs/plans/2026-10-05-app-crate-split.md`.
 
 `crates/app-shell/src` (plus `app-kit` for the `AppState` type (`ssr/state`; the store wiring
-`state/{web,desktop}.rs` stays in the shell until S2b), `config`, `copepod`, `db`,
+`init_state` lives in the root, `crates/app/src/wiring/`; `hooks` lets crates call each other without a dependency), `config`, `copepod`, `db`,
 `error`, `session`; the root `crates/app/src` holds `main.rs` and
 `app_shell/routes`): `pages/` (route components), `ui/` (components and leaf
 islands), `app_shell/` (document, layouts, navigation), `server/` (server

@@ -2,15 +2,15 @@
 
 ## Modes
 
-`AppState` (`crates/app-kit/src/ssr/state/mod.rs`; the mode wiring is `crates/app-shell/src/ssr/state/{web,desktop}.rs`) holds `Arc<dyn XStore>` trait
+`AppState` (`crates/app-kit/src/ssr/state/mod.rs`; the mode wiring is `crates/app/src/wiring/{web,desktop}.rs`) holds `Arc<dyn XStore>` trait
 objects chosen by `AppMode`:
 
-- **Web mode** — `init_web_state` (`ssr/state/web.rs`): Copepod stores.
+- **Web mode** — `init_web_state` (`crates/app/src/wiring/web.rs`): Copepod stores.
   `state.pool` / `legacy_sqlite_pool()` is an **in-memory** SQLite
   (`sqlite:file:webmode?mode=memory&cache=shared`), wiped on every restart and
   private to one replica. Only transient data (AI job queue, ingestion status)
   may live there.
-- **Desktop mode** — `init_desktop_state` (`ssr/state/desktop.rs`): local SQLite
+- **Desktop mode** — `init_desktop_state` (`crates/app/src/wiring/desktop.rs`): local SQLite
   stores (`OIKONOTES_DB_PATH`, default `data/oikonotes.sqlite` if present,
   otherwise the user data dir).
 
