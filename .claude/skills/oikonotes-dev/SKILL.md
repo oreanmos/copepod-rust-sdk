@@ -38,6 +38,14 @@ Leptos/Axum orchestration in `app-shell` (or a domain crate once one exists).
 When compile times regress, extract framework-free logic into a small crate
 rather than growing `app-shell`. See `docs/plans/2026-10-05-app-crate-split.md`.
 
+Cross-crate calls without a dependency use `oikonotes_app_kit::hooks::Hook<T>`:
+1. The calling crate declares a `pub static NAME: Hook<..> = Hook::new()` and reads it with `NAME.get()`.
+2. The owning crate exposes a `pub fn`.
+3. The root sets the hook in `register_hooks` in `crates/app/src/lib.rs`.
+4. A matching assert goes in `crates/app/tests/hooks_registered.rs`.
+
+Never put a domain-named hook in the kit.
+
 `crates/app-shell/src` (plus `app-kit` for the `AppState` type (`ssr/state`; the store wiring
 `init_state` lives in the root, `crates/app/src/wiring/`; `hooks` lets crates call each other without a dependency), `config`, `copepod`, `db`,
 `error`, `session`; the root `crates/app/src` holds `main.rs` and
