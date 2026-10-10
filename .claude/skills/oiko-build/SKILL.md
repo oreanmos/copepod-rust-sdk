@@ -57,9 +57,9 @@ play each role in turn with the same briefs and checks.
   three longest of 2026-09-26..10-03 used about a third of all tokens.
 - **Sync and claim.** Several machines and harnesses build at once. In each
   repo the work touches, `git fetch origin` and bring `main` up to
-  `origin/next` (`oiko-worktree`, Two machines). Then run
+  `origin/staging` (`oiko-worktree`, Two machines). Then run
   `~/Development/agent-state/bin/claim list`. Do not start work if its slug is
-  claimed, if a step it depends on is claimed or is not yet on `next`, or if its
+  claimed, if a step it depends on is claimed or is not yet on `staging`, or if its
   areas overlap an active claim. In those cases, pick other work or ask the
   owner. Otherwise run
   `claim take <slug> --step "<task-order step / spec>" --repos <r1,r2>
@@ -69,6 +69,12 @@ play each role in turn with the same briefs and checks.
   next slice, stop and ask the owner.
 - A notification that an agent is still running needs a one-line reply and no
   tool calls.
+- **Owner notes.** `~/Development/agent-state/owner-notes.md` holds what the
+  owner saw on staging, one dated line each. Read it before every slice and
+  before acceptance. An unhandled line inside this build's area becomes a fix in
+  the current or next slice; one outside it becomes a question to the owner
+  (plan change) or a line for the next batch. Mark a handled line with
+  `→ <slug> S<n> <short sha>` and commit the state repo.
 
 ## Each slice, in order
 
@@ -121,14 +127,14 @@ Read-only lookups can run alongside.
    without resolution, log a blocker and brief a fresh implementer with what
    the first learned.
 6. **Merge** per `oiko-worktree` (`--no-ff`, evidence in the message), `wt
-   release` the slot, delete the branch, push `main:next`, run `claim update <slug> "S<n> merged"` (it pushes the state
+   release` the slot, delete the branch, push `main:staging` (and mirror-sync when `FORGEJO_TOKEN` is set), run `claim update <slug> "S<n> merged"` (it pushes the state
    repo), update the log, and go straight to the next slice.
 
 ## Cross-repo handoffs
 
 - **SDK → Oikonotes needs the rev on GitHub.** Oikonotes pins `copepod-sdk`
   by git rev, so the SDK commit must be on `origin` before the Oikonotes slice
-  can commit its pin bump. The push of SDK `main:next` after its merge (step 6)
+  can commit its pin bump. The push of SDK `main:staging` after its merge (step 6)
   puts it there, which is pre-authorized. Pin that rev. Pushing SDK `main` stays
   the owner's call, as for every repo.
 - **Deploy order.** An Oikonotes release that uses a new endpoint needs the
@@ -163,4 +169,6 @@ When the build is accepted, abandoned or handed back to the owner, run `claim re
 
 Report, briefly: each slice with repo, merge commit and key evidence; the
 acceptance verdict (or the fix evidence); owner decisions taken; deferred items;
-pushes and deploys still needed, in order; cleanup status of worktrees.
+pushes and deploys still needed, in order; cleanup status of worktrees. Every
+slice report and the finish report say what is live on staging
+(`https://oikonotes.local.copepod.app`) and which routes to open.

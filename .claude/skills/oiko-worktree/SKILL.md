@@ -22,7 +22,7 @@ machine, and commit and push it when you stop.
 | Repo | Base branch | Task worktrees | Notes |
 |---|---|---|---|
 | `oikonotes` | `main` | `oikonotes/.worktrees/slot-<n>` | no `Co-Authored-By` trailers (owner's rule); older sibling worktrees `../oikonotes-*` belong to earlier tasks, leave them |
-| `copepod` | `main` | `copepod/.worktrees/slot-<n>` | also has `staging` and `dev` remote branches; never merge into them unless asked |
+| `copepod` | `main` | `copepod/.worktrees/slot-<n>` | `staging` is the carrier (Two machines) and deploys the staging cluster on push; the `dev` remote branch is never touched unless asked |
 | `copepod-rust-sdk` | `main` | `copepod-rust-sdk/.worktrees/slot-<n>` | small standalone crate; no CI, no tags |
 
 `.worktrees/` is gitignored in each. Branches: `feat/<scope>-<desc>`,
@@ -117,7 +117,7 @@ report; never delete tracked files to make it succeed. Release a slot as soon
 as its branch merges or is abandoned: three slots per repo serve every session
 on the machine.
 
-After merging, push `main:next` (next section) and report
+After merging, push `main:staging` (next section) and report
 `git -C <repo> status -sb`.
 
 ## Two machines
@@ -127,19 +127,28 @@ sessions can run on both at once. Two things keep them apart:
 
 - **Claims** in the state repo (`~/Development/agent-state/bin/claim`; see
   `oiko-build`, Before starting). They say who builds what.
-- **`origin/next`** in each of the three repos carries merged work between
-  machines. `origin/main` is what is deployed: pushing copepod `main` deploys
-  prod, and pushing oikonotes `main` builds the release container. No workflow
-  runs on `next`.
+- **`origin/staging`** in each of the three repos carries merged work between
+  machines, and is the live channel: pushing copepod `staging` deploys the
+  staging cluster, and pushing oikonotes `staging` builds the image and rolls
+  it onto staging Oikonotes (`https://oikonotes.local.copepod.app`, see
+  `docs/ops/release-verification.md`, Staging channel). The SDK's `staging`
+  runs nothing. `origin/main` is production: pushing copepod `main` deploys
+  prod, and pushing oikonotes `main` builds the release container.
+  build.ulev.org pull-mirrors GitHub, so pushes go to `origin` only; when
+  `FORGEJO_TOKEN` is set, trigger the mirror after the push:
+  `curl -fsS -X POST -H "Authorization: token $FORGEJO_TOKEN"
+  https://build.ulev.org/api/v1/repos/cesarli/<repo>/mirror-sync` (oikonotes
+  and copepod).
 
 | When | Do |
 |---|---|
-| Before claiming or starting a slice | `git -C <repo> fetch origin`. If `origin/next` is ahead, `git -C <repo> merge --ff-only origin/next` on `main` |
-| Local `main` and `origin/next` both moved | `git -C <repo> merge --no-ff origin/next -m "merge: next from <machine>"`. Never rebase: it rewrites the `--no-ff` merges. Re-gate only if the merged code overlaps yours (Cadence in `oiko-implement`) |
-| After every merge into `main` | `git -C <repo> push origin main:next`. If it is rejected, integrate `origin/next` as in the row above, then push again |
-| Release or deploy | Only when the owner asks: `git -C <repo> push origin next:main`, from one machine at a time, after integrating `origin/next` |
+| Before claiming or starting a slice | `git -C <repo> fetch origin`. If `origin/staging` is ahead, `git -C <repo> merge --ff-only origin/staging` on `main` |
+| Local `main` and `origin/staging` both moved | `git -C <repo> merge --no-ff origin/staging -m "merge: staging from <machine>"`. Never rebase: it rewrites the `--no-ff` merges. Re-gate only if the merged code overlaps yours (Cadence in `oiko-implement`) |
+| After every merge into `main` | `git -C <repo> push origin main:staging`, then the mirror-sync call when `FORGEJO_TOKEN` is set. If it is rejected, integrate `origin/staging` as in the row above, then push again |
+| Release or deploy | Only when the owner asks: `git -C <repo> push origin staging:main`, from one machine at a time, after integrating `origin/staging`; for oikonotes then `scripts/deploy.sh --restart` |
 
-Pushing is outward-facing. The owner has pre-authorized two pushes: `main:next` in
-these repos, and the state repo, both of which deploy nothing. Every other push
-waits for the owner to ask, including `main`, `staging`, tags and feature branches.
-Never force-push `next`.
+Pushing is outward-facing. The owner has pre-authorized two pushes: `main:staging`
+in these repos (it deploys only the staging environment, never production), and
+the state repo. Every other push waits for the owner to ask, including `main`,
+tags and feature branches. Never force-push `staging`. Every slice report names
+the staging URL and the routes to open once the run is green.

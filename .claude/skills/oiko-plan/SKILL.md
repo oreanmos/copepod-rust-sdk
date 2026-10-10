@@ -76,6 +76,11 @@ Each slice names its repo. Keep a slice to one repo. Check file headroom for
 files a slice grows: oikonotes targets ≤300 lines (500 hard), copepod has a 500
 line cap with an inventory in `docs/production-hardening-open-items.md`.
 
+**Batch size.** While the app is being stabilised before launch, a batch is one
+day of work: 3–5 slices, approved in the morning, each visible on staging
+(`https://oikonotes.local.copepod.app`) as it merges. Start the next batch's
+problem list from the unhandled lines in `~/Development/agent-state/owner-notes.md`.
+
 ## 5. Write the spec
 
 Write `docs/plans/YYYY-MM-DD-<slug>.md` in the repo that owns the user-visible
@@ -99,7 +104,7 @@ the recommended option. Revise until approved.
 
 Set the status to `approved YYYY-MM-DD`, commit only the spec on the base branch
 (`git add docs/plans/<file>` then `git commit -m "docs(plans): <slug> spec"`),
-and push `main:next` so the other machine sees it (`oiko-worktree`, Two machines).
+and push `main:staging` so the other machine sees it (`oiko-worktree`, Two machines).
 Load `oiko-build` and start the first slice in the same turn, unless the owner
 said to hold; its claim step runs first. When you propose what to build next,
 check `~/Development/agent-state/bin/claim list` and leave out claimed work.
