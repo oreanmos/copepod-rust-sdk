@@ -170,5 +170,6 @@ When the build is accepted, abandoned or handed back to the owner, run `claim re
 Report, briefly: each slice with repo, merge commit and key evidence; the
 acceptance verdict (or the fix evidence); owner decisions taken; deferred items;
 pushes and deploys still needed, in order; cleanup status of worktrees. Every
-slice report and the finish report say what is live on staging
-(`https://oikonotes.local.copepod.app`) and which routes to open.
+slice report and the finish report say what is live on staging and which routes
+to open, only once `curl -s https://oikonotes.local.copepod.app/__version` reports
+the merge sha with `assets_ok:true`; otherwise they say staging is not updated.

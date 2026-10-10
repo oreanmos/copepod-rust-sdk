@@ -151,4 +151,7 @@ Pushing is outward-facing. The owner has pre-authorized two pushes: `main:stagin
 in these repos (it deploys only the staging environment, never production), and
 the state repo. Every other push waits for the owner to ask, including `main`,
 tags and feature branches. Never force-push `staging`. Every slice report names
-the staging URL and the routes to open once the run is green.
+the staging URL and the routes to open once
+`curl -s https://oikonotes.local.copepod.app/__version` reports the merge sha with
+`assets_ok:true`; until then it says staging is not updated (a green run with no
+webhook secret rolls nothing out).
