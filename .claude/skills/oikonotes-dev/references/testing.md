@@ -8,7 +8,7 @@ Release methodology, fixtures and product contract:
 - Unit tests live next to the code; pure domain tests in the domain crates.
 - `make test-affected FAST_TEST_FILTER=<name>` for one test;
   `make test` for the workspace; CI also runs
-  `cargo test -p oikonotes-app-kit -p oikonotes-app-budget -p oikonotes-app-shell -p oikonotes-app
+  `cargo test -p oikonotes-app-kit -p oikonotes-app-budget -p oikonotes-app-investing -p oikonotes-app-shell -p oikonotes-app
   --no-default-features --features ssr-web --lib` (the unit tests live in the
   kit and shell crates; the root has none).
 

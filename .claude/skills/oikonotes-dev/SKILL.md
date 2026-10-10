@@ -23,6 +23,7 @@ Package names are `oikonotes-<dir>` (tauri-app → `oikonotes-tauri`).
 | `app` | thin composition root: server binary, router (`app_shell/routes`), hydrate/csr entry points, re-exports of the shell at the old paths, `cdylib` for cargo-leptos |
 | `app-shell` | everything not in a domain crate: Leptos UI, pages, server functions, AI pipeline, stores |
 | `app-budget` | the budget domain: server functions, Tauri IPC, pages, settings card, stores, vault sync; depends on the kit only, registers its hooks (`register_hooks`) |
+| `app-investing` | the investing domain: server functions, Tauri IPC, `/investing` pages, stores, sync handlers; depends on the kit only; the shell's LLM resolution comes through its `shell_hooks` |
 | `app-kit` | what every app crate imports: `AppState`, config, errors, session, rate limiters, Copepod client, `Database`, `delegate_to_ssr!`, shared UI helpers; no domain code |
 | `app-support` | small shared helpers (errors) for feature crates |
 | `budget`, `investing`, `travel` | pure domain logic per product area |
@@ -73,6 +74,7 @@ Full guide: `docs/devex.md`.
 make dev                      # launch.sh: Tailwind + cargo leptos watch
 make check-affected           # narrowest checks for the current diff
 make app-ssr | app-hydrate | app-csr | tauri-check
+make e2e-csr                   # desktop (CSR wasm) click-handler e2e; run via heavy
 make test-affected FAST_TEST_FILTER=<name>
 make fmt | fmt-check | clippy | test
 make ci                       # full pre-merge set
