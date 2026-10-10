@@ -149,6 +149,12 @@ for path in "${present[@]}"; do
     git -C "$path" fetch --quiet origin || { warn "$(basename "$path"): fetch failed"; continue; }
     git -C "$path" rev-parse --verify --quiet origin/staging >/dev/null \
         || { warn "$(basename "$path"): origin/staging is missing; the carrier branch is staging (oiko-worktree, Two machines)"; continue; }
+    # `next` was the carrier until 2026-10-10. A session on the old rules may
+    # still push it; its work must reach staging, so flag it loudly.
+    if git -C "$path" rev-parse --verify --quiet origin/next >/dev/null \
+        && ! git -C "$path" merge-base --is-ancestor origin/next origin/staging; then
+        warn "$(basename "$path"): origin/next has work that origin/staging lacks (a session on the old rules pushed it); merge origin/next into main and push main:staging (oiko-worktree, Two machines)"
+    fi
     if [[ "$(git -C "$path" branch --show-current)" != main ]]; then
         warn "$(basename "$path"): not on main; integrate origin/staging yourself"
     elif git -C "$path" merge-base --is-ancestor origin/staging main; then

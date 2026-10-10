@@ -143,6 +143,7 @@ sessions can run on both at once. Two things keep them apart:
 | When | Do |
 |---|---|
 | Before claiming or starting a slice | `git -C <repo> fetch origin`. If `origin/staging` is ahead, `git -C <repo> merge --ff-only origin/staging` on `main` |
+| `origin/next` has commits `origin/staging` lacks | `next` was the carrier until 2026-10-10 and a session on the old rules pushed it. Merge `origin/next` into `main` as in the row below, push `main:staging`, and tell that session to re-read this section |
 | Local `main` and `origin/staging` both moved | `git -C <repo> merge --no-ff origin/staging -m "merge: staging from <machine>"`. Never rebase: it rewrites the `--no-ff` merges. Re-gate only if the merged code overlaps yours (Cadence in `oiko-implement`) |
 | After every merge into `main` | `git -C <repo> push origin main:staging`, then the mirror-sync call when `FORGEJO_TOKEN` is set. If it is rejected, integrate `origin/staging` as in the row above, then push again |
 | Release or deploy | Only when the owner asks: `git -C <repo> push origin staging:main`, from one machine at a time, after integrating `origin/staging`; for oikonotes then `scripts/deploy.sh --restart` |
