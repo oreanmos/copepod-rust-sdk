@@ -3,13 +3,14 @@
     "skill-orchestrator map for the Oikonotes / Copepod / copepod-rust-sdk flow.",
     "Applies to any pi session started in this repo, including dispatches into",
     "copepod worktrees (the session's repo decides the map).",
-    "Scheme: zai-glm-5-3 at alternating effort levels for the thinking roles",
-    "(planning high, review high, scout medium), gpt-6-luna for implementing",
-    "(medium, matching .codex/agents; bump for heavyweight slices) and grunt work (medium).",
-    "glm-5-3 is text-only: scouts capture screenshots via scripts and report",
-    "them as paths; if you ever want the scout or reviewer to LOOK at pictures,",
-    "add \"image\" to their requires and switch them to a vision model",
-    "(openai-codex/gpt-6-luna or mistral/mistral-medium-latest)."
+    "Scheme: zai-glm-5-3 orchestrates (session model) and plans (high);",
+    "gpt-6-luna implements (medium, matching .codex/agents; bump for",
+    "heavyweight slices) and does grunt work (medium); mistral-large-4",
+    "reviews (high) and owns cybersecurity analysis - the security role",
+    "plus the secur|cyber|threat name hint route security-flavoured dispatches",
+    "to it. mistral-large-4 sees images, so the reviewer can LOOK at",
+    "screenshots directly; glm-5-3 stays text-only: scouts capture them via",
+    "scripts and report them as paths."
   ],
   "roles": {
     "planning": {
@@ -32,11 +33,21 @@
       "requires": []
     },
     "review": {
-      "model": "mistral/zai-glm-5-3",
+      "model": "mistral/mistral-large-4",
       "thinking": "high",
       "requires": [
-        "reasoning"
+        "reasoning",
+        "image"
       ]
+    },
+    "security": {
+      "model": "mistral/mistral-large-4",
+      "thinking": "high",
+      "requires": [
+        "reasoning",
+        "image"
+      ],
+      "tools": "read,bash,ls,find,grep"
     },
     "scout": {
       "model": "mistral/zai-glm-5-3",
@@ -93,6 +104,7 @@
     }
   },
   "roleHints": {
-    "grunt": "-dev$"
+    "grunt": "-dev$",
+    "security": "secur|cyber|threat"
   }
 }

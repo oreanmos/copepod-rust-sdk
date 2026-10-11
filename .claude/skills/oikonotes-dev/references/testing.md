@@ -29,6 +29,10 @@ Release methodology, fixtures and product contract:
   Run `up --build` again after each code change: it rebuilds and restarts. In
   Codex's sandbox the server dies with the command that started it, so run
   `up --build && test <args>; down` as one command.
+- The e2e server runs with vault encryption off, so "Your own key" is blocked on the AI settings page.
+  `OIKONOTES_E2E_ENCRYPTION=true scripts/devx/e2e-env.sh up --build` turns it on (a throwaway
+  passphrase) for the specs that save a provider key; those specs are `test.fixme(!ENC, 'T-env-04 …')`
+  in the default run.
 - By hand: `make test-ui-focused E2E_SPEC=e2e/<spec>.spec.ts` against `make dev`
   (port 3000, needs a working `.env`).
 - `test-results/`, `e2e-report/`, `e2e-results/` and snapshot folders are
