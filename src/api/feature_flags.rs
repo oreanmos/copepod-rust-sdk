@@ -1,10 +1,10 @@
 use crate::client::CopepodClient;
 use crate::error::Result;
-use crate::models::{FeatureFlag, ListResult};
+use crate::models::{FeatureFlag, ItemsResponse};
 
 impl CopepodClient {
     /// List feature flags for an app.
-    pub async fn list_flags(&self, app_id: &str) -> Result<ListResult<FeatureFlag>> {
+    pub async fn list_flags(&self, app_id: &str) -> Result<ItemsResponse<FeatureFlag>> {
         self.get(&format!("api/platform/apps/{}/flags", app_id))
             .await
     }
