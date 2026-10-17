@@ -41,4 +41,7 @@ pub struct RecordEvent {
     pub action: String,
     pub collection: String,
     pub record: serde_json::Value,
+    /// The Space the event belongs to; absent for app and user collections.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub space_id: Option<String>,
 }

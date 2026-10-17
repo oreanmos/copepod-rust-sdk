@@ -14,6 +14,7 @@ pub struct RecordQueryBuilder<'a> {
     fields: Option<String>,
     page: Option<u32>,
     per_page: Option<u32>,
+    space_id: Option<String>,
 }
 
 impl<'a> RecordQueryBuilder<'a> {
@@ -27,6 +28,7 @@ impl<'a> RecordQueryBuilder<'a> {
             fields: None,
             page: None,
             per_page: None,
+            space_id: None,
         }
     }
 
@@ -66,6 +68,24 @@ impl<'a> RecordQueryBuilder<'a> {
         self
     }
 
+    /// Read a space-scoped collection: sends `X-Space-Id` with the list or
+    /// get call. Without it the server answers 400 `space_required`.
+    pub fn space(mut self, space_id: &str) -> Self {
+        self.space_id = Some(space_id.to_string());
+        self
+    }
+
+    /// Apply the Space header, if any.
+    fn with_space(&self, request: reqwest::RequestBuilder) -> Result<reqwest::RequestBuilder> {
+        match &self.space_id {
+            Some(id) => {
+                crate::api::spaces::validate_id("space_id", id)?;
+                Ok(request.header(crate::api::space_records::SPACE_ID_HEADER, id))
+            }
+            None => Ok(request),
+        }
+    }
+
     /// Build the query string from accumulated parameters.
     fn build_query(&self) -> Vec<(String, String)> {
         let mut params = Vec::new();
@@ -94,9 +114,11 @@ impl<'a> RecordQueryBuilder<'a> {
     pub async fn list(self) -> Result<ListResult<Value>> {
         let query = self.build_query();
         let resp = self
-            .client
-            .auth_request(reqwest::Method::GET, &self.path)
-            .await?
+            .with_space(
+                self.client
+                    .auth_request(reqwest::Method::GET, &self.path)
+                    .await?,
+            )?
             .query(&query)
             .send()
             .await?;
@@ -108,9 +130,11 @@ impl<'a> RecordQueryBuilder<'a> {
         let path = format!("{}/{}", self.path, id);
         let query = self.build_query();
         let resp = self
-            .client
-            .auth_request(reqwest::Method::GET, &path)
-            .await?
+            .with_space(
+                self.client
+                    .auth_request(reqwest::Method::GET, &path)
+                    .await?,
+            )?
             .query(&query)
             .send()
             .await?;
