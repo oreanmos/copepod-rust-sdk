@@ -48,9 +48,16 @@ impl CopepodClient {
         collection: &str,
         body: &CreditCheckRequest,
     ) -> Result<CreditCheckResponse> {
+        let body = CreditCheckRequest {
+            kind: body.kind.trim().to_string(),
+            ..body.clone()
+        };
         validate_kind(&body.kind)?;
-        self.post(&format!("{}/check", base(org_id, app_id, collection)), body)
-            .await
+        self.post(
+            &format!("{}/check", base(org_id, app_id, collection)),
+            &body,
+        )
+        .await
     }
 
     /// Report a spend. A retry with the same `request_id` returns the first
