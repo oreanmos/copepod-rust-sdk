@@ -31,8 +31,8 @@ impl CopepodClient {
         &self,
         org_id: &str,
         app_id: &str,
-        space_id: &str,
         collection: &str,
+        space_id: &str,
         body: &impl serde::Serialize,
     ) -> Result<Value> {
         validate_id("space_id", space_id)?;
@@ -63,11 +63,8 @@ impl CopepodClient {
         body: &impl serde::Serialize,
         options: &RecordUpdateOptions,
     ) -> Result<Value> {
-        let path = format!("{}/{record_id}", records_path(org_id, app_id, collection));
-        let mut request = self.auth_request(Method::PATCH, &path).await?;
         if let Some(space_id) = &options.space_id {
             validate_id("space_id", space_id)?;
-            request = request.header(SPACE_ID_HEADER, space_id);
         }
         if let Some(rev) = &options.if_match {
             if rev.trim().is_empty() || rev.chars().any(char::is_control) {
@@ -75,6 +72,13 @@ impl CopepodClient {
                     "if_match must be a non-empty revision".into(),
                 ));
             }
+        }
+        let path = format!("{}/{record_id}", records_path(org_id, app_id, collection));
+        let mut request = self.auth_request(Method::PATCH, &path).await?;
+        if let Some(space_id) = &options.space_id {
+            request = request.header(SPACE_ID_HEADER, space_id);
+        }
+        if let Some(rev) = &options.if_match {
             request = request.header(reqwest::header::IF_MATCH, rev);
         }
         let resp = request.json(body).send().await?;
@@ -86,8 +90,8 @@ impl CopepodClient {
         &self,
         org_id: &str,
         app_id: &str,
-        space_id: &str,
         collection: &str,
+        space_id: &str,
         record_id: &str,
     ) -> Result<()> {
         validate_id("space_id", space_id)?;
@@ -113,8 +117,8 @@ impl CopepodClient {
         &self,
         org_id: &str,
         app_id: &str,
-        space_id: &str,
         collection: &str,
+        space_id: &str,
         record_id: &str,
         data: Vec<u8>,
         filename: &str,
@@ -140,8 +144,8 @@ impl CopepodClient {
         &self,
         org_id: &str,
         app_id: &str,
-        space_id: &str,
         collection: &str,
+        space_id: &str,
         record_id: &str,
         filename: &str,
     ) -> Result<Bytes> {
@@ -165,8 +169,8 @@ impl CopepodClient {
         &self,
         org_id: &str,
         app_id: &str,
-        space_id: &str,
         collection: &str,
+        space_id: &str,
         record_id: &str,
         filename: &str,
     ) -> Result<()> {

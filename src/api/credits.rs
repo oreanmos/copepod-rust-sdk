@@ -64,6 +64,10 @@ impl CopepodClient {
         collection: &str,
         body: &CreditReportRequest,
     ) -> Result<CreditReportResponse> {
+        let body = CreditReportRequest {
+            kind: body.kind.trim().to_string(),
+            ..body.clone()
+        };
         validate_kind(&body.kind)?;
         if body.request_id.trim().is_empty() {
             return Err(CopepodError::InvalidArgument(
@@ -72,7 +76,7 @@ impl CopepodClient {
         }
         self.post(
             &format!("{}/report", base(org_id, app_id, collection)),
-            body,
+            &body,
         )
         .await
     }

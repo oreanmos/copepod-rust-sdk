@@ -168,6 +168,38 @@ async fn report_charges_and_409_exhausted() {
         .unwrap_err();
     assert_eq!(err.api_status(), Some(409));
     assert!(err.is_credits_exhausted());
+    let d = err.credits_exhausted_details().unwrap();
+    assert_eq!(
+        (d.remaining_total, d.resets_at.as_str()),
+        (1, "2026-11-01T00:00:00Z")
+    );
+}
+
+#[tokio::test]
+async fn kind_is_trimmed_before_sending() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path(format!("{ME}/credits/check")))
+        .and(body_json(json!({"kind": "ai"})))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(json!({"allowed": true, "remaining_total": 1})),
+        )
+        .expect(1)
+        .mount(&server)
+        .await;
+    client(&server)
+        .check_current_credits(
+            "org",
+            "app",
+            "users",
+            &CreditCheckRequest {
+                kind: " ai ".into(),
+                estimate_credits: None,
+            },
+        )
+        .await
+        .unwrap();
 }
 
 #[tokio::test]

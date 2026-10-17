@@ -2,8 +2,9 @@
 
 Contract: copepod `docs/api-integration-reference.md` sections 4.4, 5.4, 5.7,
 8.1, 10.9a and 20. Everything here is additive: existing calls are unchanged.
-All of it needs an **app-user bearer token** (API keys and dashboard tokens get
-401 on Space routes).
+Space management routes (`spaces`, members, invites) need an **app-user bearer
+token**; API keys and dashboard tokens get 401 there. The record, file and
+realtime calls below also send the bearer token and never `X-API-Key`.
 
 ## Spaces
 

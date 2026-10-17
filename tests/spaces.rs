@@ -119,6 +119,37 @@ async fn invalid_arguments_fail_before_any_request() {
         c.accept_space_invite("org", "app", " ").await,
         Err(CopepodError::InvalidArgument(_))
     ));
+    for options in [
+        RecordUpdateOptions {
+            space_id: Some("a/b".into()),
+            if_match: None,
+        },
+        RecordUpdateOptions {
+            space_id: None,
+            if_match: Some("".into()),
+        },
+        RecordUpdateOptions {
+            space_id: None,
+            if_match: Some("  ".into()),
+        },
+    ] {
+        assert!(matches!(
+            c.update_record_with("org", "app", "notes", "r1", &json!({}), &options)
+                .await,
+            Err(CopepodError::InvalidArgument(_))
+        ));
+    }
+    assert!(matches!(
+        c.records("org", "app", "notes").space("a b").list().await,
+        Err(CopepodError::InvalidArgument(_))
+    ));
+    assert!(matches!(
+        c.records("org", "app", "notes")
+            .space("")
+            .get_one("r1")
+            .await,
+        Err(CopepodError::InvalidArgument(_))
+    ));
     assert!(server.received_requests().await.unwrap().is_empty());
 }
 
@@ -315,7 +346,7 @@ async fn space_records_send_x_space_id_and_if_match() {
         .list()
         .await
         .unwrap();
-    c.create_record_in_space("org", "app", "sp1", "notes", &json!({"title": "t"}))
+    c.create_record_in_space("org", "app", "notes", "sp1", &json!({"title": "t"}))
         .await
         .unwrap();
     let opts = |rev: &str| RecordUpdateOptions {
@@ -351,7 +382,7 @@ async fn space_records_send_x_space_id_and_if_match() {
         err.revision_conflict_details().unwrap().current_rev,
         json!(4)
     );
-    c.delete_record_in_space("org", "app", "sp1", "notes", "r1")
+    c.delete_record_in_space("org", "app", "notes", "sp1", "r1")
         .await
         .unwrap();
 }
@@ -398,7 +429,7 @@ async fn space_required_and_role_errors_keep_their_codes() {
     let err = c.records("org", "app", "notes").list().await.unwrap_err();
     assert_eq!(err.api_code(), Some("space_required"));
     let err = c
-        .delete_record_in_space("org", "app", "sp1", "notes", "r1")
+        .delete_record_in_space("org", "app", "notes", "sp1", "r1")
         .await
         .unwrap_err();
     assert!(err.is_insufficient_role());
@@ -438,8 +469,8 @@ async fn space_files_send_x_space_id() {
     c.upload_file_in_space(
         "org",
         "app",
-        "sp1",
         "notes",
+        "sp1",
         "r1",
         b"hello".to_vec(),
         "a.txt",
@@ -448,12 +479,12 @@ async fn space_files_send_x_space_id() {
     .await
     .unwrap();
     let bytes = c
-        .download_file_in_space("org", "app", "sp1", "notes", "r1", "a.txt")
+        .download_file_in_space("org", "app", "notes", "sp1", "r1", "a.txt")
         .await
         .unwrap();
     assert_eq!(&bytes[..], b"hello");
     let err = c
-        .delete_file_in_space("org", "app", "sp1", "notes", "r1", "a.txt")
+        .delete_file_in_space("org", "app", "notes", "sp1", "r1", "a.txt")
         .await
         .unwrap_err();
     assert!(err.is_insufficient_role());
@@ -501,4 +532,95 @@ async fn space_realtime_passes_space_id_and_decodes_it() {
         .err()
         .unwrap();
     assert!(err.is_space_not_found());
+}
+
+#[tokio::test]
+async fn space_get_one_sends_x_space_id() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path(format!("{APP}/records/notes/r1")))
+        .and(header("x-space-id", "sp1"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({"id": "r1"})))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let rec = client(&server)
+        .records("org", "app", "notes")
+        .space("sp1")
+        .get_one("r1")
+        .await
+        .unwrap();
+    assert_eq!(rec["id"], "r1");
+}
+
+#[tokio::test]
+async fn plain_subscribe_omits_space_id() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path(format!("{APP}/realtime")))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .insert_header("content-type", "text/event-stream")
+                .set_body_string("event: ready\ndata: {}\n\n"),
+        )
+        .expect(1)
+        .mount(&server)
+        .await;
+    let _stream = client(&server).subscribe("org", "app").await.unwrap();
+    let req = &server.received_requests().await.unwrap()[0];
+    assert!(req.url.query_pairs().all(|(k, _)| k != "space_id"));
+    assert!(req.headers.get("x-api-key").is_none());
+}
+
+#[tokio::test]
+async fn space_calls_never_send_the_api_key() {
+    let server = MockServer::start().await;
+    let ok = ResponseTemplate::new(200).set_body_json(json!({"items": [], "page": 1,
+        "per_page": 20, "total_items": 0, "total_pages": 0, "id": "r1"}));
+    Mock::given(wiremock::matchers::any())
+        .respond_with(ok)
+        .mount(&server)
+        .await;
+    let c = client(&server);
+    c.list_spaces("org", "app").await.unwrap();
+    c.list_space_members("org", "app", "sp1").await.unwrap();
+    c.records("org", "app", "notes")
+        .space("sp1")
+        .list()
+        .await
+        .unwrap();
+    c.create_record_in_space("org", "app", "notes", "sp1", &json!({}))
+        .await
+        .unwrap();
+    c.update_record_with(
+        "org",
+        "app",
+        "notes",
+        "r1",
+        &json!({}),
+        &RecordUpdateOptions {
+            space_id: Some("sp1".into()),
+            if_match: Some("1".into()),
+        },
+    )
+    .await
+    .unwrap();
+    c.upload_file_in_space(
+        "org",
+        "app",
+        "notes",
+        "sp1",
+        "r1",
+        vec![1],
+        "a",
+        "text/plain",
+    )
+    .await
+    .unwrap();
+    let requests = server.received_requests().await.unwrap();
+    assert_eq!(requests.len(), 6);
+    for req in requests {
+        assert!(req.headers.get("x-api-key").is_none(), "{}", req.url);
+        assert!(req.headers.get("authorization").is_some(), "{}", req.url);
+    }
 }

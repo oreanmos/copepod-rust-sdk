@@ -76,13 +76,17 @@ impl<'a> RecordQueryBuilder<'a> {
     }
 
     /// Apply the Space header, if any.
-    fn with_space(&self, request: reqwest::RequestBuilder) -> Result<reqwest::RequestBuilder> {
+    fn check_space(&self) -> Result<()> {
         match &self.space_id {
-            Some(id) => {
-                crate::api::spaces::validate_id("space_id", id)?;
-                Ok(request.header(crate::api::space_records::SPACE_ID_HEADER, id))
-            }
-            None => Ok(request),
+            Some(id) => crate::api::spaces::validate_id("space_id", id),
+            None => Ok(()),
+        }
+    }
+
+    fn with_space(&self, request: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
+        match &self.space_id {
+            Some(id) => request.header(crate::api::space_records::SPACE_ID_HEADER, id),
+            None => request,
         }
     }
 
@@ -112,13 +116,14 @@ impl<'a> RecordQueryBuilder<'a> {
 
     /// Execute the query and return a paginated list of records.
     pub async fn list(self) -> Result<ListResult<Value>> {
+        self.check_space()?;
         let query = self.build_query();
         let resp = self
             .with_space(
                 self.client
                     .auth_request(reqwest::Method::GET, &self.path)
                     .await?,
-            )?
+            )
             .query(&query)
             .send()
             .await?;
@@ -128,13 +133,14 @@ impl<'a> RecordQueryBuilder<'a> {
     /// Get a single record by ID.
     pub async fn get_one(self, id: &str) -> Result<Value> {
         let path = format!("{}/{}", self.path, id);
+        self.check_space()?;
         let query = self.build_query();
         let resp = self
             .with_space(
                 self.client
                     .auth_request(reqwest::Method::GET, &path)
                     .await?,
-            )?
+            )
             .query(&query)
             .send()
             .await?;
