@@ -31,8 +31,22 @@ impl CopepodClient {
         app_id: &str,
         options: RealtimeSubscriptionOptions,
     ) -> Result<impl Stream<Item = Result<RecordEvent>> + Unpin> {
+        self.subscribe_scoped(org_id, app_id, None, options).await
+    }
+
+    /// Shared by the app-level and the Space subscription.
+    pub(crate) async fn subscribe_scoped(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        space_id: Option<&str>,
+        options: RealtimeSubscriptionOptions,
+    ) -> Result<impl Stream<Item = Result<RecordEvent>> + Unpin> {
         let path = format!("api/platform/orgs/{org_id}/apps/{app_id}/realtime");
         let mut request = self.auth_request(Method::GET, &path).await?;
+        if let Some(space_id) = space_id {
+            request = request.query(&[("space_id", space_id)]);
+        }
 
         let collections = options
             .collections
@@ -56,11 +70,14 @@ impl CopepodClient {
             request = request.header("Last-Event-ID", last_event_id.to_string());
         }
 
-        let resp = request
-            .send()
-            .await?
-            .error_for_status()
-            .map_err(CopepodError::Http)?;
+        let resp = request.send().await?;
+        // A Space stream keeps the server's error code (`space_not_found`);
+        // the app-level stream keeps its existing transport error.
+        let resp = if space_id.is_some() && !resp.status().is_success() {
+            return Err(crate::api::space_records::api_error(resp).await);
+        } else {
+            resp.error_for_status().map_err(CopepodError::Http)?
+        };
 
         let stream = resp
             .bytes_stream()

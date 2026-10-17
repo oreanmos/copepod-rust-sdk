@@ -348,6 +348,13 @@ pub struct AiUsageStatus {
     pub default_model: Option<String>,
     #[serde(default)]
     pub suggested_model: Option<String>,
+    /// Credits left across the monthly allowance and top-ups (equals
+    /// `remaining_cents`). Absent on servers without the credit ledger.
+    #[serde(default)]
+    pub credit_remaining_total: Option<i64>,
+    /// Unexpired top-up grants. Absent on servers without the credit ledger.
+    #[serde(default)]
+    pub credit_topups: Option<Vec<crate::models::CreditTopup>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -389,6 +396,10 @@ pub struct AiUsageReportRequest {
     pub estimated: bool,
     /// Stable identifier used to deduplicate retries of this usage report.
     pub request_id: String,
+    /// Ledger kind: `ai` (the default when absent) or `ai:<name>`.
+    /// `connector:*` kinds are refused here; use the credits report instead.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kind: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -431,6 +442,7 @@ mod tests {
             output_units: Some(0),
             estimated: true,
             request_id: "usage-request-1".to_string(),
+            kind: None,
         })
         .unwrap();
 
@@ -438,6 +450,38 @@ mod tests {
         assert_eq!(value["input_units"], 45);
         assert_eq!(value["output_units"], 0);
         assert_eq!(value["request_id"], "usage-request-1");
+        assert!(value.get("kind").is_none(), "an unset kind is not sent");
+    }
+
+    #[test]
+    fn ai_usage_status_decodes_with_and_without_credit_fields() {
+        let old = r#"{"period_start":"a","period_end":"b","currency":"EUR","budget_cents":250,
+            "used_cents":10,"remaining_cents":240,"remaining_ratio":0.96,
+            "allowed_models":[],"default_model":null,"suggested_model":null}"#;
+        let status: super::AiUsageStatus = serde_json::from_str(old).unwrap();
+        assert_eq!(status.credit_remaining_total, None);
+        assert!(status.credit_topups.is_none());
+
+        let new = old.replace(
+            "\"suggested_model\":null}",
+            r#""suggested_model":null,"credit_remaining_total":240,
+               "credit_topups":[{"grant_id":"g1","remaining":40,"expires_at":"2027-01-01T00:00:00Z"}]}"#,
+        );
+        let status: super::AiUsageStatus = serde_json::from_str(&new).unwrap();
+        assert_eq!(status.credit_remaining_total, Some(240));
+        let topups = status.credit_topups.unwrap();
+        assert_eq!(topups[0].grant_id, "g1");
+        assert_eq!(topups[0].remaining, 40);
+    }
+
+    #[test]
+    fn usage_report_serializes_an_ai_kind() {
+        let request: AiUsageReportRequest = serde_json::from_value(serde_json::json!({
+            "model": "m", "operation": "chat", "input_tokens": 1, "output_tokens": 1,
+            "request_id": "r", "kind": "ai:chat"
+        }))
+        .unwrap();
+        assert_eq!(serde_json::to_value(&request).unwrap()["kind"], "ai:chat");
     }
 
     #[test]
