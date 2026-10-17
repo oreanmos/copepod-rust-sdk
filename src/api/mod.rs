@@ -11,6 +11,7 @@ pub mod cache;
 pub mod cdn;
 pub mod cluster;
 pub mod collections;
+pub mod credit_packs;
 pub mod credits;
 pub mod dashboard;
 pub mod deployments;
