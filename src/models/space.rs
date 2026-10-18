@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum SpaceKind {
-    /// Only members see it. The only kind that can be created today.
+    /// Only members see it.
     #[default]
     Private,
     Commons,
@@ -66,7 +66,7 @@ pub struct SpaceMember {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SpaceCreate {
     pub name: String,
-    /// Only [`SpaceKind::Private`] is accepted for now.
+    /// `private` or `commons`.
     #[serde(default)]
     pub kind: SpaceKind,
 }
@@ -87,8 +87,8 @@ pub struct SpaceInvite {
     pub created: String,
 }
 
-/// Body of `POST spaces/{space_id}/invites`. `role` is `owner`, `editor` or
-/// `viewer` for now.
+/// Body of `POST spaces/{space_id}/invites`. Which roles a Space accepts
+/// depends on its kind; the server answers 400 for a role it refuses.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SpaceInviteCreate {
     pub email: String,

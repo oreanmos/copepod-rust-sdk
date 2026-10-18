@@ -279,6 +279,17 @@ impl CopepodClient {
         Self::handle_response(resp).await
     }
 
+    /// Perform an unauthenticated GET request with query parameters and
+    /// deserialize the response.
+    pub(crate) async fn get_public_with_query<T: DeserializeOwned>(
+        &self,
+        path: &str,
+        query: &[(&str, String)],
+    ) -> Result<T> {
+        let resp = self.request(Method::GET, path).query(query).send().await?;
+        Self::handle_response(resp).await
+    }
+
     /// Perform an authenticated POST request with a JSON body.
     pub(crate) async fn post<T: DeserializeOwned>(
         &self,

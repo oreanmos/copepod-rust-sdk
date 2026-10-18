@@ -7,17 +7,21 @@
 //! Errors on management: 404 `space_not_found` / `link_not_found`, 403
 //! `insufficient_role`, 400 for a bad scope or expiry, 409 `share_link_limit`,
 //! 429 `share_link_rate_limited`, 503 `share_links_upgrading`. Errors on a
-//! shared read: 404 `link_not_found`, 410 `link_revoked` / `link_expired`,
-//! 429 `link_rate_limited` (failed lookups from one address).
+//! shared read: 404 `link_not_found`, 410 `link_revoked` (also when the
+//! link's creator is no longer owner or editor) / `link_expired`, 429
+//! `link_rate_limited` (failed lookups from one address), a plain 404 without
+//! code for a collection the link cannot read, 400 for a filter, sort or
+//! `fields` naming hidden fields or for `expand`. Contract: copepod
+//! `docs/api-integration-reference.md`, "Share links" (restored on main
+//! 706c44f).
 
-use reqwest::Method;
 use serde_json::Value;
 
 use super::spaces::{base, validate_id};
 use crate::client::CopepodClient;
 use crate::error::{CopepodError, Result};
 use crate::models::{
-    ItemsResponse, ListResult, ShareLinkCreate, ShareLinkIssued, ShareLinkScope,
+    ItemsResponse, ListResult, ShareLinkCreate, ShareLinkIssued, ShareLinkScope, SharePermission,
     SharedRecordsQuery, SpaceShareLink,
 };
 
@@ -36,7 +40,13 @@ fn validate_expiry(expires_at: Option<&str>) -> Result<()> {
 }
 
 fn validate_token(token: &str) -> Result<()> {
-    validate_id("token", token)?;
+    // The server counts any lookup of an unknown token against the caller's
+    // address, so a malformed one is never sent.
+    if token.is_empty() || !token.chars().all(|c| c.is_ascii_alphanumeric()) {
+        return Err(CopepodError::InvalidArgument(
+            "token must be ASCII letters and digits".into(),
+        ));
+    }
     if token.len() > MAX_TOKEN_BYTES {
         return Err(CopepodError::InvalidArgument("token is too long".into()));
     }
@@ -57,6 +67,11 @@ impl CopepodClient {
     ) -> Result<ShareLinkIssued> {
         validate_id("space_id", space_id)?;
         validate_expiry(body.expires_at.as_deref())?;
+        if body.permission == SharePermission::Other {
+            return Err(CopepodError::InvalidArgument(
+                "permission must be read or comment".into(),
+            ));
+        }
         if let ShareLinkScope::Record {
             record_collection,
             record_id,
@@ -156,12 +171,7 @@ impl CopepodClient {
             "{}/shared/{token}/records/{collection}",
             base(org_id, app_id)
         );
-        let resp = self
-            .request(Method::GET, &path)
-            .query(&params)
-            .send()
-            .await?;
-        CopepodClient::handle_response_pub(resp).await
+        self.get_public_with_query(&path, &params).await
     }
 
     /// Get one record through a link, without any credentials

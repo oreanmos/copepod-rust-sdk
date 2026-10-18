@@ -17,6 +17,7 @@ pub struct SpaceVisitor {
 /// The answer of [`crate::CopepodClient::get_space_view`]: the member shape
 /// (it carries `role`) or the visitor shape of a commons.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum SpaceView {
     Member(SpaceWithRole),
     Visitor(SpaceVisitor),

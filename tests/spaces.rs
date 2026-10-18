@@ -95,12 +95,12 @@ async fn space_crud_uses_bearer_and_documented_shapes() {
 async fn invalid_arguments_fail_before_any_request() {
     let server = MockServer::start().await;
     let c = client(&server);
-    let commons = SpaceCreate {
+    let unknown = SpaceCreate {
         name: "x".into(),
-        kind: SpaceKind::Commons,
+        kind: SpaceKind::Other,
     };
     assert!(matches!(
-        c.create_space("org", "app", &commons).await,
+        c.create_space("org", "app", &unknown).await,
         Err(CopepodError::InvalidArgument(_))
     ));
     assert!(matches!(
@@ -109,7 +109,7 @@ async fn invalid_arguments_fail_before_any_request() {
     ));
     let moderator = SpaceInviteCreate {
         email: "a@x.com".into(),
-        role: SpaceRole::Moderator,
+        role: SpaceRole::Other,
     };
     assert!(matches!(
         c.create_space_invite("org", "app", "sp1", &moderator).await,
@@ -623,4 +623,78 @@ async fn space_calls_never_send_the_api_key() {
         assert!(req.headers.get("x-api-key").is_none(), "{}", req.url);
         assert!(req.headers.get("authorization").is_some(), "{}", req.url);
     }
+}
+
+#[tokio::test]
+async fn commons_can_be_created_and_contributors_invited() {
+    let server = MockServer::start().await;
+    let mut commons = space("c1");
+    commons["kind"] = json!("commons");
+    Mock::given(method("POST"))
+        .and(path(format!("{APP}/spaces")))
+        .and(body_json(json!({"name": "Wiki", "kind": "commons"})))
+        .respond_with(ResponseTemplate::new(201).set_body_json(commons))
+        .expect(1)
+        .mount(&server)
+        .await;
+    Mock::given(method("POST"))
+        .and(path(format!("{APP}/spaces/c1/invites")))
+        .and(body_json(
+            json!({"email": "a@x.com", "role": "contributor"}),
+        ))
+        .respond_with(ResponseTemplate::new(201).set_body_json(json!({
+            "id": "i1", "space_id": "c1", "email": "a@x.com", "role": "contributor",
+            "status": "pending", "expires_at": "2026-11-01T00:00:00Z"})))
+        .expect(1)
+        .mount(&server)
+        .await;
+    Mock::given(method("POST"))
+        .and(path(format!("{APP}/spaces")))
+        .and(body_json(json!({"name": "Again", "kind": "commons"})))
+        .respond_with(ResponseTemplate::new(429).set_body_json(
+            json!({"code": "space_rate_limited", "message": "too many spaces created today"}),
+        ))
+        .mount(&server)
+        .await;
+    let c = client(&server);
+    let made = c
+        .create_space(
+            "org",
+            "app",
+            &SpaceCreate {
+                name: "Wiki".into(),
+                kind: SpaceKind::Commons,
+            },
+        )
+        .await
+        .unwrap();
+    assert_eq!(made.kind, SpaceKind::Commons);
+    let invite = c
+        .create_space_invite(
+            "org",
+            "app",
+            "c1",
+            &SpaceInviteCreate {
+                email: "a@x.com".into(),
+                role: SpaceRole::Contributor,
+            },
+        )
+        .await
+        .unwrap();
+    assert_eq!(invite.role, SpaceRole::Contributor);
+    let e = c
+        .create_space(
+            "org",
+            "app",
+            &SpaceCreate {
+                name: "Again".into(),
+                kind: SpaceKind::Commons,
+            },
+        )
+        .await
+        .unwrap_err();
+    assert_eq!(
+        (e.api_status(), e.api_code()),
+        (Some(429), Some("space_rate_limited"))
+    );
 }

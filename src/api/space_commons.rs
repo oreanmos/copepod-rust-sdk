@@ -56,9 +56,9 @@ impl CopepodClient {
             validate_id("record_id", record_id)?;
         }
         validate_reason("reason", &body.reason, true)?;
-        if !body.proposed.is_object() {
+        if body.proposed.as_object().is_none_or(|o| o.is_empty()) {
             return Err(CopepodError::InvalidArgument(
-                "proposed must be a JSON object".into(),
+                "proposed must be a non-empty JSON object".into(),
             ));
         }
         if body.proposed.to_string().len() > MAX_PROPOSED_BYTES {

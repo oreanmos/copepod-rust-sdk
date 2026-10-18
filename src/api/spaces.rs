@@ -34,8 +34,9 @@ pub(crate) fn base(org_id: &str, app_id: &str) -> String {
 impl CopepodClient {
     /// Create a Space; the caller becomes its owner (`POST spaces`).
     ///
-    /// Only [`SpaceKind::Private`] can be created for now. Errors: 400 for an
-    /// invalid name or kind, 503 `spaces_upgrading` during a rolling upgrade.
+    /// The kind is `private` or `commons`. Errors: 400 for an invalid name,
+    /// 429 `space_rate_limited` (daily creation limits), 503
+    /// `spaces_upgrading` during a rolling upgrade.
     pub async fn create_space(
         &self,
         org_id: &str,
@@ -47,9 +48,9 @@ impl CopepodClient {
                 "space name must not be empty".into(),
             ));
         }
-        if body.kind != SpaceKind::Private {
+        if body.kind == SpaceKind::Other {
             return Err(CopepodError::InvalidArgument(
-                "only private spaces can be created".into(),
+                "space kind must be private or commons".into(),
             ));
         }
         self.post(&format!("{}/spaces", base(org_id, app_id)), body)
@@ -93,7 +94,7 @@ impl CopepodClient {
         let value: serde_json::Value = self
             .get(&format!("{}/spaces/{space_id}", base(org_id, app_id)))
             .await?;
-        if value.get("role").is_some() {
+        if value.get("role").is_some_and(|role| !role.is_null()) {
             Ok(SpaceView::Member(serde_json::from_value::<SpaceWithRole>(
                 value,
             )?))
@@ -191,7 +192,9 @@ impl CopepodClient {
 
     /// Invite an email address to a Space (owner only, verified email).
     ///
-    /// The role is `owner`, `editor` or `viewer`. The token is only in the
+    /// The role must be one the server knows; which roles a Space kind
+    /// accepts (e.g. `contributor` or `moderator` in a commons) is the
+    /// server's call and answers 400 otherwise. The token is only in the
     /// email. Errors: 403 `email_not_verified`, 429 `invite_rate_limited`,
     /// 503 when the platform cannot send email.
     pub async fn create_space_invite(
@@ -207,12 +210,9 @@ impl CopepodClient {
                 "invite email must not be empty".into(),
             ));
         }
-        if !matches!(
-            body.role,
-            SpaceRole::Owner | SpaceRole::Editor | SpaceRole::Viewer
-        ) {
+        if body.role == SpaceRole::Other {
             return Err(CopepodError::InvalidArgument(
-                "invite role must be owner, editor or viewer".into(),
+                "invite role must be a known role".into(),
             ));
         }
         self.post(

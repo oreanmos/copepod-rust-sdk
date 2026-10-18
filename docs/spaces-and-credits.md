@@ -11,9 +11,10 @@ realtime calls below also send the bearer token and never `X-API-Key`.
 `create_space`, `list_spaces`, `get_space`, `rename_space`, `delete_space`,
 `list_space_members`, `set_space_member_role`, `remove_space_member`,
 `create_space_invite`, `list_space_invites`, `revoke_space_invite`,
-`accept_space_invite` (`src/api/spaces.rs`). Only private Spaces can be created;
-`create_space` rejects `Commons` client-side. Invite roles are `owner`,
-`editor`, `viewer`. A Space the caller does not belong to is 404
+`accept_space_invite` (`src/api/spaces.rs`). `create_space` makes a private
+Space or a commons (429 `space_rate_limited` past the daily limits). Invite
+roles are checked by the server per Space kind (`contributor` and `moderator`
+in a commons). A Space the caller does not belong to is 404
 `space_not_found` (same as one that does not exist); a role that cannot do the
 operation is 403 `insufficient_role` (`err.is_space_not_found()`,
 `err.is_insufficient_role()`; other codes are constants in `error.rs`).

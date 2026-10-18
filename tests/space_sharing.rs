@@ -686,7 +686,48 @@ async fn management_calls_never_send_the_api_key_and_bad_arguments_fail_early() 
             .await,
         Err(CopepodError::InvalidArgument(_))
     ));
+    assert!(matches!(
+        c.create_space_suggestion("o", "a", "c1", &sugg("r", json!({})))
+            .await,
+        Err(CopepodError::InvalidArgument(_))
+    ));
+    for token in ["", "tok-1", "tok%20", "tok.x", "tök"] {
+        assert!(
+            matches!(
+                c.get_shared_record("o", "a", token, "notes", "r1").await,
+                Err(CopepodError::InvalidArgument(_))
+            ),
+            "{token}"
+        );
+    }
+    let other = ShareLinkCreate {
+        permission: SharePermission::Other,
+        ..link(None)
+    };
+    assert!(matches!(
+        c.create_share_link("o", "a", "sp", &other).await,
+        Err(CopepodError::InvalidArgument(_))
+    ));
     assert!(server.received_requests().await.unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn null_role_is_a_visitor() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path(format!("{APP}/spaces/c1")))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(
+                json!({"id": "c1", "name": "Wiki", "kind": "commons", "role": null}),
+            ),
+        )
+        .mount(&server)
+        .await;
+    let view = client(&server)
+        .get_space_view("org", "app", "c1")
+        .await
+        .unwrap();
+    assert!(matches!(view, SpaceView::Visitor(_)));
 }
 
 #[test]
