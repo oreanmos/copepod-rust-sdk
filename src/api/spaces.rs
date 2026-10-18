@@ -9,7 +9,7 @@ use crate::client::CopepodClient;
 use crate::error::{CopepodError, Result};
 use crate::models::{
     ItemsResponse, Space, SpaceCreate, SpaceInvite, SpaceInviteCreate, SpaceKind, SpaceMember,
-    SpaceRole, SpaceWithRole,
+    SpaceRole, SpaceView, SpaceVisitor, SpaceWithRole,
 };
 
 /// Reject an empty id or one that is not a single URL path segment / header
@@ -27,15 +27,16 @@ pub(crate) fn validate_id(what: &str, value: &str) -> Result<()> {
     Ok(())
 }
 
-fn base(org_id: &str, app_id: &str) -> String {
+pub(crate) fn base(org_id: &str, app_id: &str) -> String {
     format!("api/platform/orgs/{org_id}/apps/{app_id}")
 }
 
 impl CopepodClient {
     /// Create a Space; the caller becomes its owner (`POST spaces`).
     ///
-    /// Only [`SpaceKind::Private`] can be created for now. Errors: 400 for an
-    /// invalid name or kind, 503 `spaces_upgrading` during a rolling upgrade.
+    /// The kind is `private` or `commons`. Errors: 400 for an invalid name,
+    /// 429 `space_rate_limited` (daily creation limits), 503
+    /// `spaces_upgrading` during a rolling upgrade.
     pub async fn create_space(
         &self,
         org_id: &str,
@@ -47,9 +48,9 @@ impl CopepodClient {
                 "space name must not be empty".into(),
             ));
         }
-        if body.kind != SpaceKind::Private {
+        if body.kind == SpaceKind::Other {
             return Err(CopepodError::InvalidArgument(
-                "only private spaces can be created".into(),
+                "space kind must be private or commons".into(),
             ));
         }
         self.post(&format!("{}/spaces", base(org_id, app_id)), body)
@@ -75,6 +76,33 @@ impl CopepodClient {
         validate_id("space_id", space_id)?;
         self.get(&format!("{}/spaces/{space_id}", base(org_id, app_id)))
             .await
+    }
+
+    /// Fetch one Space as either a member or, for a commons the caller has
+    /// not joined, a visitor.
+    ///
+    /// A signed-in non-member of a commons gets only `{id, name, kind}`
+    /// ([`SpaceView::Visitor`]); [`get_space`](Self::get_space) fails to
+    /// decode that shape. A private Space stays 404 `space_not_found`.
+    pub async fn get_space_view(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        space_id: &str,
+    ) -> Result<SpaceView> {
+        validate_id("space_id", space_id)?;
+        let value: serde_json::Value = self
+            .get(&format!("{}/spaces/{space_id}", base(org_id, app_id)))
+            .await?;
+        if value.get("role").is_some_and(|role| !role.is_null()) {
+            Ok(SpaceView::Member(serde_json::from_value::<SpaceWithRole>(
+                value,
+            )?))
+        } else {
+            Ok(SpaceView::Visitor(serde_json::from_value::<SpaceVisitor>(
+                value,
+            )?))
+        }
     }
 
     /// Rename a Space (owner only).
@@ -164,7 +192,9 @@ impl CopepodClient {
 
     /// Invite an email address to a Space (owner only, verified email).
     ///
-    /// The role is `owner`, `editor` or `viewer`. The token is only in the
+    /// The role must be one the server knows; which roles a Space kind
+    /// accepts (e.g. `contributor` or `moderator` in a commons) is the
+    /// server's call and answers 400 otherwise. The token is only in the
     /// email. Errors: 403 `email_not_verified`, 429 `invite_rate_limited`,
     /// 503 when the platform cannot send email.
     pub async fn create_space_invite(
@@ -180,12 +210,9 @@ impl CopepodClient {
                 "invite email must not be empty".into(),
             ));
         }
-        if !matches!(
-            body.role,
-            SpaceRole::Owner | SpaceRole::Editor | SpaceRole::Viewer
-        ) {
+        if body.role == SpaceRole::Other {
             return Err(CopepodError::InvalidArgument(
-                "invite role must be owner, editor or viewer".into(),
+                "invite role must be a known role".into(),
             ));
         }
         self.post(
