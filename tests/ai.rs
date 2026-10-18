@@ -64,7 +64,7 @@ async fn missing_credit_headers_are_none() {
         .mount(&server)
         .await;
     let r = client(&server)
-        .ai_embeddings("org", "app", "users", &json!({"input": ["a"]}))
+        .ai_embeddings("org", "app", "users", &json!({"input": ["a"]}), None)
         .await
         .unwrap();
     assert_eq!(r.request_id, None);
@@ -79,7 +79,8 @@ async fn credits_exhausted_maps_to_api_error() {
         .and(path(format!("{U}/chat/completions")))
         .respond_with(ResponseTemplate::new(402).set_body_json(json!({
             "status": 402, "code": "ai_credits_exhausted",
-            "error": "Payment Required", "message": "No credits left"
+            "error": "ai_credits_exhausted", "message": "No credits left",
+            "remaining_total": 0, "resets_at": "2026-11-01T00:00:00Z"
         })))
         .expect(1)
         .mount(&server)
@@ -89,12 +90,21 @@ async fn credits_exhausted_maps_to_api_error() {
         .await
         .unwrap_err();
     match err {
-        CopepodError::Api { status, code, .. } => {
+        CopepodError::ApiWithDetails {
+            status,
+            ref code,
+            ref details,
+            ..
+        } => {
             assert_eq!(status, 402);
             assert_eq!(code.as_deref(), Some("ai_credits_exhausted"));
+            assert_eq!(details["remaining_total"], 0);
+            assert_eq!(details["resets_at"], "2026-11-01T00:00:00Z");
         }
-        other => panic!("unexpected {other:?}"),
+        ref other => panic!("unexpected {other:?}"),
     }
+    assert_eq!(err.api_code(), Some("ai_credits_exhausted"));
+    assert_eq!(err.api_status(), Some(402));
 }
 
 #[tokio::test]
@@ -104,7 +114,8 @@ async fn replay_conflict_and_model_not_allowed_keep_their_codes() {
         .and(path(format!("{U}/chat/completions")))
         .and(header("idempotency-key", "dup"))
         .respond_with(ResponseTemplate::new(409).set_body_json(
-            json!({"status": 409, "code": "ai_request_replayed", "message": "replayed"}),
+            json!({"status": 409, "code": "ai_request_replayed", "error": "ai_request_replayed",
+                "message": "replayed", "charged_credits": 7}),
         ))
         .mount(&server)
         .await;
@@ -126,8 +137,9 @@ async fn replay_conflict_and_model_not_allowed_keep_their_codes() {
         (e.api_status(), e.api_code()),
         (Some(409), Some("ai_request_replayed"))
     );
+    assert_eq!(e.api_details().unwrap()["charged_credits"], 7);
     let e = c
-        .ai_embeddings("org", "app", "users", &json!({"model": "x"}))
+        .ai_embeddings("org", "app", "users", &json!({"model": "x"}), None)
         .await
         .unwrap_err();
     assert_eq!(
@@ -141,16 +153,39 @@ async fn limiter_unavailable_503_is_an_api_error() {
     let server = MockServer::start().await;
     Mock::given(method("POST"))
         .and(path(format!("{U}/ocr")))
-        .respond_with(ResponseTemplate::new(503).set_body_json(
-            json!({"status": 503, "code": "ai_provider_unavailable", "message": "limiter down"}),
-        ))
+        .respond_with(
+            ResponseTemplate::new(503).set_body_json(
+                json!({"status": 503, "message": "shared rate limiter unavailable"}),
+            ),
+        )
         .mount(&server)
         .await;
     let e = client(&server)
-        .ai_ocr("org", "app", "users", &json!({"document": {}}))
+        .ai_ocr("org", "app", "users", &json!({"document": {}}), None)
         .await
         .unwrap_err();
     assert_eq!(e.api_status(), Some(503));
+    assert_eq!(e.api_code(), None);
+}
+
+#[tokio::test]
+async fn coded_limiter_unavailable_503_keeps_its_code() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path(format!("{U}/ocr")))
+        .respond_with(ResponseTemplate::new(503).set_body_json(json!({
+            "status": 503, "code": "ai_rate_limiter_unavailable",
+            "error": "ai_rate_limiter_unavailable",
+            "message": "shared rate limiter unavailable"
+        })))
+        .mount(&server)
+        .await;
+    let e = client(&server)
+        .ai_ocr("org", "app", "users", &json!({"document": {}}), None)
+        .await
+        .unwrap_err();
+    assert_eq!(e.api_status(), Some(503));
+    assert_eq!(e.api_code(), Some("ai_rate_limiter_unavailable"));
 }
 
 #[tokio::test]
@@ -174,6 +209,7 @@ async fn ocr_hits_its_path() {
             "app",
             "users",
             &json!({"model": "mistral-ocr-latest"}),
+            None,
         )
         .await
         .unwrap();
@@ -258,7 +294,14 @@ async fn upload_sends_multipart_with_purpose_ocr() {
         .mount(&server)
         .await;
     let v = client(&server)
-        .ai_upload_file("org", "app", "users", b"%PDF".to_vec(), "a.pdf")
+        .ai_upload_file(
+            "org",
+            "app",
+            "users",
+            b"%PDF".to_vec(),
+            "a.pdf",
+            Some("up-1"),
+        )
         .await
         .unwrap();
     assert_eq!(v["id"], "f1");
@@ -323,6 +366,7 @@ async fn transcribe_sends_model_fields_and_file() {
     Mock::given(method("POST"))
         .and(path(format!("{U}/audio/transcriptions")))
         .and(header("authorization", "Bearer user-bearer"))
+        .and(header("idempotency-key", "tr-1"))
         .respond_with(
             ResponseTemplate::new(200)
                 .insert_header("X-Copepod-Credits-Charged", "5")
@@ -342,6 +386,7 @@ async fn transcribe_sends_model_fields_and_file() {
                 filename: "a.wav".into(),
                 fields: vec![("language".into(), "en".into())],
             },
+            Some("tr-1"),
         )
         .await
         .unwrap();
@@ -453,7 +498,7 @@ async fn invalid_arguments_fail_before_any_request() {
         .await
         .unwrap_err()));
     assert!(bad(c
-        .ai_upload_file("org", "app", "users", vec![], " ")
+        .ai_upload_file("org", "app", "users", vec![], " ", None)
         .await
         .unwrap_err()));
     assert!(bad(c
@@ -468,10 +513,107 @@ async fn invalid_arguments_fail_before_any_request() {
         fields: vec![("file".into(), "x".into())],
     };
     assert!(bad(c
-        .ai_transcribe("org", "app", "users", req)
+        .ai_transcribe("org", "app", "users", req, None)
+        .await
+        .unwrap_err()));
+    assert!(bad(c
+        .ai_chat("org", "app", "users", &json!({"stream": true}), None)
+        .await
+        .unwrap_err()));
+    assert!(bad(c
+        .ai_chat("org", "app", "users", &json!({"model": ""}), None)
+        .await
+        .unwrap_err()));
+    assert!(bad(c
+        .ai_file_url("org", "app", "users", "a.b", 1)
+        .await
+        .unwrap_err()));
+    assert!(bad(c
+        .ai_file_url("org", "app", "users", &"a".repeat(129), 1)
+        .await
+        .unwrap_err()));
+    let streaming = AiTranscriptionRequest {
+        model: "m".into(),
+        bytes: vec![],
+        filename: "a.wav".into(),
+        fields: vec![("stream".into(), "true".into())],
+    };
+    assert!(bad(c
+        .ai_transcribe("org", "app", "users", streaming, None)
+        .await
+        .unwrap_err()));
+    assert!(bad(c
+        .ai_ocr("org", "app", "users", &json!({}), Some("no good"))
         .await
         .unwrap_err()));
     assert!(server.received_requests().await.unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn null_model_and_stream_false_are_accepted() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path(format!("{U}/chat/completions")))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({})))
+        .expect(1)
+        .mount(&server)
+        .await;
+    client(&server)
+        .ai_chat(
+            "org",
+            "app",
+            "users",
+            &json!({"model": null, "stream": false}),
+            None,
+        )
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn metered_methods_send_the_idempotency_key() {
+    let server = MockServer::start().await;
+    for route in ["embeddings", "ocr", "files"] {
+        Mock::given(method("POST"))
+            .and(path(format!("{U}/{route}")))
+            .and(header("idempotency-key", "k-9"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({})))
+            .expect(1)
+            .mount(&server)
+            .await;
+    }
+    let c = client(&server);
+    c.ai_embeddings("org", "app", "users", &json!({}), Some("k-9"))
+        .await
+        .unwrap();
+    c.ai_ocr("org", "app", "users", &json!({}), Some("k-9"))
+        .await
+        .unwrap();
+    c.ai_upload_file("org", "app", "users", vec![1], "a.pdf", Some("k-9"))
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn stream_closed_before_done_yields_one_sse_error() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path(format!("{U}/chat/completions")))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_raw("data: {\"n\":1}\n\n", "text/event-stream"),
+        )
+        .mount(&server)
+        .await;
+    let mut stream = client(&server)
+        .ai_chat_stream("org", "app", "users", &json!({}), None)
+        .await
+        .unwrap();
+    assert_eq!(stream.next().await.unwrap().unwrap()["n"], 1);
+    match stream.next().await.unwrap() {
+        Err(CopepodError::Sse(message)) => assert_eq!(message, "stream ended before [DONE]"),
+        other => panic!("unexpected {other:?}"),
+    }
+    assert!(stream.next().await.is_none());
 }
 
 #[tokio::test]

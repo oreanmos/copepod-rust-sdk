@@ -32,11 +32,24 @@ so read `get_current_credits` afterwards.
 
 ## Errors
 
-Every non-2xx maps to `CopepodError::Api { status, code, message }`; use `api_status()` and
-`api_code()`. Codes: 402 `ai_credits_exhausted`, 403 `hosted_ai_disabled` / `ai_model_not_allowed`,
-404 `ai_file_not_found`, 409 `ai_request_replayed`, 429 `ai_rate_limited` /
-`ai_provider_rate_limited`, 503 `ai_provider_unavailable` (also when the shared limiter is
-unavailable); Mistral's own 4xx pass through. The 402 credit headers are not exposed on the error.
+Every non-2xx maps to `CopepodError::Api { status, code, message }`; use `api_status()`,
+`api_code()` and `api_details()` (all work on both variants). Two codes carry their body fields as
+`CopepodError::ApiWithDetails` (the whole body is `details`):
+402 `ai_credits_exhausted` (`remaining_total`, `resets_at`) and 409 `ai_request_replayed`
+(`charged_credits`). Other codes: 403 `hosted_ai_disabled` / `ai_model_not_allowed`,
+404 `ai_file_not_found`, 429 `ai_rate_limited` / `ai_provider_rate_limited`,
+503 `ai_provider_unavailable`, `ai_rate_limiter_unavailable` (the shared rate limiter is down),
+`credits_upgrading`, `ai_upgrading`. Servers before copepod ceaaace send the limiter-outage 503
+without a code (`api_code()` is `None`), so match on the status 503, not the code, to cover both. Mistral's own 4xx pass through. The credit headers the server
+sends on a 402 are not exposed.
+
+## Validation
+
+Before any request: body is a JSON object; `model` is absent, null or a non-empty string;
+`ai_chat` rejects `stream: true` (use `ai_chat_stream`); `Idempotency-Key` is 1-160 chars of
+`[A-Za-z0-9_.:-]`; `file_id` is `[A-Za-z0-9_-]{1,128}`; `expiry_hours` is 1-24; transcription
+`fields` may not hold `model`, `file` or `stream=true`. `ai_embeddings`, `ai_ocr`,
+`ai_upload_file` and `ai_transcribe` take an optional `Idempotency-Key` too.
 
 ## Streaming
 
@@ -44,3 +57,9 @@ unavailable); Mistral's own 4xx pass through. The 402 credit headers are not exp
 A failure after the stream started arrives as `data: {"error":{"code","message"}}`; it yields one
 `Err(CopepodError::Api)` (503 for `ai_provider_unavailable`, 429 for rate limits, else 502) and the
 stream ends. A failure before the first byte is returned by the call itself.
+A stream that closes cleanly before `[DONE]` yields one `CopepodError::Sse("stream ended before
+[DONE]")`. A `CopepodError::Deserialize` mid-stream also means the answer was interrupted: servers before
+ceaaace could garble the error event when the provider failed mid-event, newer ones send a clean
+error event. Treat both as a cut-off answer, not as bad input.
+
+`ai_realtime_url` points at a route that answers 404 until Copepod C3 is deployed.

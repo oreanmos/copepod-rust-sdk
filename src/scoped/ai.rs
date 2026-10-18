@@ -76,21 +76,46 @@ impl<'a> ScopedAiClient<'a> {
     }
 
     /// See [`CopepodClient::ai_embeddings`].
-    pub async fn embeddings(&self, body: &Value) -> Result<AiResponse<Value>> {
+    pub async fn embeddings(
+        &self,
+        body: &Value,
+        idempotency_key: Option<&str>,
+    ) -> Result<AiResponse<Value>> {
         self.client
-            .ai_embeddings(&self.org_id, &self.app_id, &self.collection, body)
+            .ai_embeddings(
+                &self.org_id,
+                &self.app_id,
+                &self.collection,
+                body,
+                idempotency_key,
+            )
             .await
     }
 
     /// See [`CopepodClient::ai_ocr`].
-    pub async fn ocr(&self, body: &Value) -> Result<AiResponse<Value>> {
+    pub async fn ocr(
+        &self,
+        body: &Value,
+        idempotency_key: Option<&str>,
+    ) -> Result<AiResponse<Value>> {
         self.client
-            .ai_ocr(&self.org_id, &self.app_id, &self.collection, body)
+            .ai_ocr(
+                &self.org_id,
+                &self.app_id,
+                &self.collection,
+                body,
+                idempotency_key,
+            )
             .await
     }
 
     /// See [`CopepodClient::ai_upload_file`].
-    pub async fn upload_file(&self, bytes: Vec<u8>, filename: &str) -> Result<Value> {
+    pub async fn upload_file(
+        &self,
+        bytes: Vec<u8>,
+        filename: &str,
+        idempotency_key: Option<&str>,
+    ) -> Result<Value> {
         self.client
             .ai_upload_file(
                 &self.org_id,
@@ -98,6 +123,7 @@ impl<'a> ScopedAiClient<'a> {
                 &self.collection,
                 bytes,
                 filename,
+                idempotency_key,
             )
             .await
     }
@@ -123,9 +149,19 @@ impl<'a> ScopedAiClient<'a> {
     }
 
     /// See [`CopepodClient::ai_transcribe`].
-    pub async fn transcribe(&self, request: AiTranscriptionRequest) -> Result<AiResponse<Value>> {
+    pub async fn transcribe(
+        &self,
+        request: AiTranscriptionRequest,
+        idempotency_key: Option<&str>,
+    ) -> Result<AiResponse<Value>> {
         self.client
-            .ai_transcribe(&self.org_id, &self.app_id, &self.collection, request)
+            .ai_transcribe(
+                &self.org_id,
+                &self.app_id,
+                &self.collection,
+                request,
+                idempotency_key,
+            )
             .await
     }
 

@@ -458,9 +458,12 @@ impl CopepodClient {
             // The server puts `checkout_url` and `expires_at` at the top level.
             Some(crate::error::CHECKOUT_PENDING_CODE) => body.filter(|value| value.is_object()),
             // `current_rev`, `remaining_total` and `resets_at` also sit at the top level.
-            Some(crate::error::REVISION_CONFLICT_CODE | crate::error::CREDITS_EXHAUSTED_CODE) => {
-                body.filter(|value| value.is_object())
-            }
+            Some(
+                crate::error::REVISION_CONFLICT_CODE
+                | crate::error::CREDITS_EXHAUSTED_CODE
+                | crate::error::AI_CREDITS_EXHAUSTED_CODE
+                | crate::error::AI_REQUEST_REPLAYED_CODE,
+            ) => body.filter(|value| value.is_object()),
             _ => None,
         };
         Err(match details {

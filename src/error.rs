@@ -21,6 +21,14 @@ pub const REVISION_CONFLICT_CODE: &str = "revision_conflict";
 /// body carries `remaining_total` and `resets_at` at its top level.
 pub const CREDITS_EXHAUSTED_CODE: &str = "credits_exhausted";
 
+/// 402 on a hosted AI call: no credits left. The body carries `remaining_total`
+/// and `resets_at` at its top level.
+pub const AI_CREDITS_EXHAUSTED_CODE: &str = "ai_credits_exhausted";
+
+/// 409 on a hosted AI call: this `Idempotency-Key` was already charged (or is still
+/// running). The body carries `charged_credits` at its top level.
+pub const AI_REQUEST_REPLAYED_CODE: &str = "ai_request_replayed";
+
 /// 404: the Space does not exist or the caller is not a member.
 pub const SPACE_NOT_FOUND_CODE: &str = "space_not_found";
 

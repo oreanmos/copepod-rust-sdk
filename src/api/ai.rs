@@ -19,8 +19,19 @@ fn validate_body(body: &Value) -> Result<()> {
     let Some(object) = body.as_object() else {
         return invalid("AI request body must be a JSON object");
     };
-    if object.get("model").is_some_and(|m| !m.is_string()) {
-        return invalid("AI request `model` must be a string");
+    match object.get("model") {
+        None | Some(Value::Null) => {}
+        Some(Value::String(model)) if !model.is_empty() => {}
+        Some(Value::String(_)) => return invalid("AI request `model` must not be empty"),
+        Some(_) => return invalid("AI request `model` must be a string"),
+    }
+    Ok(())
+}
+
+/// Reject a body that asks for streaming on a method that returns one JSON answer.
+fn reject_stream_flag(body: &Value) -> Result<()> {
+    if body.get("stream").and_then(Value::as_bool) == Some(true) {
+        return invalid("`stream: true` needs ai_chat_stream");
     }
     Ok(())
 }
@@ -41,8 +52,12 @@ fn validate_idempotency_key(key: Option<&str>) -> Result<()> {
 }
 
 fn validate_file_id(file_id: &str) -> Result<()> {
-    if file_id.is_empty() || file_id.contains(['/', '?', '#', '\\']) {
-        return invalid("file_id must be a non-empty identifier");
+    let ok = (1..=128).contains(&file_id.len())
+        && file_id
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'_' | b'-'));
+    if !ok {
+        return invalid("file_id must be 1 to 128 characters of letters, digits, '_' or '-'");
     }
     Ok(())
 }
@@ -112,6 +127,7 @@ impl CopepodClient {
 
     /// WebSocket URL of the realtime transcription route (`ws`/`wss` scheme).
     /// The access token is never placed in the URL: send it as a bearer header on the upgrade.
+    /// The realtime route answers 404 until the Copepod C3 slice is deployed.
     ///
     /// # Errors
     /// `InvalidArgument` when `model` is empty.
@@ -160,7 +176,7 @@ impl CopepodClient {
     ///
     /// Errors: 402 `ai_credits_exhausted`, 403 `hosted_ai_disabled` / `ai_model_not_allowed`,
     /// 409 `ai_request_replayed` (the key was already charged, or is still running),
-    /// 429 `ai_rate_limited`, 503 `ai_provider_unavailable` (also when the shared limiter is unavailable).
+    /// 429 `ai_rate_limited`, 503 `ai_provider_unavailable` (the shared rate limiter being unavailable is a 503 without a code).
     pub async fn ai_chat(
         &self,
         org_id: &str,
@@ -169,6 +185,8 @@ impl CopepodClient {
         body: &Value,
         idempotency_key: Option<&str>,
     ) -> Result<AiResponse<Value>> {
+        validate_body(body)?;
+        reject_stream_flag(body)?;
         let resp = self
             .ai_post_json(
                 org_id,
@@ -183,7 +201,10 @@ impl CopepodClient {
     }
 
     /// Streaming chat: forces `stream: true`, yields each SSE JSON chunk and stops at `[DONE]`.
-    /// An `{"error":…}` event yields one `CopepodError::Api` and ends the stream. Only the request
+    /// An `{"error":…}` event yields one `CopepodError::Api` and ends the stream. A stream that
+    /// closes before `[DONE]` yields one `CopepodError::Sse("stream ended before [DONE]")`; a
+    /// `Deserialize` error mid-stream also means the answer was interrupted (the server can garble
+    /// an error event when the provider fails mid-event), so treat both as an interrupted answer. Only the request
     /// id header is available; credits are debited after the last byte (read them with `get_current_credits`).
     pub async fn ai_chat_stream(
         &self,
@@ -218,7 +239,14 @@ impl CopepodClient {
                 return None;
             }
             loop {
-                match events.next().await? {
+                let Some(next) = events.next().await else {
+                    // Closed without `[DONE]`: the answer was cut off.
+                    return Some((
+                        Err(CopepodError::Sse("stream ended before [DONE]".into())),
+                        (events, true),
+                    ));
+                };
+                match next {
                     Err(error) => {
                         return Some((Err(CopepodError::Sse(error.to_string())), (events, true)))
                     }
@@ -251,9 +279,17 @@ impl CopepodClient {
         app_id: &str,
         collection: &str,
         body: &Value,
+        idempotency_key: Option<&str>,
     ) -> Result<AiResponse<Value>> {
         let resp = self
-            .ai_post_json(org_id, app_id, collection, "/embeddings", body, None)
+            .ai_post_json(
+                org_id,
+                app_id,
+                collection,
+                "/embeddings",
+                body,
+                idempotency_key,
+            )
             .await?;
         ai_response(resp).await
     }
@@ -265,9 +301,10 @@ impl CopepodClient {
         app_id: &str,
         collection: &str,
         body: &Value,
+        idempotency_key: Option<&str>,
     ) -> Result<AiResponse<Value>> {
         let resp = self
-            .ai_post_json(org_id, app_id, collection, "/ocr", body, None)
+            .ai_post_json(org_id, app_id, collection, "/ocr", body, idempotency_key)
             .await?;
         ai_response(resp).await
     }
@@ -280,7 +317,9 @@ impl CopepodClient {
         collection: &str,
         bytes: Vec<u8>,
         filename: &str,
+        idempotency_key: Option<&str>,
     ) -> Result<Value> {
+        validate_idempotency_key(idempotency_key)?;
         if filename.trim().is_empty() {
             return invalid("filename must not be empty");
         }
@@ -288,13 +327,14 @@ impl CopepodClient {
         let form = Form::new()
             .text("purpose", "ocr")
             .part("file", Part::bytes(bytes).file_name(filename.to_string()));
-        let resp = self
+        let mut request = self
             .auth_request(Method::POST, &path)
             .await?
-            .multipart(form)
-            .send()
-            .await?;
-        Self::handle_response_pub(resp).await
+            .multipart(form);
+        if let Some(key) = idempotency_key {
+            request = request.header("Idempotency-Key", key);
+        }
+        Self::handle_response_pub(request.send().await?).await
     }
 
     /// `GET …/me/ai/v1/files/{file_id}/url?expiry=1..24` (bearer); owner only.
@@ -355,7 +395,9 @@ impl CopepodClient {
         app_id: &str,
         collection: &str,
         request: AiTranscriptionRequest,
+        idempotency_key: Option<&str>,
     ) -> Result<AiResponse<Value>> {
+        validate_idempotency_key(idempotency_key)?;
         if request.model.trim().is_empty() {
             return invalid("model must not be empty");
         }
@@ -369,6 +411,13 @@ impl CopepodClient {
         {
             return invalid("fields must not contain `model` or `file`");
         }
+        if request
+            .fields
+            .iter()
+            .any(|(name, value)| name == "stream" && value.eq_ignore_ascii_case("true"))
+        {
+            return invalid("streaming transcription is not supported by ai_transcribe");
+        }
         let path = format!(
             "{}/audio/transcriptions",
             user_prefix(org_id, app_id, collection)
@@ -381,13 +430,14 @@ impl CopepodClient {
             "file",
             Part::bytes(request.bytes).file_name(request.filename),
         );
-        let resp = self
+        let mut http = self
             .auth_request(Method::POST, &path)
             .await?
-            .multipart(form)
-            .send()
-            .await?;
-        ai_response(resp).await
+            .multipart(form);
+        if let Some(key) = idempotency_key {
+            http = http.header("Idempotency-Key", key);
+        }
+        ai_response(http.send().await?).await
     }
 
     /// `POST …/me/ai/v1/moderations` (bearer). Moderation models only (`mistral-moderation*`);
