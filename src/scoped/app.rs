@@ -1,7 +1,8 @@
 use crate::client::CopepodClient;
 
 use super::{
-    ScopedAppAuthClient, ScopedEmailClient, ScopedMigrationClient, ScopedRecordCollectionClient,
+    ScopedAiClient, ScopedAppAuthClient, ScopedEmailClient, ScopedMigrationClient,
+    ScopedRecordCollectionClient,
 };
 
 /// Application-scoped client helpers.
@@ -43,6 +44,11 @@ impl<'a> ScopedAppClient<'a> {
     /// Return record helpers bound to a specific collection.
     pub fn records(&self, collection: impl Into<String>) -> ScopedRecordCollectionClient<'a> {
         ScopedRecordCollectionClient::new(self.client, &self.org_id, &self.app_id, collection)
+    }
+
+    /// Return hosted AI gateway helpers bound to an app auth collection.
+    pub fn ai(&self, collection: impl Into<String>) -> ScopedAiClient<'a> {
+        ScopedAiClient::new(self.client, &self.org_id, &self.app_id, collection)
     }
 
     /// Return migration helpers bound to this application.

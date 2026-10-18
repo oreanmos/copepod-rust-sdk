@@ -1,3 +1,4 @@
+mod ai;
 mod app;
 mod auth;
 mod email;
@@ -5,6 +6,7 @@ mod migrations;
 mod org;
 mod records;
 
+pub use ai::ScopedAiClient;
 pub use app::ScopedAppClient;
 pub use auth::ScopedAppAuthClient;
 pub use email::ScopedEmailClient;

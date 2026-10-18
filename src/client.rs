@@ -404,6 +404,15 @@ impl CopepodClient {
         Self::handle_response(resp).await
     }
 
+    /// Map a non-success response to its [`CopepodError`] (same mapping as every JSON call).
+    pub(crate) async fn error_from_response(resp: reqwest::Response) -> CopepodError {
+        let status = resp.status();
+        match Self::map_error::<()>(status, resp).await {
+            Err(error) => error,
+            Ok(()) => unreachable!("map_error always returns Err"),
+        }
+    }
+
     /// Handle a JSON response, mapping errors.
     async fn handle_response<T: DeserializeOwned>(resp: reqwest::Response) -> Result<T> {
         let status = resp.status();
