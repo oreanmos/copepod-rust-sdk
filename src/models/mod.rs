@@ -1,4 +1,5 @@
 pub mod addon;
+pub mod ai;
 pub mod app;
 pub mod audit;
 pub mod auth;
@@ -38,6 +39,7 @@ pub mod ticket;
 pub mod webhook;
 
 pub use addon::*;
+pub use ai::*;
 pub use app::*;
 pub use audit::*;
 pub use auth::*;
