@@ -59,6 +59,49 @@ pub const INVITE_NOT_FOUND_CODE: &str = "invite_not_found";
 /// 429: daily invite limits reached.
 pub const INVITE_RATE_LIMITED_CODE: &str = "invite_rate_limited";
 
+/// 429: too many Spaces created today.
+pub const SPACE_RATE_LIMITED_CODE: &str = "space_rate_limited";
+
+/// 429: too many suggestions to a commons, or too many waiting.
+pub const SUGGESTION_RATE_LIMITED_CODE: &str = "suggestion_rate_limited";
+
+/// 404: unknown suggestion.
+pub const SUGGESTION_NOT_FOUND_CODE: &str = "suggestion_not_found";
+
+/// 409: the suggestion was already accepted, rejected or withdrawn.
+pub const SUGGESTION_DECIDED_CODE: &str = "suggestion_decided";
+
+/// 400: the Space is not a commons (suggestions, takedown).
+pub const NOT_COMMONS_CODE: &str = "not_commons";
+
+/// 503: a rolling upgrade holds commons writes.
+pub const COMMONS_UPGRADING_CODE: &str = "commons_upgrading";
+
+/// 503: account deletion could not finish re-attributing commons records;
+/// repeating the deletion finishes them.
+pub const COMMONS_INCOMPLETE_CODE: &str = "commons_incomplete";
+
+/// 503: a rolling upgrade holds share link writes.
+pub const SHARE_LINKS_UPGRADING_CODE: &str = "share_links_upgrading";
+
+/// 404: unknown share link or token.
+pub const LINK_NOT_FOUND_CODE: &str = "link_not_found";
+
+/// 410: the share link was revoked or rotated away.
+pub const LINK_REVOKED_CODE: &str = "link_revoked";
+
+/// 410: the share link is past its expiry.
+pub const LINK_EXPIRED_CODE: &str = "link_expired";
+
+/// 429: too many failed link lookups from one address.
+pub const LINK_RATE_LIMITED_CODE: &str = "link_rate_limited";
+
+/// 429: too many share links created today.
+pub const SHARE_LINK_RATE_LIMITED_CODE: &str = "share_link_rate_limited";
+
+/// 409: the Space holds the most share links; revoke one first.
+pub const SHARE_LINK_LIMIT_CODE: &str = "share_link_limit";
+
 /// 503: a rolling upgrade holds Space writes.
 pub const SPACES_UPGRADING_CODE: &str = "spaces_upgrading";
 

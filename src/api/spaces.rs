@@ -9,7 +9,7 @@ use crate::client::CopepodClient;
 use crate::error::{CopepodError, Result};
 use crate::models::{
     ItemsResponse, Space, SpaceCreate, SpaceInvite, SpaceInviteCreate, SpaceKind, SpaceMember,
-    SpaceRole, SpaceWithRole,
+    SpaceRole, SpaceView, SpaceVisitor, SpaceWithRole,
 };
 
 /// Reject an empty id or one that is not a single URL path segment / header
@@ -27,7 +27,7 @@ pub(crate) fn validate_id(what: &str, value: &str) -> Result<()> {
     Ok(())
 }
 
-fn base(org_id: &str, app_id: &str) -> String {
+pub(crate) fn base(org_id: &str, app_id: &str) -> String {
     format!("api/platform/orgs/{org_id}/apps/{app_id}")
 }
 
@@ -75,6 +75,33 @@ impl CopepodClient {
         validate_id("space_id", space_id)?;
         self.get(&format!("{}/spaces/{space_id}", base(org_id, app_id)))
             .await
+    }
+
+    /// Fetch one Space as either a member or, for a commons the caller has
+    /// not joined, a visitor.
+    ///
+    /// A signed-in non-member of a commons gets only `{id, name, kind}`
+    /// ([`SpaceView::Visitor`]); [`get_space`](Self::get_space) fails to
+    /// decode that shape. A private Space stays 404 `space_not_found`.
+    pub async fn get_space_view(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        space_id: &str,
+    ) -> Result<SpaceView> {
+        validate_id("space_id", space_id)?;
+        let value: serde_json::Value = self
+            .get(&format!("{}/spaces/{space_id}", base(org_id, app_id)))
+            .await?;
+        if value.get("role").is_some() {
+            Ok(SpaceView::Member(serde_json::from_value::<SpaceWithRole>(
+                value,
+            )?))
+        } else {
+            Ok(SpaceView::Visitor(serde_json::from_value::<SpaceVisitor>(
+                value,
+            )?))
+        }
     }
 
     /// Rename a Space (owner only).

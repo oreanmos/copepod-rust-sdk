@@ -49,6 +49,48 @@ update and bumps the revision itself; on a stale revision it answers 409
 after every node supports it, an older leader ignores the header and the update
 would be unconditional.
 
+## Share links, commons and takedown
+
+Contract: copepod `docs/api-integration-reference.md` (Spaces S2/S3), server
+`1dbc341`. All additive. Management calls need the app-user bearer token.
+
+**Visitor shape.** A signed-in non-member of a commons gets `{id, name, kind}`
+from `GET spaces/{id}`. `get_space_view` returns `SpaceView::Member` or
+`SpaceView::Visitor`; `get_space` keeps returning `SpaceWithRole` and fails
+to decode the visitor shape. A private Space stays 404.
+
+**Share links** (`src/api/space_sharing.rs`): `create_share_link`,
+`list_share_links`, `revoke_share_link`, `rotate_share_link` (owner or
+editor). The token is in the create/rotate answer only (`ShareLinkIssued`);
+list never returns it. Scope is `ShareLinkScope::whole_space()` or
+`::record(collection, id)`; expiry is RFC 3339 (server default 30 days, at
+most 365). Rotation revokes the old link: its token answers 410
+`link_revoked`.
+
+`list_shared_records` / `get_shared_record` read through a token and send **no
+credentials** (no bearer, no API key): the token in the path is the only
+credential. Hidden fields and `created_by` are stripped, `expand` is not
+offered (the server refuses it), `per_page` is at most 100. Failed lookups are
+throttled per address (429 `link_rate_limited`), so do not probe tokens.
+
+**Suggestions and takedown** (`src/api/space_commons.rs`):
+`create_space_suggestion`, `list_space_suggestions` (cursor: pass
+`SuggestionPage::next` as `SuggestionListOptions::after`),
+`accept_space_suggestion` (returns suggestion and record; 409
+`revision_conflict` carries `current_rev`, 409 `suggestion_decided` is final),
+`reject_space_suggestion`, `takedown_space_record` (safe to repeat after a
+failure). Reason and note are checked client-side (1000 characters, no control
+characters), `proposed` must be an object of at most 16 KB.
+
+**Error codes** are constants in `error.rs`: `SPACE_RATE_LIMITED_CODE`,
+`SUGGESTION_RATE_LIMITED_CODE`, `SUGGESTION_DECIDED_CODE`,
+`SUGGESTION_NOT_FOUND_CODE`, `NOT_COMMONS_CODE`, `COMMONS_UPGRADING_CODE`,
+`COMMONS_INCOMPLETE_CODE` (account deletion; repeat it), `SHARE_LINKS_UPGRADING_CODE`,
+`LINK_NOT_FOUND_CODE`, `LINK_REVOKED_CODE`, `LINK_EXPIRED_CODE`,
+`LINK_RATE_LIMITED_CODE`, `SHARE_LINK_RATE_LIMITED_CODE`, `SHARE_LINK_LIMIT_CODE`,
+`INSUFFICIENT_ROLE_CODE`, `REVISION_CONFLICT_CODE`. During a rolling upgrade the
+`*_upgrading` 503s are retryable.
+
 ## Credits
 
 `get_current_credits`, `check_current_credits`, `report_current_credits`
