@@ -35,6 +35,29 @@ impl CopepodClient {
         .await
     }
 
+    /// Turn anonymous commons reads on or off for the whole app (the master
+    /// switch, `PATCH apps/{id} {"settings":{"anonymous_commons_enabled":..}}`,
+    /// org member or admin as for any app update).
+    ///
+    /// `Some(false)` closes every anonymous commons door (404
+    /// `space_not_found`) and stops file links already issued (401); `Some(true)`
+    /// restores what owners had open; `None` clears the setting back to the
+    /// default (on). Other settings keys are kept (the server merges). The
+    /// answer is the updated app: read it with [`App::anonymous_commons_enabled`].
+    pub async fn set_anonymous_commons_enabled(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        enabled: Option<bool>,
+    ) -> Result<App> {
+        self.update_app(
+            org_id,
+            app_id,
+            &serde_json::json!({ "settings": { "anonymous_commons_enabled": enabled } }),
+        )
+        .await
+    }
+
     /// Delete an app.
     pub async fn delete_app(&self, org_id: &str, app_id: &str) -> Result<()> {
         self.delete(&format!("api/platform/orgs/{}/apps/{}", org_id, app_id))

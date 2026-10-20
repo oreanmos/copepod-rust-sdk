@@ -48,6 +48,7 @@ pub mod roles;
 pub mod schedules;
 pub mod settings;
 pub mod signed_urls;
+pub mod space_anonymous;
 pub mod space_commons;
 pub mod space_records;
 pub mod space_sharing;
