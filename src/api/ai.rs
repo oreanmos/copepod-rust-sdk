@@ -9,7 +9,7 @@ use serde_json::Value;
 
 use crate::client::CopepodClient;
 use crate::error::{CopepodError, Result};
-use crate::models::{AiResponse, AiTranscriptionRequest};
+use crate::models::{AiModelList, AiModelsResponse, AiResponse, AiTranscriptionRequest};
 
 fn invalid<T>(message: &str) -> Result<T> {
     Err(CopepodError::InvalidArgument(message.into()))
@@ -123,6 +123,37 @@ impl CopepodClient {
         let prefix = user_prefix(org_id, app_id, collection);
         let prefix = prefix.trim_end_matches("/v1");
         format!("{}{prefix}", self.base_url.as_str())
+    }
+
+    /// `GET …/me/ai/models` (bearer): the hosted models the caller's plan offers.
+    ///
+    /// A 404 (a node older than the route) is not an error: it returns
+    /// [`AiModelsResponse::Unavailable`] so callers keep their last list. A plan
+    /// without hosted AI is `Available` with `hosted_ai_enabled: false`.
+    ///
+    /// # Errors
+    /// `InvalidArgument` for an empty id; 401 and other statuses as `CopepodError::Api`.
+    pub async fn get_ai_models(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        collection: &str,
+    ) -> Result<AiModelsResponse> {
+        if [org_id, app_id, collection]
+            .iter()
+            .any(|s| s.trim().is_empty())
+        {
+            return invalid("org_id, app_id and collection must not be empty");
+        }
+        let path =
+            format!("api/platform/orgs/{org_id}/apps/{app_id}/auth/{collection}/me/ai/models");
+        let resp = self.auth_request(Method::GET, &path).await?.send().await?;
+        if resp.status() == reqwest::StatusCode::NOT_FOUND {
+            return Ok(AiModelsResponse::Unavailable);
+        }
+        Self::handle_response_pub::<AiModelList>(resp)
+            .await
+            .map(AiModelsResponse::Available)
     }
 
     /// WebSocket URL of the realtime transcription route (`ws`/`wss` scheme).

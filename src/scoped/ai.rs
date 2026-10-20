@@ -3,7 +3,7 @@ use serde_json::Value;
 
 use crate::client::CopepodClient;
 use crate::error::Result;
-use crate::models::{AiResponse, AiTranscriptionRequest};
+use crate::models::{AiModelsResponse, AiResponse, AiTranscriptionRequest};
 
 /// Hosted AI gateway helpers bound to an application and an auth collection.
 #[derive(Debug, Clone)]
@@ -33,6 +33,13 @@ impl<'a> ScopedAiClient<'a> {
     pub fn gateway_base_url(&self) -> String {
         self.client
             .ai_gateway_base_url(&self.org_id, &self.app_id, &self.collection)
+    }
+
+    /// See [`CopepodClient::get_ai_models`].
+    pub async fn models(&self) -> Result<AiModelsResponse> {
+        self.client
+            .get_ai_models(&self.org_id, &self.app_id, &self.collection)
+            .await
     }
 
     /// See [`CopepodClient::ai_realtime_url`].
