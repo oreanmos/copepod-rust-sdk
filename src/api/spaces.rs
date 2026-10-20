@@ -16,6 +16,8 @@ use crate::models::{
 /// value, before any network call.
 pub(crate) fn validate_id(what: &str, value: &str) -> Result<()> {
     if value.is_empty()
+        || value == "."
+        || value == ".."
         || value.chars().any(|c| {
             c == '/' || c == '?' || c == '#' || c == '%' || c.is_whitespace() || c.is_control()
         })

@@ -74,6 +74,13 @@ pub const SUGGESTION_DECIDED_CODE: &str = "suggestion_decided";
 /// 400: the Space is not a commons (suggestions, takedown).
 pub const NOT_COMMONS_CODE: &str = "not_commons";
 
+/// 409: the app's master switch for anonymous commons reads is off, so an
+/// owner cannot switch `anonymous_read` on.
+pub const ANONYMOUS_COMMONS_DISABLED_CODE: &str = "anonymous_commons_disabled";
+
+/// 503: a rolling upgrade holds back switching anonymous commons reads on.
+pub const ANONYMOUS_COMMONS_UPGRADING_CODE: &str = "anonymous_commons_upgrading";
+
 /// 503: a rolling upgrade holds commons writes.
 pub const COMMONS_UPGRADING_CODE: &str = "commons_upgrading";
 

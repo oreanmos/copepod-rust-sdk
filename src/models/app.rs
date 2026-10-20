@@ -36,8 +36,23 @@ pub struct App {
     #[serde(default)]
     pub slug: Option<String>,
     pub org_id: String,
+    /// The app's JSON settings (`null` when the server sent none).
+    #[serde(default)]
+    pub settings: serde_json::Value,
     pub created: DateTime<Utc>,
     pub updated: DateTime<Utc>,
+}
+
+impl App {
+    /// The master switch for anonymous commons reads
+    /// (`settings.anonymous_commons_enabled`): on unless explicitly `false`,
+    /// as the server reads it.
+    pub fn anonymous_commons_enabled(&self) -> bool {
+        self.settings
+            .get("anonymous_commons_enabled")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(true)
+    }
 }
 
 /// Request body to create an app.

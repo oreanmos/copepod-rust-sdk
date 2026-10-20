@@ -107,3 +107,52 @@ servers without the ledger these routes are 404.
 older servers, `None`); `AiUsageReportRequest` gained `kind` (omitted when
 `None`). Both are new struct fields: code that builds `AiUsageReportRequest` or
 `RecordEvent` with a struct literal must add them (Oikonotes has no such site).
+
+## Anonymous commons reads and the master switch
+
+Contract: copepod `docs/api-integration-reference.md` 5.7 ("Anonymous commons
+reads", "Master switch"), server `d8524de`. All additive.
+
+**Reads** (`src/api/space_anonymous.rs`, no credentials, no bearer and no API
+key): `get_public_commons` (`{id, name, kind}` only; the server sends no
+description), `list_public_commons_records` (`CommonsRecordsQuery`: `q`,
+`filter`, `sort`, `fields`, `page`, `per_page`), `get_public_commons_record`,
+`sign_public_commons_file` (`{url, expires}`, a 60 second link, `no-store`).
+They answer only while the owner set `anonymous_read` and the app's master
+switch is on. A missing, private, non-commons or closed Space (or the switch
+off) is the same 404 `space_not_found`; each miss counts against the caller's
+address (429 `link_rate_limited`), so do not probe ids. A collection that is
+not open to every member, or has no such name, is a plain 404 without a code;
+a filter, sort or `fields` naming hidden fields is 400. Answers may be cached
+30 seconds, so a just-closed commons can still read for that long.
+
+**File links.** `PublicFileUrl::url` is a path relative to the Copepod base
+URL, not an absolute URL. `resolve_url` joins it; `download_public_commons_file`
+fetches it with no credentials (400 after `expires`, 401 once the master
+switch is off, served `no-store`).
+
+**Throttle.** Misses (404 `space_not_found`) are locked out per client IP: 5
+misses lock for 1 minute, 10 for 5 minutes, 20 for 1 hour (429
+`link_rate_limited`), and a read can answer 503 when the throttle is
+unavailable. A server-side caller whose requests all come from one address
+(an SSR server proxying many visitors) should treat 429/503 as "not found /
+try later" and not retry in a loop.
+
+**Validation before the call** (matches the server): `q` at most 100
+characters (it is a literal contains-match; `%`, `_` and `\` match
+themselves), a filter with at most 8 comparisons and no `~` / `!~` (quoted
+strings are skipped; use `q` to search).
+
+**Owner switch:** `set_space_anonymous_read(space_id, on)` (owner bearer,
+`PATCH spaces/{id}`): 400 `not_commons`, 403 `insufficient_role`, 404
+`space_not_found`, 409 `anonymous_commons_disabled` (switching on while the
+master switch is off, checked after the owner and kind checks), 503
+`anonymous_commons_upgrading` during a rolling upgrade.
+
+**Master switch:** `set_anonymous_commons_enabled(org, app, Some(bool) | None)`
+patches `settings.anonymous_commons_enabled` (None clears it, default on).
+`App` now carries a public `settings` field (code that builds `App` by struct
+literal or matches it exhaustively must be updated), and `App::anonymous_commons_enabled()` reads the
+switch the way the server does. Off closes every anonymous door and kills file
+links already issued (401); turning it on again restores what owners had open.
+A node on an older server image ignores the switch until upgraded.
