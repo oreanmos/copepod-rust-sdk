@@ -208,3 +208,50 @@ async fn empty_ids_are_rejected_before_the_network() {
         .unwrap_err();
     assert!(matches!(err, CopepodError::InvalidArgument(_)));
 }
+
+#[tokio::test]
+async fn plain_text_404_is_unavailable() {
+    let server = MockServer::start().await;
+    mount(
+        &server,
+        ResponseTemplate::new(404).set_body_string("not found"),
+    )
+    .await;
+    let r = client(&server)
+        .get_ai_models("org", "app", "users")
+        .await
+        .unwrap();
+    assert_eq!(r, AiModelsResponse::Unavailable);
+}
+
+#[tokio::test]
+async fn json_app_not_found_404_is_an_error() {
+    let server = MockServer::start().await;
+    mount(
+        &server,
+        ResponseTemplate::new(404)
+            .set_body_json(json!({"status": 404, "message": "app 'app' not found"})),
+    )
+    .await;
+    let err = client(&server)
+        .get_ai_models("org", "app", "users")
+        .await
+        .unwrap_err();
+    assert!(
+        matches!(err, CopepodError::Api { status: 404, .. }),
+        "{err:?}"
+    );
+}
+
+#[tokio::test]
+async fn path_unsafe_ids_are_rejected() {
+    let server = MockServer::start().await;
+    for (o, a, c) in [
+        ("a/b", "app", "users"),
+        ("org", "a?x", "users"),
+        ("org", "app", ".."),
+    ] {
+        let err = client(&server).get_ai_models(o, a, c).await.unwrap_err();
+        assert!(matches!(err, CopepodError::InvalidArgument(_)));
+    }
+}

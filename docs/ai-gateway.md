@@ -73,13 +73,13 @@ error event. Treat both as a cut-off answer, not as bad input.
   hosted AI is `Available` with `hosted_ai_enabled: false` and empty lists. `hosted_ai_enabled: true`
   can still have empty `models` and `default_model: None` (nothing priced yet): show free-text entry.
 - `Unavailable`: the server answered 404, i.e. a node running an image older than the route (rolling
-  upgrade). Keep the last list. Match on it; it is not a `CopepodError`. Every 404 maps here, so an
-  unknown app also reads as unavailable.
+  upgrade). Keep the last list. Match on it; it is not a `CopepodError`. Only a 404 whose body is not a JSON object with `message` or `code` maps here (axum's empty
+  404); a JSON 404 such as app-not-found is `Err(CopepodError::Api { status: 404, .. })`.
 - 401 and other statuses are `Err(CopepodError::Api { .. })`.
 
 All fields are `#[serde(default)]` and the types are `#[non_exhaustive]`, so older and newer servers
 decode. `roles` and `cost_tier` are open strings (`chat`, `analysis`, `vision`, `embedding`, `audio`,
 `realtime_audio`, `ocr`, `moderation`; `low`, `medium`, `high`): match known values, ignore the rest.
 A hosted chat picker should keep models whose `roles` contain `chat`; the list also holds OCR and
-audio models. `retired[].replaced_by` is a suggestion: a call naming a retired model runs on
-`default_model`, not on `replaced_by`. Prices are never returned.
+audio models. `retired[].replaced_by` is a suggestion: a call naming a retired model is refused
+with 403 `ai_model_not_allowed`; only a call without `model` runs on `default_model`. Prices are never returned.

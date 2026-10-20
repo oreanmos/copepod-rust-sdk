@@ -87,7 +87,8 @@ pub struct AiRetiredModel {
     #[serde(default)]
     pub display_name: String,
     /// The announced replacement when the plan offers it, else the plan default.
-    /// Calls do not run on it: a retired model falls back to `default_model`.
+    /// A call naming the retired model is refused with 403 `ai_model_not_allowed`;
+    /// only a call without `model` runs on `default_model`.
     #[serde(default)]
     pub replaced_by: Option<String>,
 }

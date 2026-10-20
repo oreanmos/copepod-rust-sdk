@@ -7,6 +7,7 @@ use reqwest::Method;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 
+use crate::api::spaces::validate_id;
 use crate::client::CopepodClient;
 use crate::error::{CopepodError, Result};
 use crate::models::{AiModelList, AiModelsResponse, AiResponse, AiTranscriptionRequest};
@@ -127,7 +128,7 @@ impl CopepodClient {
 
     /// `GET …/me/ai/models` (bearer): the hosted models the caller's plan offers.
     ///
-    /// A 404 (a node older than the route) is not an error: it returns
+    /// A 404 without a JSON `message`/`code` body (a node older than the route) is not an error: it returns
     /// [`AiModelsResponse::Unavailable`] so callers keep their last list. A plan
     /// without hosted AI is `Available` with `hosted_ai_enabled: false`.
     ///
@@ -139,17 +140,32 @@ impl CopepodClient {
         app_id: &str,
         collection: &str,
     ) -> Result<AiModelsResponse> {
-        if [org_id, app_id, collection]
-            .iter()
-            .any(|s| s.trim().is_empty())
-        {
-            return invalid("org_id, app_id and collection must not be empty");
-        }
+        validate_id("org_id", org_id)?;
+        validate_id("app_id", app_id)?;
+        validate_id("collection", collection)?;
         let path =
             format!("api/platform/orgs/{org_id}/apps/{app_id}/auth/{collection}/me/ai/models");
         let resp = self.auth_request(Method::GET, &path).await?.send().await?;
         if resp.status() == reqwest::StatusCode::NOT_FOUND {
-            return Ok(AiModelsResponse::Unavailable);
+            // An old node has no route: axum's empty (or non-JSON) 404. A Copepod
+            // JSON error body (unknown app, etc.) is a real error.
+            let bytes = resp.bytes().await.unwrap_or_default();
+            let is_api_error = serde_json::from_slice::<Value>(&bytes)
+                .ok()
+                .and_then(|v| {
+                    v.as_object()
+                        .map(|o| o.contains_key("message") || o.contains_key("code"))
+                })
+                .unwrap_or(false);
+            if !is_api_error {
+                return Ok(AiModelsResponse::Unavailable);
+            }
+            let (code, message) = crate::client::decode_error_body(&bytes);
+            return Err(CopepodError::Api {
+                status: 404,
+                code,
+                message,
+            });
         }
         Self::handle_response_pub::<AiModelList>(resp)
             .await
