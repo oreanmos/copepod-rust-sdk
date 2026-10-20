@@ -126,6 +126,18 @@ not open to every member, or has no such name, is a plain 404 without a code;
 a filter, sort or `fields` naming hidden fields is 400. Answers may be cached
 30 seconds, so a just-closed commons can still read for that long.
 
+**File links.** `PublicFileUrl::url` is a path relative to the Copepod base
+URL, not an absolute URL. `resolve_url` joins it; `download_public_commons_file`
+fetches it with no credentials (400 after `expires`, 401 once the master
+switch is off, served `no-store`).
+
+**Throttle.** Misses (404 `space_not_found`) are locked out per client IP: 5
+misses lock for 1 minute, 10 for 5 minutes, 20 for 1 hour (429
+`link_rate_limited`), and a read can answer 503 when the throttle is
+unavailable. A server-side caller whose requests all come from one address
+(an SSR server proxying many visitors) should treat 429/503 as "not found /
+try later" and not retry in a loop.
+
 **Validation before the call** (matches the server): `q` at most 100
 characters (it is a literal contains-match; `%`, `_` and `\` match
 themselves), a filter with at most 8 comparisons and no `~` / `!~` (quoted
@@ -139,7 +151,8 @@ master switch is off, checked after the owner and kind checks), 503
 
 **Master switch:** `set_anonymous_commons_enabled(org, app, Some(bool) | None)`
 patches `settings.anonymous_commons_enabled` (None clears it, default on).
-`App` now carries `settings`, and `App::anonymous_commons_enabled()` reads the
+`App` now carries a public `settings` field (code that builds `App` by struct
+literal or matches it exhaustively must be updated), and `App::anonymous_commons_enabled()` reads the
 switch the way the server does. Off closes every anonymous door and kills file
 links already issued (401); turning it on again restores what owners had open.
 A node on an older server image ignores the switch until upgraded.

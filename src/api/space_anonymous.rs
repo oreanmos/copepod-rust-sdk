@@ -129,7 +129,8 @@ impl CopepodClient {
         validate_id("space_id", space_id)?;
         validate_id("collection", collection)?;
         if let Some(q) = &query.q {
-            if q.chars().count() > MAX_SEARCH_CHARS {
+            // The server trims before it counts.
+            if q.trim().chars().count() > MAX_SEARCH_CHARS {
                 return Err(CopepodError::InvalidArgument(format!(
                     "q must be at most {MAX_SEARCH_CHARS} characters"
                 )));
@@ -189,8 +190,10 @@ impl CopepodClient {
     /// (`GET commons/{space_id}/records/{collection}/{id}/files/{filename}`).
     ///
     /// Only for a file that a visible file field of the record names; any
-    /// other case is a plain 404. The URL works for about 60 seconds and
-    /// answers 401 as soon as the app's master switch is turned off. The
+    /// other case is a plain 404. The returned `url` is a server-relative
+    /// path: use [`CopepodClient::download_public_commons_file`] or
+    /// [`CopepodClient::resolve_url`]. The link works for about 60 seconds
+    /// and answers 401 as soon as the app's master switch is turned off. The
     /// answer is served `no-store`: ask again rather than keeping it.
     pub async fn sign_public_commons_file(
         &self,
@@ -210,5 +213,38 @@ impl CopepodClient {
             commons_path(org_id, app_id, space_id)
         ))
         .await
+    }
+
+    /// Join a server-relative path such as [`PublicFileUrl::url`] onto the
+    /// client's base URL. Only paths starting with `/` are accepted.
+    pub fn resolve_url(&self, path: &str) -> Result<url::Url> {
+        if !path.starts_with('/') || path.starts_with("//") {
+            return Err(CopepodError::InvalidArgument(
+                "path must be server-relative (start with a single /)".into(),
+            ));
+        }
+        Ok(self.base_url.join(path.trim_start_matches('/'))?)
+    }
+
+    /// Download the file a [`PublicFileUrl`] names, without credentials (the
+    /// link's signature is the credential; no bearer and no API key is sent).
+    ///
+    /// Errors: 400 once the link expired, 401 when the signature is not
+    /// valid or the app's master switch is off. The body is served
+    /// `no-store`.
+    pub async fn download_public_commons_file(&self, file: &PublicFileUrl) -> Result<bytes::Bytes> {
+        let url = self.resolve_url(&file.url)?;
+        let resp = self.http.get(url).send().await?;
+        let status = resp.status();
+        if status.is_success() {
+            return Ok(resp.bytes().await?);
+        }
+        let body = resp.bytes().await.unwrap_or_default();
+        let (code, message) = crate::client::decode_error_body(&body);
+        Err(CopepodError::Api {
+            status: status.as_u16(),
+            code,
+            message,
+        })
     }
 }

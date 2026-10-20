@@ -70,7 +70,7 @@ async fn public_reads_send_no_credentials_and_the_query() {
     Mock::given(method("GET"))
         .and(path(format!("{base}/records/notes/r1/files/a.png")))
         .respond_with(NoCredentials(
-            json!({"url": "https://x/files/signed/k?token=t&anon=1", "expires": 1760000000}),
+            json!({"url": "/api/platform/apps/app/files/signed/k?token=t&expires=1760000000&anon=1", "expires": 1760000000}),
         ))
         .expect(1)
         .mount(&server)
@@ -107,6 +107,7 @@ async fn public_reads_send_no_credentials_and_the_query() {
         .await
         .unwrap();
     assert_eq!(file.expires, 1760000000);
+    assert!(file.url.starts_with("/api/platform/apps/app/files/signed/"));
     assert!(file.url.contains("anon=1"));
     for req in server.received_requests().await.unwrap() {
         assert!(!req.headers.contains_key("authorization"));
@@ -369,6 +370,28 @@ async fn bad_arguments_fail_before_the_network() {
         c.set_space_anonymous_read("org", "app", "", true).await,
         Err(CopepodError::InvalidArgument(_))
     ));
+    // The server trims q before it counts, so padding does not count.
+    for q in [format!(" {} ", "a".repeat(100)), " ".repeat(200)] {
+        let padded = CommonsRecordsQuery {
+            q: Some(q),
+            ..Default::default()
+        };
+        assert!(!matches!(
+            c.list_public_commons_records("org", "app", "c1", "n", &padded)
+                .await,
+            Err(CopepodError::InvalidArgument(_))
+        ));
+    }
+    for id in [".", ".."] {
+        assert!(matches!(
+            c.get_public_commons("org", "app", id).await,
+            Err(CopepodError::InvalidArgument(_))
+        ));
+        assert!(matches!(
+            c.delete_space("org", "app", id).await,
+            Err(CopepodError::InvalidArgument(_))
+        ));
+    }
     let long = CommonsRecordsQuery {
         q: Some("x".repeat(101)),
         ..Default::default()
@@ -429,4 +452,64 @@ fn error_code_constants_match_the_server() {
         ANONYMOUS_COMMONS_UPGRADING_CODE,
         "anonymous_commons_upgrading"
     );
+}
+
+#[tokio::test]
+async fn download_follows_the_relative_url_without_credentials() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/api/platform/apps/app/files/signed/k"))
+        .and(query_param("anon", "1"))
+        .respond_with(|req: &Request| {
+            if req.headers.contains_key("authorization") || req.headers.contains_key("x-api-key") {
+                coded(400, "leaked")
+            } else {
+                ResponseTemplate::new(200).set_body_bytes(b"bytes".to_vec())
+            }
+        })
+        .expect(1)
+        .mount(&server)
+        .await;
+    for (key, status, code) in [("old", 400, "expired"), ("off", 401, "unauthorized")] {
+        Mock::given(method("GET"))
+            .and(path(format!("/api/platform/apps/app/files/signed/{key}")))
+            .respond_with(coded(status, code))
+            .mount(&server)
+            .await;
+    }
+    let c = client(&server);
+    let file = |p: &str| {
+        serde_json::from_value::<copepod_sdk::PublicFileUrl>(json!({"url": p, "expires": 1}))
+            .unwrap()
+    };
+    let got = c
+        .download_public_commons_file(&file(
+            "/api/platform/apps/app/files/signed/k?token=t&expires=9&anon=1",
+        ))
+        .await
+        .unwrap();
+    assert_eq!(&got[..], b"bytes");
+    let e = err_of(
+        c.download_public_commons_file(&file("/api/platform/apps/app/files/signed/old?token=t"))
+            .await,
+    )
+    .await;
+    assert_eq!(e.api_status(), Some(400));
+    let e = err_of(
+        c.download_public_commons_file(&file("/api/platform/apps/app/files/signed/off?token=t"))
+            .await,
+    )
+    .await;
+    assert_eq!(e.api_status(), Some(401));
+    for bad in ["https://evil.example/x", "//evil.example/x", "rel/path"] {
+        assert!(matches!(
+            c.resolve_url(bad),
+            Err(CopepodError::InvalidArgument(_))
+        ));
+    }
+    assert!(c
+        .resolve_url("/api/x?y=1")
+        .unwrap()
+        .as_str()
+        .ends_with("/api/x?y=1"));
 }

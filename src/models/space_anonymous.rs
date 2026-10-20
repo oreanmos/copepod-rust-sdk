@@ -18,7 +18,11 @@ pub struct PublicCommons {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct PublicFileUrl {
-    /// Download URL, good for about 60 seconds.
+    /// Server-relative path (`/api/platform/apps/{app}/files/signed/{key}?token=..&expires=..&anon=1`),
+    /// relative to the Copepod base URL. Fetch it without credentials (see
+    /// `CopepodClient::download_public_commons_file`); it answers 400 after
+    /// `expires`, 401 once the app's master switch is off, and is served
+    /// `no-store`.
     pub url: String,
     /// Expiry as Unix seconds.
     pub expires: u64,
