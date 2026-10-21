@@ -1,5 +1,6 @@
 pub mod addon;
 pub mod ai;
+pub mod ai_laya;
 pub mod app;
 pub mod audit;
 pub mod auth;
@@ -42,6 +43,7 @@ pub mod webhook;
 
 pub use addon::*;
 pub use ai::*;
+pub use ai_laya::*;
 pub use app::*;
 pub use audit::*;
 pub use auth::*;
