@@ -436,7 +436,7 @@ impl CopepodClient {
     }
 
     /// Handle a response that should have no body.
-    async fn handle_empty_response(resp: reqwest::Response) -> Result<()> {
+    pub(crate) async fn handle_empty_response(resp: reqwest::Response) -> Result<()> {
         let status = resp.status();
         if status.is_success() {
             Ok(())

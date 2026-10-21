@@ -24,11 +24,11 @@ match answer {
   `shadow` answers but is never `confident`.
 - **Any failure is "no answer"**: a 503 `laya_unavailable` (timeout, busy, circuit open), a 404
   from a node older than the routes, a transport error. Apply the task's fail mode.
-- `decision_id` is present for every `shadow` call and for sampled `active` calls (about 1 in 20).
+- `decision_id` is present for every `shadow` call and for sampled `active` calls (about 1 in 20, chosen deterministically from the input: the same input is always or never sampled).
   Keep it to report an outcome. Ad-hoc answers never have one.
 - Decide is app overhead: it never charges the user's credits.
 - Task `input` fields are cut at the task's `max_chars` by the server, never refused.
-  `subject_ref` (at most 200 characters) is stored only as a hash.
+  `subject_ref` (the server allows at most 200 characters) is stored only as a hash; the SDK does not check it.
 
 ## Two routes, two auth kinds
 
@@ -90,9 +90,10 @@ as `CopepodError::Api { status, code, .. }`:
 
 ## Older servers
 
-A node older than these routes answers 404 with no JSON body. It arrives as `Api { status: 404,
-code: None }`, distinct from `laya_task_unknown` and `laya_decision_unknown`, which carry codes.
-Unlike `get_ai_models` (AI2), these methods do not return a separate `Unavailable` value: their
-return types are fixed by the AI4 contract, a body-less 404 is not unambiguous (a Copepod 404 for
-an unknown app can also lack a code), and callers already treat every failure of `decide` as "no
-answer". Treat a 404 from a donation call as "donations not available yet".
+A node older than these routes answers 404 with an empty body. It arrives as
+`Api { status: 404, code: None, message: "Unknown error" }`, and `CopepodError::is_route_missing()`
+recognises exactly that (a donation UI uses it to hide the toggle). A JSON 404 such as
+`laya_task_unknown` or `laya_decision_unknown` is not a missing route.
+
+Unlike `get_ai_models` (AI2), these methods return no separate `Unavailable` value: callers treat
+every failure of `decide` as "no answer" (apply the task's fail mode), so nothing more is needed.

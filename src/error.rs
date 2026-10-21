@@ -207,6 +207,16 @@ pub enum CopepodError {
 }
 
 impl CopepodError {
+    /// Whether the server has no such route: a 404 with an empty body (axum's answer on a node
+    /// older than the route), arriving as `Api { status: 404, code: None, message: "Unknown error" }`.
+    /// A Copepod JSON 404 (`laya_task_unknown`, unknown app, ...) is not a missing route.
+    pub fn is_route_missing(&self) -> bool {
+        matches!(
+            self,
+            Self::Api { status: 404, code: None, message } if message == "Unknown error"
+        )
+    }
+
     /// Whether the server rejected this request at the Raft leader interlock.
     pub fn is_raft_leader_unavailable(&self) -> bool {
         matches!(

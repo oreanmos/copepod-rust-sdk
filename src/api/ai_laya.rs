@@ -1,9 +1,9 @@
 //! Laya `decide`, decide outcome and donations (AI4).
 //!
-//! Older nodes answer 404 with no JSON body for these routes; that arrives as
-//! `CopepodError::Api { status: 404, code: None, .. }`, distinct from `laya_task_unknown` and
-//! `laya_decision_unknown`. The AI2 `Unavailable` result is not used here: the return types are
-//! fixed by the AI4 contract and callers already treat any failure as "no answer". See
+//! Callers treat every failure of these routes as "no answer", so no separate "unavailable" value
+//! is returned. A node older than the routes answers 404 with an empty body, which arrives as
+//! `CopepodError::Api { status: 404, code: None, message: "Unknown error" }`;
+//! [`CopepodError::is_route_missing`] recognises it (a donation UI can hide its toggle). See
 //! `docs/ai-laya.md`.
 
 use reqwest::Method;
@@ -20,8 +20,6 @@ use crate::models::{
 const MAX_STATE_CHARS: usize = 4_000;
 /// Most questions in an ad-hoc call (one service batch).
 const MAX_ADHOC_QUESTIONS: usize = 3;
-/// Longest `subject_ref`, in characters.
-const MAX_SUBJECT_REF_CHARS: usize = 200;
 /// Longest donation `language` tag, in bytes.
 const MAX_LANGUAGE_BYTES: usize = 16;
 
@@ -35,13 +33,6 @@ fn validate_decide(request: &DecideRequest) -> Result<()> {
         DecideRequest::Task(task) => {
             if task.task.is_empty() {
                 return invalid("task must not be empty");
-            }
-            if task
-                .subject_ref
-                .as_ref()
-                .is_some_and(|s| s.chars().count() > MAX_SUBJECT_REF_CHARS)
-            {
-                return invalid("subject_ref must be at most 200 characters");
             }
         }
         DecideRequest::AdHoc(adhoc) => {
@@ -110,15 +101,6 @@ fn key_base(org_id: &str, app_id: &str) -> Result<String> {
     Ok(format!("api/platform/orgs/{org_id}/apps/{app_id}/ai"))
 }
 
-/// A 2xx with no body is success; anything else is mapped like every JSON call.
-async fn expect_no_content(resp: reqwest::Response) -> Result<()> {
-    if resp.status().is_success() {
-        Ok(())
-    } else {
-        Err(CopepodClient::error_from_response(resp).await)
-    }
-}
-
 impl CopepodClient {
     /// `POST …/auth/{collection}/me/ai/decide` (bearer): ask Laya a registered task's questions.
     ///
@@ -128,7 +110,7 @@ impl CopepodClient {
     /// use [`Self::ai_decide_with_api_key`].
     ///
     /// # Errors
-    /// `InvalidArgument` for empty ids, an empty task or an over-long `subject_ref`; 400
+    /// `InvalidArgument` for empty ids, an empty task; 400
     /// `laya_invalid_request`, 404 `laya_task_unknown`, 503 `laya_unavailable` (treat as "no
     /// answer") and 403 `ai_paused_for_review` as `CopepodError::Api`.
     pub async fn ai_decide(
@@ -172,6 +154,7 @@ impl CopepodClient {
     ) -> Result<DecideResponse> {
         let base = key_base(org_id, app_id)?;
         validate_decide(request)?;
+        // Intentional: an empty `X-User-Id` is never a valid attribution, so refuse it here.
         if user_id.is_some_and(str::is_empty) {
             return invalid("user_id must not be empty");
         }
@@ -218,7 +201,7 @@ impl CopepodClient {
             .json(outcome)
             .send()
             .await?;
-        expect_no_content(resp).await
+        Self::handle_empty_response(resp).await
     }
 
     /// `POST /api/platform/orgs/{org}/apps/{app}/ai/decide/{decision_id}/outcome`
@@ -244,7 +227,7 @@ impl CopepodClient {
             .json(outcome)
             .send()
             .await?;
-        expect_no_content(resp).await
+        Self::handle_empty_response(resp).await
     }
 
     /// `GET …/me/ai/donations` (bearer): whether donating is on, how many donations, the oldest.

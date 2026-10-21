@@ -351,10 +351,6 @@ async fn adhoc_and_task_limits_reject_before_any_request() {
             DecideRequest::adhoc("s", vec![not_choice]),
         ),
         ("empty task", DecideRequest::task("", json!({}))),
-        (
-            "subject_ref 201 chars",
-            DecideRequest::task("t", json!({})).with_subject_ref("x".repeat(201)),
-        ),
     ];
     for (name, request) in cases {
         let error = c
@@ -366,8 +362,7 @@ async fn adhoc_and_task_limits_reject_before_any_request() {
             "{name}: {error:?}"
         );
     }
-    // A subject_ref of exactly 200 characters and an input that is not an object are checked by
-    // the server, not here.
+    // `subject_ref` length and the input shape are checked by the server, not here.
     expect_no_request(&server).await;
 }
 
