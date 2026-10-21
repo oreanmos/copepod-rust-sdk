@@ -29,6 +29,42 @@ pub const AI_CREDITS_EXHAUSTED_CODE: &str = "ai_credits_exhausted";
 /// running). The body carries `charged_credits` at its top level.
 pub const AI_REQUEST_REPLAYED_CODE: &str = "ai_request_replayed";
 
+/// 400 on Laya `decide`: the body is neither a task nor an ad-hoc request, or breaks a limit.
+pub const LAYA_INVALID_REQUEST_CODE: &str = "laya_invalid_request";
+
+/// 403 on Laya `decide`: an ad-hoc question set on the app-user route. Ad-hoc is API-key only.
+pub const LAYA_ADHOC_FORBIDDEN_CODE: &str = "laya_adhoc_forbidden";
+
+/// 404 on Laya `decide`: no such task. (A node without the route answers 404 with no code.)
+pub const LAYA_TASK_UNKNOWN_CODE: &str = "laya_task_unknown";
+
+/// 404 on a decide outcome: the decision belongs to another app, is missing, or is older than 180 days.
+pub const LAYA_DECISION_UNKNOWN_CODE: &str = "laya_decision_unknown";
+
+/// 400 on a decide outcome or a donation: a label names an unknown question or option, or there are none.
+pub const LAYA_INVALID_LABEL_CODE: &str = "laya_invalid_label";
+
+/// 503 on Laya `decide`: timeout, busy, not ready or circuit open. Treat it as "no answer".
+pub const LAYA_UNAVAILABLE_CODE: &str = "laya_unavailable";
+
+/// 503 on a decide outcome or a donation write: held while a rolling upgrade reaches every peer.
+pub const LAYA_UPGRADING_CODE: &str = "laya_upgrading";
+
+/// 403 on Laya `decide`: the user is restricted pending review (reserved; not enforced yet).
+pub const AI_PAUSED_FOR_REVIEW_CODE: &str = "ai_paused_for_review";
+
+/// 400 on a consent grant: the policy version is not one the server knows.
+pub const LAYA_POLICY_VERSION_UNKNOWN_CODE: &str = "laya_policy_version_unknown";
+
+/// 403 on a donation: the user has not turned donations on.
+pub const LAYA_DONATION_CONSENT_REQUIRED_CODE: &str = "laya_donation_consent_required";
+
+/// 400 on a donation: the task does not take donations.
+pub const LAYA_TASK_NOT_DONATABLE_CODE: &str = "laya_task_not_donatable";
+
+/// 429 on a donation: 2,000 donations in the last 30 days.
+pub const LAYA_DONATION_QUOTA_CODE: &str = "laya_donation_quota";
+
 /// 404: the Space does not exist or the caller is not a member.
 pub const SPACE_NOT_FOUND_CODE: &str = "space_not_found";
 

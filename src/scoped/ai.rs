@@ -3,7 +3,11 @@ use serde_json::Value;
 
 use crate::client::CopepodClient;
 use crate::error::Result;
-use crate::models::{AiModelsResponse, AiResponse, AiTranscriptionRequest};
+use crate::models::{
+    AiModelsResponse, AiResponse, AiTranscriptionRequest, DecideOutcome, DecideRequest,
+    DecideResponse, Donation, DonationConsent, DonationConsentResult, DonationCreated,
+    DonationStatus, DonationsDeleted,
+};
 
 /// Hosted AI gateway helpers bound to an application and an auth collection.
 #[derive(Debug, Clone)]
@@ -183,6 +187,79 @@ impl<'a> ScopedAiClient<'a> {
     pub async fn chat_moderations(&self, body: &Value) -> Result<Value> {
         self.client
             .ai_chat_moderations(&self.org_id, &self.app_id, &self.collection, body)
+            .await
+    }
+
+    /// See [`CopepodClient::ai_decide`].
+    pub async fn decide(&self, request: &DecideRequest) -> Result<DecideResponse> {
+        self.client
+            .ai_decide(&self.org_id, &self.app_id, &self.collection, request)
+            .await
+    }
+
+    /// See [`CopepodClient::ai_decide_with_api_key`].
+    pub async fn decide_with_api_key(
+        &self,
+        request: &DecideRequest,
+        user_id: Option<&str>,
+    ) -> Result<DecideResponse> {
+        self.client
+            .ai_decide_with_api_key(&self.org_id, &self.app_id, request, user_id)
+            .await
+    }
+
+    /// See [`CopepodClient::ai_decide_outcome`].
+    pub async fn decide_outcome(&self, decision_id: &str, outcome: &DecideOutcome) -> Result<()> {
+        self.client
+            .ai_decide_outcome(
+                &self.org_id,
+                &self.app_id,
+                &self.collection,
+                decision_id,
+                outcome,
+            )
+            .await
+    }
+
+    /// See [`CopepodClient::ai_decide_outcome_with_api_key`].
+    pub async fn decide_outcome_with_api_key(
+        &self,
+        decision_id: &str,
+        outcome: &DecideOutcome,
+    ) -> Result<()> {
+        self.client
+            .ai_decide_outcome_with_api_key(&self.org_id, &self.app_id, decision_id, outcome)
+            .await
+    }
+
+    /// See [`CopepodClient::ai_donations_status`].
+    pub async fn donations_status(&self) -> Result<DonationStatus> {
+        self.client
+            .ai_donations_status(&self.org_id, &self.app_id, &self.collection)
+            .await
+    }
+
+    /// See [`CopepodClient::ai_set_donation_consent`].
+    pub async fn set_donation_consent(
+        &self,
+        consent: &DonationConsent,
+    ) -> Result<DonationConsentResult> {
+        self.client
+            .ai_set_donation_consent(&self.org_id, &self.app_id, &self.collection, consent)
+            .await
+    }
+
+    /// See [`CopepodClient::ai_donate`].
+    pub async fn donate(&self, donation: &Donation) -> Result<DonationCreated> {
+        self.client
+            .ai_donate(&self.org_id, &self.app_id, &self.collection, donation)
+            .await
+    }
+
+    /// See [`CopepodClient::ai_delete_donations`].
+    pub async fn delete_donations(&self) -> Result<DonationsDeleted> {
+        self.client
+            .ai_delete_donations(&self.org_id, &self.app_id, &self.collection)
             .await
     }
 }
