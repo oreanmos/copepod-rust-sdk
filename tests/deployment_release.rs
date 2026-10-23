@@ -265,7 +265,7 @@ async fn record_validation_error_with_details_stays_api() {
 }
 
 #[tokio::test]
-async fn quota_error_with_details_stays_api() {
+async fn quota_error_with_details_maps_to_typed_variant() {
     let err = error_for(
         422,
         json!({"status": 422, "error": "storage_quota_exceeded", "code": "storage_quota_exceeded",
@@ -274,9 +274,6 @@ async fn quota_error_with_details_stays_api() {
                "details": {"used_bytes": 5}}),
     )
     .await;
-    assert!(matches!(
-        err,
-        CopepodError::Api { status: 422, code: Some(ref c), .. } if c == "storage_quota_exceeded"
-    ));
+    assert_eq!(err.storage_quota_exceeded_bytes(), Some((5, 5, 1)));
     assert!(err.api_details().is_none());
 }

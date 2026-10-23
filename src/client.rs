@@ -455,6 +455,9 @@ impl CopepodClient {
     /// [`MAX_ERROR_BODY_CHARS`] characters to bound log size.
     async fn map_error<T>(status: StatusCode, resp: reqwest::Response) -> Result<T> {
         let bytes = resp.bytes().await.unwrap_or_default();
+        if let Some(error) = crate::error_decode::typed_error(status.as_u16(), &bytes) {
+            return Err(error);
+        }
         let (code, message) = decode_error_body(&bytes);
         // Only the rollout capacity, checkout_pending, revision_conflict and
         // credits_exhausted errors get the dedicated variant; every other error keeps the `Api` shape consumers

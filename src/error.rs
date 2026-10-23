@@ -151,6 +151,14 @@ pub const SPACES_UPGRADING_CODE: &str = "spaces_upgrading";
 /// 503: a rolling upgrade holds credit reports.
 pub const CREDITS_UPGRADING_CODE: &str = "credits_upgrading";
 
+/// 409 at signup or billing intent: the app is at capacity. The body carries `limit`
+/// (the full capacity setting, e.g. `max_active_users`). Do not retry.
+pub const CAPACITY_REACHED_CODE: &str = "capacity_reached";
+
+/// 422 on an upload: the user's storage quota would be exceeded. The body carries
+/// `used_bytes`, `limit_bytes` and `file_bytes`. Do not retry.
+pub const STORAGE_QUOTA_EXCEEDED_CODE: &str = "storage_quota_exceeded";
+
 /// Errors returned by the Copepod SDK.
 #[derive(Debug, Error)]
 pub enum CopepodError {
@@ -179,6 +187,27 @@ pub enum CopepodError {
         code: Option<String>,
         message: String,
         details: serde_json::Value,
+    },
+
+    /// 409 `capacity_reached`: the app is at capacity. Not retryable; offer a
+    /// waitlist. Falls back to [`CopepodError::Api`] when `limit` is missing.
+    #[error("API error {status}: {message}")]
+    CapacityReached {
+        status: u16,
+        message: String,
+        /// The capacity setting that is full, e.g. `max_active_users`.
+        limit: String,
+    },
+
+    /// 422 `storage_quota_exceeded`: the upload would pass the user's quota. Not
+    /// retryable. Falls back to [`CopepodError::Api`] when any number is missing.
+    #[error("API error {status}: {message}")]
+    StorageQuotaExceeded {
+        status: u16,
+        message: String,
+        used_bytes: u64,
+        limit_bytes: u64,
+        file_bytes: u64,
     },
 
     /// Authentication error (missing token, expired, etc.).
@@ -236,7 +265,10 @@ impl CopepodError {
     /// HTTP status of an API error.
     pub fn api_status(&self) -> Option<u16> {
         match self {
-            Self::Api { status, .. } | Self::ApiWithDetails { status, .. } => Some(*status),
+            Self::Api { status, .. }
+            | Self::ApiWithDetails { status, .. }
+            | Self::CapacityReached { status, .. }
+            | Self::StorageQuotaExceeded { status, .. } => Some(*status),
             _ => None,
         }
     }
@@ -245,6 +277,8 @@ impl CopepodError {
     pub fn api_code(&self) -> Option<&str> {
         match self {
             Self::Api { code, .. } | Self::ApiWithDetails { code, .. } => code.as_deref(),
+            Self::CapacityReached { .. } => Some(CAPACITY_REACHED_CODE),
+            Self::StorageQuotaExceeded { .. } => Some(STORAGE_QUOTA_EXCEEDED_CODE),
             _ => None,
         }
     }
@@ -314,6 +348,37 @@ impl CopepodError {
     /// Whether the caller's Space role cannot do the operation.
     pub fn is_insufficient_role(&self) -> bool {
         self.api_code() == Some(INSUFFICIENT_ROLE_CODE)
+    }
+
+    /// The full capacity setting of a 409 `capacity_reached`.
+    pub fn capacity_reached_limit(&self) -> Option<&str> {
+        match self {
+            Self::CapacityReached { limit, .. } => Some(limit),
+            _ => None,
+        }
+    }
+
+    /// Whether the app is at capacity (`capacity_reached`).
+    pub fn is_capacity_reached(&self) -> bool {
+        matches!(self, Self::CapacityReached { .. })
+    }
+
+    /// `(used_bytes, limit_bytes, file_bytes)` of a 422 `storage_quota_exceeded`.
+    pub fn storage_quota_exceeded_bytes(&self) -> Option<(u64, u64, u64)> {
+        match self {
+            Self::StorageQuotaExceeded {
+                used_bytes,
+                limit_bytes,
+                file_bytes,
+                ..
+            } => Some((*used_bytes, *limit_bytes, *file_bytes)),
+            _ => None,
+        }
+    }
+
+    /// Whether an upload was refused for storage quota (`storage_quota_exceeded`).
+    pub fn is_storage_quota_exceeded(&self) -> bool {
+        matches!(self, Self::StorageQuotaExceeded { .. })
     }
 
     /// Server-advertised retry delay for a Raft leader election.
