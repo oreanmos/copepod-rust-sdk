@@ -44,8 +44,33 @@ async fn credit_status_decodes_the_documented_shape() {
     assert_eq!(s.topups[0].grant_id, "g1");
     assert_eq!(s.topups[0].expires_at, None);
     assert_eq!(s.used_by_kind["connector:ors"], 10);
+    assert!(
+        s.connector_prices.is_empty(),
+        "older servers omit the field"
+    );
     let req = &server.received_requests().await.unwrap()[0];
     assert!(req.headers.get("x-api-key").is_none());
+}
+
+#[tokio::test]
+async fn credit_status_decodes_connector_prices() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path(format!("{ME}/credits")))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "period_start": "2026-10-01T00:00:00Z", "period_end": "2026-11-01T00:00:00Z",
+            "allowance": 250, "allowance_used": 0, "remaining_total": 250,
+            "remaining_ratio": 1.0,
+            "connector_prices": {"connector:ors": 5, "connector:weather": 1}
+        })))
+        .mount(&server)
+        .await;
+    let s = client(&server)
+        .get_current_credits("org", "app", "users")
+        .await
+        .unwrap();
+    assert_eq!(s.connector_prices["connector:ors"], 5);
+    assert_eq!(s.connector_prices["connector:weather"], 1);
 }
 
 #[tokio::test]

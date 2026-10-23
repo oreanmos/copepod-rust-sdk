@@ -95,7 +95,8 @@ characters), `proposed` must be an object of at most 16 KB.
 ## Credits
 
 `get_current_credits`, `check_current_credits`, `report_current_credits`
-(`me/credits*`). `check` fails with 402 `credits_exhausted`, `report` with 409
+(`me/credits*`). `CreditStatus.connector_prices` maps `connector:<name>` to the
+credits one call costs (empty from older servers). `check` fails with 402 `credits_exhausted`, `report` with 409
 `credits_exhausted`; both carry `remaining_total` and `resets_at`:
 `err.credits_exhausted_details()`. `report` is idempotent per `request_id`
 (an identical retry returns the first answer; `remaining_total` is the balance

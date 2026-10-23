@@ -30,6 +30,10 @@ pub struct CreditStatus {
     /// Credits spent this month by kind (`ai`, `connector:ors`, ...).
     #[serde(default)]
     pub used_by_kind: BTreeMap<String, i64>,
+    /// Credits one call costs per connector this app charges for, keyed
+    /// `connector:<name>`. Empty from servers that predate the field.
+    #[serde(default)]
+    pub connector_prices: BTreeMap<String, i64>,
 }
 
 /// Body of `POST me/credits/check`.
