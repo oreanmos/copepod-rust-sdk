@@ -151,6 +151,28 @@ pub const SPACES_UPGRADING_CODE: &str = "spaces_upgrading";
 /// 503: a rolling upgrade holds credit reports.
 pub const CREDITS_UPGRADING_CODE: &str = "credits_upgrading";
 
+/// 402 on a storage pack subscribe: the user has no active, non-trial paid plan.
+pub const REQUIRES_PAID_PLAN_CODE: &str = "requires_paid_plan";
+
+/// 409 on a storage pack subscribe: the pack's currency is not the plan's.
+pub const CURRENCY_MISMATCH_CODE: &str = "currency_mismatch";
+
+/// 409 on a storage pack subscribe: the plan already has unlimited storage.
+pub const STORAGE_UNLIMITED_CODE: &str = "storage_unlimited";
+
+/// 409 on a storage pack subscribe: the app has no spare storage capacity.
+pub const STORAGE_CAPACITY_UNAVAILABLE_CODE: &str = "capacity_unavailable";
+
+/// 409 on a storage pack subscribe: the payment provider has no usable mandate.
+/// The same idempotency key can be retried later.
+pub const MANDATE_UNAVAILABLE_CODE: &str = "mandate_unavailable";
+
+/// 502 on a storage pack subscribe: the payment provider refused the subscription.
+pub const PAYMENT_PROVIDER_REJECTED_CODE: &str = "payment_provider_rejected";
+
+/// 503: a rolling upgrade holds storage pack subscribe, cancel and settlement.
+pub const PACKS_UPGRADING_CODE: &str = "packs_upgrading";
+
 /// 409 at signup or billing intent: the app is at capacity. The body carries `limit`
 /// (the full capacity setting, e.g. `max_active_users`). Do not retry.
 pub const CAPACITY_REACHED_CODE: &str = "capacity_reached";
