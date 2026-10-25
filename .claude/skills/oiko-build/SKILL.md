@@ -28,9 +28,9 @@ spec does not cover, or a push.
 | Role | Claude Code | Codex | Does |
 |---|---|---|---|
 | Orchestrator (you) | the session model | `gpt-6-sol` | briefs, checks evidence, merges, keeps the log, talks to the owner |
-| `oiko-implementer` | Sonnet, medium | `gpt-6-luna` | one slice or fix in its worktree, per `oiko-implement`; never merges |
-| `oiko-reviewer` | Opus, high | `gpt-6-luna` | read-only acceptance, per `oiko-review` |
-| `oiko-scout` | Sonnet, medium | `gpt-6-luna` | read-only runtime observation and code questions |
+| `oiko-implementer` | Sonnet, medium, 1h cache | `gpt-6-luna` | one slice or fix in its worktree, per `oiko-implement`; never merges |
+| `oiko-reviewer` | Sonnet, high | `gpt-6-luna` | read-only acceptance, per `oiko-review` |
+| `oiko-scout` | Haiku, medium | `gpt-6-luna` | read-only runtime observation and code questions |
 | Lookups | `Explore`, `model: "haiku"` | default subagent | "where is X" questions, in parallel |
 
 Agent definitions set model and effort (`.claude/agents/`, `.codex/agents/`,

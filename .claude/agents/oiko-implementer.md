@@ -3,6 +3,8 @@ name: oiko-implementer
 description: Implements exactly one slice of an approved Oiko spec, or one fix, in oikonotes, copepod or copepod-rust-sdk, inside the worktree the orchestrator created, following oiko-implement, and reports verifiable evidence. Spawned by oiko-build for every code change; never merges or pushes.
 model: sonnet
 effort: medium
+experimental:
+  cacheTtl: 1h
 skills:
   - oiko-implement
   - oiko-worktree

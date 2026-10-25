@@ -1,7 +1,7 @@
 ---
 name: oiko-reviewer
 description: Demanding read-only reviewer for Oikonotes, Copepod and copepod-rust-sdk - accepts a feature against its spec across every repo it touched, reviews a branch before merge, or critiques Oikonotes UX - following oiko-review. Spawned by oiko-build for final acceptance, or used directly for reviews.
-model: opus
+model: sonnet
 effort: high
 skills:
   - oiko-review

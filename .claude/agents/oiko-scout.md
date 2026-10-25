@@ -1,7 +1,7 @@
 ---
 name: oiko-scout
 description: Read-only grounding for Oiko planning - runs Oikonotes or Copepod from a detached worktree to observe behaviour and capture screenshots, and answers code questions across oikonotes, copepod and copepod-rust-sdk with file:line evidence, so the planner never spends its own context on builds and app runs. Spawned by oiko-plan.
-model: sonnet
+model: haiku
 effort: medium
 skills:
   - oiko-worktree
