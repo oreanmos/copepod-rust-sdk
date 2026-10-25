@@ -21,7 +21,8 @@ pub struct OwnedStoragePack {
     pub subscription_id: String,
     pub pack_id: String,
     pub quantity: i64,
-    /// `pending` (first payment not yet confirmed), `active` or `cancelling`.
+    /// `pending` (first payment not yet confirmed), `active`, `cancelling` or
+    /// `lapsed` (a renewal failed; still listed and still cancellable).
     pub status: String,
     /// End of the paid month; `None` while pending.
     #[serde(default)]

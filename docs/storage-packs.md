@@ -21,6 +21,10 @@ checked before any request. A retry with the same key returns the same subscript
 `cancel` is idempotent: a paid pack becomes `cancelling` and keeps its space until
 `ends_at`; a pack never paid becomes `cancelled` (`ends_at` is now).
 
+`owned_storage[].status` is `pending`, `active`, `cancelling` or `lapsed`. A `lapsed`
+pack (a renewal failed) adds no space but stays listed, and `cancel_storage_pack` is
+allowed on it so the user can clear it.
+
 ### Error codes
 
 Read with `err.api_code()`; constants are exported at the crate root.
