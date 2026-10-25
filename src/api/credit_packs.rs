@@ -14,7 +14,7 @@ fn base(org_id: &str, app_id: &str, collection: &str) -> String {
     format!("api/platform/orgs/{org_id}/apps/{app_id}/auth/{collection}/me/credits")
 }
 
-fn validate_idempotency_key(key: &str) -> Result<()> {
+pub(super) fn validate_idempotency_key(key: &str) -> Result<()> {
     if key.is_empty()
         || key.len() > 160
         || !key
@@ -28,7 +28,7 @@ fn validate_idempotency_key(key: &str) -> Result<()> {
     Ok(())
 }
 
-fn validate_segment(name: &str, value: &str) -> Result<()> {
+pub(super) fn validate_segment(name: &str, value: &str) -> Result<()> {
     if value.trim().is_empty() || value.contains(['/', '?', '#']) {
         return Err(CopepodError::InvalidArgument(format!(
             "{name} must be a non-empty id"

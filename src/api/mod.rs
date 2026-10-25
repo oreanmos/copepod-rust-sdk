@@ -54,6 +54,7 @@ pub mod space_commons;
 pub mod space_records;
 pub mod space_sharing;
 pub mod spaces;
+pub mod storage_packs;
 pub mod support_macros;
 pub mod tickets;
 pub mod usage_analytics;
