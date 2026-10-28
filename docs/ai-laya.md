@@ -83,7 +83,7 @@ as `CopepodError::Api { status, code, .. }`:
 | Status | Code |
 |---|---|
 | 400 | `laya_invalid_request`, `laya_invalid_label`, `laya_policy_version_unknown`, `laya_task_not_donatable` |
-| 403 | `laya_adhoc_forbidden`, `laya_donation_consent_required`, `ai_paused_for_review` (reserved) |
+| 403 | `laya_adhoc_forbidden`, `laya_donation_consent_required`, `ai_paused_for_review` (`ApiWithDetails`, see `docs/trust-safety.md`) |
 | 404 | `laya_task_unknown`, `laya_decision_unknown` |
 | 429 | `laya_donation_quota` |
 | 503 | `laya_unavailable`, `laya_upgrading` |

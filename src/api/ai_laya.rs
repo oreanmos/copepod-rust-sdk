@@ -112,7 +112,7 @@ impl CopepodClient {
     /// # Errors
     /// `InvalidArgument` for empty ids, an empty task; 400
     /// `laya_invalid_request`, 404 `laya_task_unknown`, 503 `laya_unavailable` (treat as "no
-    /// answer") and 403 `ai_paused_for_review` as `CopepodError::Api`.
+    /// answer") and 403 `ai_paused_for_review` (`ApiWithDetails`: scope and until).
     pub async fn ai_decide(
         &self,
         org_id: &str,

@@ -57,5 +57,7 @@ pub mod spaces;
 pub mod storage_packs;
 pub mod support_macros;
 pub mod tickets;
+pub mod trust;
+pub mod trust_admin;
 pub mod usage_analytics;
 pub mod users;

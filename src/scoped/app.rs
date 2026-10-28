@@ -2,7 +2,7 @@ use crate::client::CopepodClient;
 
 use super::{
     ScopedAiClient, ScopedAppAuthClient, ScopedEmailClient, ScopedMigrationClient,
-    ScopedRecordCollectionClient,
+    ScopedRecordCollectionClient, ScopedTrustClient,
 };
 
 /// Application-scoped client helpers.
@@ -49,6 +49,11 @@ impl<'a> ScopedAppClient<'a> {
     /// Return hosted AI gateway helpers bound to an app auth collection.
     pub fn ai(&self, collection: impl Into<String>) -> ScopedAiClient<'a> {
         ScopedAiClient::new(self.client, &self.org_id, &self.app_id, collection)
+    }
+
+    /// Return trust and safety helpers bound to this application.
+    pub fn trust(&self) -> ScopedTrustClient<'a> {
+        ScopedTrustClient::new(self.client, &self.org_id, &self.app_id)
     }
 
     /// Return migration helpers bound to this application.
