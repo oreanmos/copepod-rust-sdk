@@ -2,7 +2,9 @@ use serde::Serialize;
 
 use crate::client::CopepodClient;
 use crate::error::Result;
-use crate::models::{AppLoginResult, AppRegisterResponse, AuthResponse, MfaEnrollResponse};
+use crate::models::{
+    AccountErased, AppLoginResult, AppRegisterResponse, AuthResponse, MfaEnrollResponse,
+};
 
 /// App auth helpers bound to a specific auth collection.
 #[derive(Debug, Clone)]
@@ -152,6 +154,14 @@ impl<'a> ScopedAppAuthClient<'a> {
                 mfa_token,
                 recovery_code,
             )
+            .await
+    }
+
+    /// Erase the account an erasure token was issued for. See
+    /// [`CopepodClient::app_erase_account`].
+    pub async fn erase_account(&self, erasure_token: &str) -> Result<AccountErased> {
+        self.client
+            .app_erase_account(&self.org_id, &self.app_id, &self.collection, erasure_token)
             .await
     }
 }

@@ -139,7 +139,7 @@ impl CopepodClient {
     /// `POST /api/platform/orgs/{org}/apps/{app}/ai/decide` (`X-API-Key`, scope `ai:decide`).
     ///
     /// Sends `X-API-Key` only, never `Authorization`. `user_id` is sent as `X-User-Id` for
-    /// attribution. Takes a task request or an ad-hoc one (at most 3 questions, state at most
+    /// attribution; a suspended user is refused (403 `account_suspended`). Takes a task request or an ad-hoc one (at most 3 questions, state at most
     /// 4,000 characters). An ad-hoc answer has `mode: "adhoc"`, no `decision_id` and
     /// `confident: false`; apply your own threshold to `confidence`.
     ///

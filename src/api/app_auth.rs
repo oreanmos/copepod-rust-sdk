@@ -2,7 +2,7 @@ use crate::auth::TokenPair;
 use crate::client::CopepodClient;
 use crate::error::Result;
 use crate::models::auth::{AppLoginResult, AuthResponse, MfaChallenge};
-use crate::models::AppRegisterResponse;
+use crate::models::{AccountErased, AppRegisterResponse};
 
 impl CopepodClient {
     /// Log in as an app user. Returns MFA challenge if 2FA is enabled.
@@ -267,6 +267,34 @@ impl CopepodClient {
         );
         let body = serde_json::json!({ "mfa_token": mfa_token, "recovery_code": recovery_code });
         self.post(&path, &body).await
+    }
+
+    /// `POST .../auth/{collection}/erase`: permanently erase the account an `erasure_token`
+    /// was issued for (see `CopepodError::account_suspended_details`).
+    ///
+    /// Sends neither `Authorization` nor `X-API-Key`: the token in the body is the only
+    /// credential. It is single use and valid 10 minutes. Errors: 401 bad, expired, reused or
+    /// other-app token (`is_erasure_token_invalid`); 503 `billing_cancellation_failed` (nothing
+    /// erased; the token is already consumed, so sign in again for a fresh one and repeat, which is safe)
+    /// and 503 `trust_upgrading`.
+    pub async fn app_erase_account(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        collection: &str,
+        erasure_token: &str,
+    ) -> Result<AccountErased> {
+        if erasure_token.trim().is_empty() {
+            return Err(crate::error::CopepodError::InvalidArgument(
+                "erasure_token is required".into(),
+            ));
+        }
+        let path = format!(
+            "api/platform/orgs/{}/apps/{}/auth/{}/erase",
+            org_id, app_id, collection
+        );
+        let body = serde_json::json!({ "erasure_token": erasure_token, "confirm": true });
+        self.post_public(&path, &body).await
     }
 
     /// Set password for an app user (admin).
