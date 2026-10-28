@@ -374,3 +374,23 @@ pub struct AiPausedForReview {
     #[serde(default)]
     pub until: Option<String>,
 }
+
+/// Details of a 403 `account_suspended`, read with `CopepodError::account_suspended_details`.
+/// Both fields are `None` unless the credentials were proven (password, magic link, MFA).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AccountSuspended {
+    /// Single-use token for `app_erase_account`.
+    #[serde(default)]
+    pub erasure_token: Option<String>,
+    /// Seconds the token stays valid (600).
+    #[serde(default, rename = "erasure_token_expires_in")]
+    pub expires_in: Option<u64>,
+}
+
+/// Answer of the erase call.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AccountErased {
+    pub deleted: bool,
+    #[serde(default)]
+    pub erased_rows: u64,
+}

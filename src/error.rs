@@ -57,6 +57,17 @@ pub const AI_PAUSED_FOR_REVIEW_CODE: &str = "ai_paused_for_review";
 /// 403 on any app-user call: the account is suspended by the app's owner.
 pub const ACCOUNT_SUSPENDED_CODE: &str = "account_suspended";
 
+/// 403 on sign-up (register, register with a billing intent, billing-intent creation): the
+/// email address is held after the erasure of a suspended account. No reason is given.
+pub const SIGNUP_UNAVAILABLE_CODE: &str = "signup_unavailable";
+
+/// 503 on the erase call: a subscription could not be cancelled at the payment provider, so
+/// nothing was erased. Cancelling repeats safely; retry.
+pub const BILLING_CANCELLATION_FAILED_CODE: &str = "billing_cancellation_failed";
+
+/// 503 on a trust write or the erase call: held while a rolling upgrade reaches every peer.
+pub const TRUST_UPGRADING_CODE: &str = "trust_upgrading";
+
 /// 429 on a content report: the reporter or the subject hit a report limit.
 pub const REPORT_RATE_LIMITED_CODE: &str = "report_rate_limited";
 
@@ -428,6 +439,41 @@ impl CopepodError {
     /// Whether the app-user's account is suspended (403 `account_suspended`).
     pub fn is_account_suspended(&self) -> bool {
         self.api_status() == Some(403) && self.api_code() == Some(ACCOUNT_SUSPENDED_CODE)
+    }
+
+    /// The erasure token of a 403 `account_suspended` from a login, magic-link redemption or
+    /// MFA verification, when the server sent one (it did not for a call made with an
+    /// existing token or an API key, nor from an older server).
+    pub fn account_suspended_details(&self) -> Option<crate::models::AccountSuspended> {
+        if !self.is_account_suspended() {
+            return None;
+        }
+        match self.api_details() {
+            Some(details) => serde_json::from_value(details.clone()).ok(),
+            None => Some(crate::models::AccountSuspended::default()),
+        }
+    }
+
+    /// Whether sign-up was refused for a held email address (403 `signup_unavailable`).
+    pub fn is_signup_unavailable(&self) -> bool {
+        self.api_status() == Some(403) && self.api_code() == Some(SIGNUP_UNAVAILABLE_CODE)
+    }
+
+    /// Whether the erase call was refused because the erasure token is bad, expired, reused or
+    /// for another app (401).
+    pub fn is_erasure_token_invalid(&self) -> bool {
+        self.api_status() == Some(401)
+    }
+
+    /// Whether the erase call failed cancelling a subscription (503
+    /// `billing_cancellation_failed`); nothing was erased and a retry is safe.
+    pub fn is_billing_cancellation_failed(&self) -> bool {
+        self.api_code() == Some(BILLING_CANCELLATION_FAILED_CODE)
+    }
+
+    /// Whether a trust write is held during a rolling upgrade (503 `trust_upgrading`); retry.
+    pub fn is_trust_upgrading(&self) -> bool {
+        self.api_code() == Some(TRUST_UPGRADING_CODE)
     }
 
     /// Whether hosted AI is paused for this user (403 `ai_paused_for_review`).

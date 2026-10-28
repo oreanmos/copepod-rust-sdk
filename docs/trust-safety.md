@@ -114,3 +114,25 @@ arrives as `ApiWithDetails` (its `scope` and `until` sit at the top level).
 Every trust enum is `#[non_exhaustive]` with an `Unknown` variant that absorbs a
 value from a newer server. `Unknown` is never sent: request methods reject it with
 `InvalidArgument` before the network.
+
+## Suspended users and erasure
+
+A suspended user cannot sign in, but may erase their own account (GDPR).
+
+1. Login (password, magic link, or MFA `verify`/`recovery`) with correct
+   credentials answers 403 `account_suspended`. When the credentials were proven the
+   error carries a token: `err.account_suspended_details()` returns
+   `AccountSuspended { erasure_token, expires_in }` (600 seconds). Wrong credentials
+   answer as for an active user; calls made with an existing token or an API key
+   carry no token (`erasure_token: None`). `is_account_suspended()` is true either way.
+2. The app shows a confirm screen ("this permanently deletes your account").
+3. `auth("users").erase_account(token)` (`app_erase_account`) posts
+   `{erasure_token, confirm: true}` with no bearer and no API key and answers
+   `AccountErased { deleted, erased_rows }`.
+
+The token is single use and valid 10 minutes; a bad, expired or reused one is 401
+(`is_erasure_token_invalid`). Erasure cancels subscriptions first and may answer 503
+`billing_cancellation_failed` (nothing erased) or `trust_upgrading` (rolling upgrade).
+The token is already consumed then: sign in again for a fresh one and repeat; cancelling
+repeats safely. Sign-up with an address held after such an erasure answers 403
+`signup_unavailable` (`is_signup_unavailable`) with no reason. An older server issues no token.

@@ -477,7 +477,8 @@ impl CopepodClient {
                 | crate::error::CREDITS_EXHAUSTED_CODE
                 | crate::error::AI_CREDITS_EXHAUSTED_CODE
                 | crate::error::AI_REQUEST_REPLAYED_CODE
-                | crate::error::AI_PAUSED_FOR_REVIEW_CODE,
+                | crate::error::AI_PAUSED_FOR_REVIEW_CODE
+                | crate::error::ACCOUNT_SUSPENDED_CODE,
             ) => body.filter(|value| value.is_object()),
             _ => None,
         };
