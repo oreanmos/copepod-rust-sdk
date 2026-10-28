@@ -33,6 +33,14 @@ turn may proceed. Do not treat `Err` as `Allow` for anything shown to others.
 `subject_ref` is `kind:id` (kind `a-z_` up to 40, id `A-Za-z0-9._:-` up to 160),
 for example `blog_comment:<id>`. `text` is at most 20,000 characters (a purpose
 may allow less; the server answers 400 `invalid_moderation_request`).
+`reviewer` is a required argument of `ModerateRequest::new`; there is no default:
+
+| Content | `reviewer` |
+|---|---|
+| The app has an owner who reviews it (comments, public suggestions) | `App` |
+| No owner can review it (profile text, catalogue publishing by the owner) | `Operator` |
+| `moderate_as_user` | ignored; the server forces `App` |
+
 The app-user route ignores `actor` and `reviewer`: the actor is the token's user
 and the reviewer is `app`. Only the API-key route may send `reviewer: Operator`,
 which puts a `review` decision in the Copepod operator queue.
@@ -67,7 +75,8 @@ at least daily; a gap longer than that loses actions. Unknown kinds decode to
 
 `submit_content_report` files a report as the app's server: the reporter is
 identified only by `reporter_ip_hash` (64 hex characters, a hash of the address,
-never the address). The server rate limits per reporter and per subject: 429
+never the address). `captcha_token` is optional (the server accepts any until verification
+is enabled). The server rate limits per reporter and per subject: 429
 `report_rate_limited`. `duplicate: true` means the same reporter reported the
 same subject within a day (no new report). `urgent` priority is set by the
 server from the category and triage.
@@ -76,7 +85,7 @@ server from the category and triage.
 
 `record_abuse_signal` reports what only the app can see: `chat_jailbreak`,
 `chat_harm`, `rate_limit_hammering`, `invite_cap`. `moderation_block` and
-`report_upheld` are recorded by Copepod and answer 400. `evidence_ref` is an id
+`report_upheld` are recorded by Copepod; the SDK refuses them with `InvalidArgument`. `evidence_ref` is an id
 (at most 200 characters of letters, digits and `_ . : / -`), never content. The
 receipt's `restriction` is set when the signal tipped the score over the
 threshold. Weights, decay and the threshold are server-side.
@@ -84,7 +93,10 @@ threshold. Weights, decay and the threshold are server-side.
 A restricted user's hosted AI answers 403 `ai_paused_for_review`; read the end
 of the pause with `CopepodError::ai_paused_for_review_details()` (`scope`,
 `until`). A suspended user's calls answer 403 `account_suspended`
-(`is_account_suspended`) and `my_restrictions` still works to tell them why.
+(`is_account_suspended`), including `my_restrictions`: the token is refused before the
+handler runs, so the call returns `Err`, not a 200 with `suspended: true`. Treat
+`is_account_suspended()` as the signal; the `suspended` field is only ever `false` for a
+caller that gets an answer.
 `suspend_app_user` answers 409 `already_suspended`; `unsuspend_app_user` 409
 `not_suspended`; `lift_app_user_restriction` (scopes `hosted_ai`,
 `public_posting`, `invites` only) 404 `restriction_not_found`.

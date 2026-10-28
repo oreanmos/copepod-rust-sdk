@@ -50,7 +50,8 @@ pub const LAYA_UNAVAILABLE_CODE: &str = "laya_unavailable";
 /// 503 on a decide outcome or a donation write: held while a rolling upgrade reaches every peer.
 pub const LAYA_UPGRADING_CODE: &str = "laya_upgrading";
 
-/// 403 on Laya `decide`: the user is restricted pending review (reserved; not enforced yet).
+/// 403 on a hosted AI call (Laya `decide`, the gateway): the user has an active `hosted_ai`
+/// restriction. The body carries `scope` and `until`.
 pub const AI_PAUSED_FOR_REVIEW_CODE: &str = "ai_paused_for_review";
 
 /// 403 on any app-user call: the account is suspended by the app's owner.

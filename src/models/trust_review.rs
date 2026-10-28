@@ -70,7 +70,7 @@ trust_enum! {
 
 trust_enum! {
     /// An abuse signal the app may report. `ModerationBlock` and `ReportUpheld`
-    /// are recorded by Copepod itself and refused (400) when sent.
+    /// are recorded by Copepod itself; `record_abuse_signal` refuses them client-side.
     AbuseSignalKind {
         ModerationBlock => "moderation_block",
         ChatJailbreak => "chat_jailbreak",
@@ -82,7 +82,9 @@ trust_enum! {
 }
 
 /// Body of `POST …/reports` as the app's server (API key, scope `trust:write`).
+/// Build it with [`ContentReportRequest::new`] and set optional fields on the result.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct ContentReportRequest {
     /// `kind:id` of the reported thing.
     pub subject_ref: String,
@@ -98,6 +100,29 @@ pub struct ContentReportRequest {
     pub reporter_ip_hash: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub subject_owner_user_id: Option<String>,
+    /// Captcha token, for servers that verify one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub captcha_token: Option<String>,
+}
+
+impl ContentReportRequest {
+    /// A report with empty details and no optional fields.
+    pub fn new(
+        subject_ref: impl Into<String>,
+        category: ReportCategory,
+        reporter_ip_hash: impl Into<String>,
+    ) -> Self {
+        Self {
+            subject_ref: subject_ref.into(),
+            subject_url: None,
+            category,
+            details: String::new(),
+            reporter_email: None,
+            reporter_ip_hash: reporter_ip_hash.into(),
+            subject_owner_user_id: None,
+            captcha_token: None,
+        }
+    }
 }
 
 /// Answer of a filed report (`202`).

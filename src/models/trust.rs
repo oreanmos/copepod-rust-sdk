@@ -132,11 +132,14 @@ pub struct ModerateRequest {
 }
 
 impl ModerateRequest {
-    /// A check of `text` with an empty context, no actor and the app as reviewer.
+    /// A check of `text` with an empty context and no actor. `reviewer` is required: the
+    /// server's own default is `Operator`, and the right choice depends on the content
+    /// (see `docs/trust-safety.md`).
     pub fn new(
         purpose: ModerationPurpose,
         subject_ref: impl Into<String>,
         text: impl Into<String>,
+        reviewer: ModerationReviewer,
     ) -> Self {
         Self {
             purpose,
@@ -145,7 +148,7 @@ impl ModerateRequest {
             image_ref: None,
             context: ModerateContext::default(),
             actor: ModerateActor::default(),
-            reviewer: ModerationReviewer::App,
+            reviewer,
         }
     }
 }

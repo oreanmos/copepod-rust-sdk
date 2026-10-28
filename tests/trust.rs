@@ -41,9 +41,13 @@ fn moderate_body() -> serde_json::Value {
 }
 
 fn check() -> ModerateRequest {
-    let mut r = ModerateRequest::new(ModerationPurpose::Comment, "blog_comment:abc", "hello");
+    let mut r = ModerateRequest::new(
+        ModerationPurpose::Comment,
+        "blog_comment:abc",
+        "hello",
+        ModerationReviewer::Operator,
+    );
     r.actor.user_id = Some("u1".into());
-    r.reviewer = ModerationReviewer::Operator;
     r
 }
 
@@ -140,15 +144,10 @@ async fn record_outcome_posts_with_key_only() {
 }
 
 fn report() -> ContentReportRequest {
-    ContentReportRequest {
-        subject_ref: "blog_comment:abc".into(),
-        subject_url: None,
-        category: ReportCategory::Spam,
-        details: "bad".into(),
-        reporter_email: None,
-        reporter_ip_hash: HASH.into(),
-        subject_owner_user_id: Some("u2".into()),
-    }
+    let mut r = ContentReportRequest::new("blog_comment:abc", ReportCategory::Spam, HASH);
+    r.details = "bad".into();
+    r.subject_owner_user_id = Some("u2".into());
+    r
 }
 
 #[tokio::test]
@@ -239,23 +238,18 @@ async fn abuse_signal_posts_with_key_only() {
 #[tokio::test]
 async fn my_restrictions_uses_bearer_and_maps_suspension() {
     let server = MockServer::start().await;
-    mount(
-        &server,
-        "GET",
-        format!("{APP}/auth/users/me/restrictions"),
-        200,
-        json!({
-        "restrictions":[{"scope":"account","until":null,"reason_code":"owner"}],"suspended":true}),
-    )
-    .await;
+    mount(&server, "GET", format!("{APP}/auth/users/me/restrictions"), 200, json!({
+        "restrictions":[{"scope":"hosted_ai","until":"2026-11-02T00:00:00Z","reason_code":"abuse_score"}],
+        "suspended":false})).await;
     let r = client(&server)
         .my_restrictions("org", "app", "users")
         .await
         .unwrap();
-    assert!(r.suspended);
-    assert_eq!(r.restrictions[0].until, None);
+    assert!(!r.suspended);
+    assert_eq!(r.restrictions[0].scope, RestrictionScope::HostedAi);
     expect_bearer(&server).await;
 
+    // A suspended user's token is refused before the handler: 403, not a 200 with `suspended`.
     server.reset().await;
     mount(&server, "GET", format!("{APP}/auth/users/me/restrictions"), 403,
         json!({"status":403,"code":"account_suspended","error":"account_suspended","message":"suspended"})).await;
@@ -570,16 +564,36 @@ async fn suspend_and_unsuspend() {
 async fn invalid_arguments_fail_before_the_network() {
     let server = MockServer::start().await; // no mocks: any request would 404
     let c = client(&server);
-    let bad_ref = ModerateRequest::new(ModerationPurpose::Comment, "no-colon", "x");
-    let long = ModerateRequest::new(ModerationPurpose::Comment, "a:b", "x".repeat(20_001));
-    let unknown = ModerateRequest::new(ModerationPurpose::Unknown, "a:b", "x");
+    let bad_ref = ModerateRequest::new(
+        ModerationPurpose::Comment,
+        "no-colon",
+        "x",
+        ModerationReviewer::App,
+    );
+    let long = ModerateRequest::new(
+        ModerationPurpose::Comment,
+        "a:b",
+        "x".repeat(20_001),
+        ModerationReviewer::App,
+    );
+    let unknown = ModerateRequest::new(
+        ModerationPurpose::Unknown,
+        "a:b",
+        "x",
+        ModerationReviewer::App,
+    );
     for r in [&bad_ref, &long, &unknown] {
         assert!(matches!(
             c.moderate("org", "app", r).await,
             Err(CopepodError::InvalidArgument(_))
         ));
     }
-    let mut ok = ModerateRequest::new(ModerationPurpose::Comment, "a:b", "x".repeat(20_000));
+    let mut ok = ModerateRequest::new(
+        ModerationPurpose::Comment,
+        "a:b",
+        "x".repeat(20_000),
+        ModerationReviewer::App,
+    );
     ok.subject_ref = "a_b:C.d-1".into();
     assert!(!matches!(
         c.moderate("org", "app", &ok).await,

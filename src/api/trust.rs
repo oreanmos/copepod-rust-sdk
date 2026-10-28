@@ -109,8 +109,11 @@ fn validate_report(request: &ContentReportRequest) -> Result<()> {
 
 fn validate_signal(request: &AbuseSignalRequest) -> Result<()> {
     validate_user_id(&request.user_id)?;
-    if request.kind == AbuseSignalKind::Unknown {
-        return invalid("kind is not a known abuse signal kind");
+    if matches!(
+        request.kind,
+        AbuseSignalKind::Unknown | AbuseSignalKind::ModerationBlock | AbuseSignalKind::ReportUpheld
+    ) {
+        return invalid("kind must be one the app reports: chat_jailbreak, chat_harm, rate_limit_hammering or invite_cap");
     }
     if request.evidence_ref.chars().count() > 200
         || !request
@@ -268,7 +271,7 @@ impl CopepodClient {
 
     /// `POST …/trust/signals` (`X-API-Key`, scope `trust:write`): report abuse only the app
     /// can see (`chat_jailbreak`, `chat_harm`, `rate_limit_hammering`, `invite_cap`).
-    /// `moderation_block` and `report_upheld` are recorded by Copepod and answer 400.
+    /// `moderation_block` and `report_upheld` are recorded by Copepod and are refused here.
     /// The receipt's `restriction` is set when this signal tipped the score over 2.5.
     ///
     /// # Errors
