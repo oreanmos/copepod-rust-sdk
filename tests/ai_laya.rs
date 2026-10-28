@@ -604,11 +604,10 @@ async fn decide_and_outcome_errors_map_to_api_with_codes() {
         AI_PAUSED_FOR_REVIEW_CODE,
     )
     .await;
-    assert_api(
-        c.ai_decide("org", "app", "users", &req).await.unwrap_err(),
-        403,
-        AI_PAUSED_FOR_REVIEW_CODE,
-    );
+    // Carries the pause's `scope` and `until`, so it is `ApiWithDetails` (see tests/trust.rs).
+    let paused = c.ai_decide("org", "app", "users", &req).await.unwrap_err();
+    assert_eq!(paused.api_status(), Some(403));
+    assert_eq!(paused.api_code(), Some(AI_PAUSED_FOR_REVIEW_CODE));
     server.reset().await;
 
     let route = format!("{U}/decide/ld_1/outcome");

@@ -40,6 +40,8 @@ pub mod space_sharing;
 pub mod storage_packs;
 pub mod support;
 pub mod ticket;
+pub mod trust;
+pub mod trust_review;
 pub mod webhook;
 
 pub use addon::*;
@@ -84,4 +86,6 @@ pub use space_sharing::*;
 pub use storage_packs::*;
 pub use support::*;
 pub use ticket::*;
+pub use trust::*;
+pub use trust_review::*;
 pub use webhook::*;

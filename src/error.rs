@@ -50,8 +50,30 @@ pub const LAYA_UNAVAILABLE_CODE: &str = "laya_unavailable";
 /// 503 on a decide outcome or a donation write: held while a rolling upgrade reaches every peer.
 pub const LAYA_UPGRADING_CODE: &str = "laya_upgrading";
 
-/// 403 on Laya `decide`: the user is restricted pending review (reserved; not enforced yet).
+/// 403 on a hosted AI call (Laya `decide`, the gateway): the user has an active `hosted_ai`
+/// restriction. The body carries `scope` and `until`.
 pub const AI_PAUSED_FOR_REVIEW_CODE: &str = "ai_paused_for_review";
+
+/// 403 on any app-user call: the account is suspended by the app's owner.
+pub const ACCOUNT_SUSPENDED_CODE: &str = "account_suspended";
+
+/// 429 on a content report: the reporter or the subject hit a report limit.
+pub const REPORT_RATE_LIMITED_CODE: &str = "report_rate_limited";
+
+/// 429 on `moderate`: the app or the user hit the moderation rate limit.
+pub const MODERATION_RATE_LIMITED_CODE: &str = "moderation_rate_limited";
+
+/// 422 on a record edit: moderation blocked the edited text; nothing was stored.
+pub const CONTENT_REJECTED_CODE: &str = "content_rejected";
+
+/// 409 on suspend: the user is already suspended.
+pub const ALREADY_SUSPENDED_CODE: &str = "already_suspended";
+
+/// 409 on unsuspend: the user is not suspended.
+pub const NOT_SUSPENDED_CODE: &str = "not_suspended";
+
+/// 404 on lifting a restriction: no active restriction in that scope.
+pub const RESTRICTION_NOT_FOUND_CODE: &str = "restriction_not_found";
 
 /// 400 on a consent grant: the policy version is not one the server knows.
 pub const LAYA_POLICY_VERSION_UNKNOWN_CODE: &str = "laya_policy_version_unknown";
@@ -401,6 +423,57 @@ impl CopepodError {
     /// Whether an upload was refused for storage quota (`storage_quota_exceeded`).
     pub fn is_storage_quota_exceeded(&self) -> bool {
         matches!(self, Self::StorageQuotaExceeded { .. })
+    }
+
+    /// Whether the app-user's account is suspended (403 `account_suspended`).
+    pub fn is_account_suspended(&self) -> bool {
+        self.api_status() == Some(403) && self.api_code() == Some(ACCOUNT_SUSPENDED_CODE)
+    }
+
+    /// Whether hosted AI is paused for this user (403 `ai_paused_for_review`).
+    pub fn is_ai_paused_for_review(&self) -> bool {
+        self.api_code() == Some(AI_PAUSED_FOR_REVIEW_CODE)
+    }
+
+    /// The restriction scope and end time of a 403 `ai_paused_for_review`. `until` is the
+    /// RFC 3339 time the pause ends by itself.
+    pub fn ai_paused_for_review_details(&self) -> Option<crate::models::AiPausedForReview> {
+        match self.api_code() {
+            Some(AI_PAUSED_FOR_REVIEW_CODE) => {
+                serde_json::from_value(self.api_details()?.clone()).ok()
+            }
+            _ => None,
+        }
+    }
+
+    /// Whether a content report was rate limited (429 `report_rate_limited`).
+    pub fn is_report_rate_limited(&self) -> bool {
+        self.api_code() == Some(REPORT_RATE_LIMITED_CODE)
+    }
+
+    /// Whether `moderate` was rate limited (429 `moderation_rate_limited`).
+    pub fn is_moderation_rate_limited(&self) -> bool {
+        self.api_code() == Some(MODERATION_RATE_LIMITED_CODE)
+    }
+
+    /// Whether moderation blocked a record edit (422 `content_rejected`); nothing was stored.
+    pub fn is_content_rejected(&self) -> bool {
+        self.api_code() == Some(CONTENT_REJECTED_CODE)
+    }
+
+    /// Whether suspend found the user already suspended (409 `already_suspended`).
+    pub fn is_already_suspended(&self) -> bool {
+        self.api_code() == Some(ALREADY_SUSPENDED_CODE)
+    }
+
+    /// Whether unsuspend found the user not suspended (409 `not_suspended`).
+    pub fn is_not_suspended(&self) -> bool {
+        self.api_code() == Some(NOT_SUSPENDED_CODE)
+    }
+
+    /// Whether a lift found no active restriction (404 `restriction_not_found`).
+    pub fn is_restriction_not_found(&self) -> bool {
+        self.api_code() == Some(RESTRICTION_NOT_FOUND_CODE)
     }
 
     /// Server-advertised retry delay for a Raft leader election.
