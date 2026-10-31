@@ -1,5 +1,20 @@
 use serde::{Deserialize, Serialize};
 
+use crate::error::{CopepodError, Result};
+
+/// Check a consent sentence the way the server does: after trimming it holds
+/// 1-500 characters and no NUL.
+pub(crate) fn validate_consent_text(text: &str) -> Result<()> {
+    let text = text.trim();
+    let chars = text.chars().count();
+    if !(1..=500).contains(&chars) || text.contains('\0') {
+        return Err(CopepodError::InvalidArgument(
+            "consent text must contain 1-500 characters without null bytes".into(),
+        ));
+    }
+    Ok(())
+}
+
 /// First-touch attribution recorded with a lead. Every field is optional; the
 /// server limits each to 200 bytes without control characters.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -33,15 +48,17 @@ pub struct CreateLeadRequest {
     pub email: String,
     /// The consent sentence the visitor saw, verbatim (1-500 characters).
     pub consent_text: String,
-    /// ISO 3166-1 alpha-2 country code, upper case.
+    /// ISO 3166-1 alpha-2 country code. The SDK trims and upper-cases it, as
+    /// the server does, and sends the normalised value.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
     /// First-touch attribution.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub acquisition: Option<LeadAcquisition>,
-    /// The visitor's IP address, used by the server for rate limiting and
-    /// Turnstile only and never stored. Pass it from SSR code; without it the
-    /// server rate-limits the whole API key connection.
+    /// The visitor's IP address (a single IPv4/IPv6 address, not an
+    /// `X-Forwarded-For` list: pass the first hop). Used by the server for rate
+    /// limiting and Turnstile only and never stored. The limit is per
+    /// `(app, client_ip)`; without it, per `(app, connection peer IP)`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub client_ip: Option<String>,
     /// Cloudflare Turnstile token; required only when the app enables Turnstile.
@@ -61,6 +78,16 @@ pub struct CreateLeadResponse {
 pub struct MarketingConsent {
     /// The consent sentence the user saw, verbatim (1-500 characters).
     pub consent_text: String,
+}
+
+impl MarketingConsent {
+    /// Mirror the server's `invalid_marketing_consent` rule: the trimmed text
+    /// holds 1-500 characters and no NUL. `register_with_billing_intent` calls
+    /// this before sending; call it yourself before building an
+    /// [`AppRegisterRequest`](crate::AppRegisterRequest) body.
+    pub fn validate(&self) -> Result<()> {
+        validate_consent_text(&self.consent_text)
+    }
 }
 
 /// Banner severity, ordered by the server `critical`, `warning`, `info`.

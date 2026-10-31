@@ -64,55 +64,41 @@ async fn create_lead_uses_api_key_and_exact_body_without_bearer() {
 }
 
 #[tokio::test]
-async fn create_lead_maps_429_and_422_codes() {
-    let server = MockServer::start().await;
-    Mock::given(method("POST"))
-        .and(path(LEADS))
-        .and(body_json(json!({
-            "list_key": "launch_waitlist", "email": "limit@example.com",
-            "consent_text": "c"
-        })))
-        .respond_with(
-            ResponseTemplate::new(429)
-                .insert_header("Retry-After", "3600")
-                .set_body_json(json!({"error": "rate_limited: too many sign-ups, try again later", "code": "rate_limited"})),
-        )
-        .mount(&server)
-        .await;
-    Mock::given(method("POST"))
-        .and(path(LEADS))
-        .respond_with(ResponseTemplate::new(422).set_body_json(json!({
-            "error": "turnstile_failed: a Turnstile token is required", "code": "turnstile_failed"
-        })))
-        .mount(&server)
-        .await;
-
-    let limited = CreateLeadRequest {
-        list_key: "launch_waitlist".into(),
-        email: "limit@example.com".into(),
-        consent_text: "c".into(),
-        ..Default::default()
-    };
-    match client(&server)
-        .create_lead("org_1", "app_1", &limited)
-        .await
-    {
-        Err(CopepodError::Api {
-            status, message, ..
-        }) => {
-            assert_eq!(status, 429);
-            assert!(message.contains("rate_limited"), "{message}");
+async fn create_lead_maps_error_codes() {
+    // (status, code, expected code in the SDK error); bodies use the server's
+    // real shape {status, code, error, message}.
+    let cases: [(u16, Option<&str>); 4] = [
+        (429, Some("rate_limited")),
+        (422, Some("turnstile_failed")),
+        (503, Some("audience_upgrading")),
+        (403, None),
+    ];
+    for (status, code) in cases {
+        let server = MockServer::start().await;
+        let body = match code {
+            Some(code) => json!({
+                "status": status, "code": code, "error": code,
+                "message": format!("{code}: server text")
+            }),
+            None => json!({"error": "forbidden"}),
+        };
+        Mock::given(method("POST"))
+            .and(path(LEADS))
+            .respond_with(ResponseTemplate::new(status).set_body_json(body))
+            .mount(&server)
+            .await;
+        match client(&server).create_lead("org_1", "app_1", &lead()).await {
+            Err(CopepodError::Api {
+                status: got,
+                code: got_code,
+                message,
+            }) => {
+                assert_eq!(got, status);
+                assert_eq!(got_code.as_deref(), code, "status {status}");
+                assert!(!message.is_empty());
+            }
+            other => panic!("status {status}: expected Api, got {other:?}"),
         }
-        other => panic!("expected Api 429, got {other:?}"),
-    }
-    match client(&server).create_lead("org_1", "app_1", &lead()).await {
-        Err(CopepodError::Api {
-            status, message, ..
-        }) => {
-            assert_eq!(status, 422);
-            assert!(message.contains("turnstile_failed"), "{message}");
-        }
-        other => panic!("expected Api 422, got {other:?}"),
     }
 }
 
@@ -138,7 +124,11 @@ async fn create_lead_validates_before_network() {
             ..lead()
         },
         CreateLeadRequest {
-            country: Some("gb".into()),
+            country: Some("GBR".into()),
+            ..lead()
+        },
+        CreateLeadRequest {
+            client_ip: Some("1.2.3.4, 5.6.7.8".into()),
             ..lead()
         },
     ];
@@ -270,4 +260,50 @@ async fn unknown_announcement_severity_parses_as_unknown() {
     assert_eq!(items.len(), 2);
     assert_eq!(items[0].severity, AnnouncementSeverity::Unknown);
     assert_eq!(items[1].severity, AnnouncementSeverity::Warning);
+}
+
+#[tokio::test]
+async fn create_lead_sends_normalised_country() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path(LEADS))
+        .and(wiremock::matchers::body_partial_json(
+            json!({"country": "GB"}),
+        ))
+        .respond_with(ResponseTemplate::new(202).set_body_json(json!({"accepted": true})))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let request = CreateLeadRequest {
+        country: Some(" gb".into()),
+        ..lead()
+    };
+    assert!(
+        client(&server)
+            .create_lead("org_1", "app_1", &request)
+            .await
+            .unwrap()
+            .accepted
+    );
+}
+
+#[test]
+fn marketing_consent_validates_like_the_server() {
+    assert!(MarketingConsent {
+        consent_text: " Yes ".into()
+    }
+    .validate()
+    .is_ok());
+    for bad in ["", "  ", "a\0b"] {
+        assert!(MarketingConsent {
+            consent_text: bad.into()
+        }
+        .validate()
+        .is_err());
+    }
+    assert!(MarketingConsent {
+        consent_text: "x".repeat(501)
+    }
+    .validate()
+    .is_err());
 }
