@@ -36,7 +36,9 @@ returns the announcements whose window contains now (scope
 `announcements:read`): at most 20, `critical` first, then `warning`, `info`,
 newest first. The response is `Cache-Control: private, max-age=60`; call at
 most once a minute per process and cache the vector. `message` is plain text:
-render it as text, never as markup.
+render it as text, never as markup. A severity the SDK does not know
+(added by a newer server) parses as `AnnouncementSeverity::Unknown` so the rest of
+the list still loads; style it like `info`.
 
 ## Marketing consent at registration
 

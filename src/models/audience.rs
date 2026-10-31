@@ -73,6 +73,10 @@ pub enum AnnouncementSeverity {
     Warning,
     /// Urgent.
     Critical,
+    /// A severity this SDK does not know (added by a newer server). Render it
+    /// like [`AnnouncementSeverity::Info`].
+    #[serde(other)]
+    Unknown,
 }
 
 /// An announcement currently inside its display window.

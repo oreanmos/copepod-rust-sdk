@@ -247,3 +247,27 @@ fn register_with_billing_intent_omits_absent_consent() {
         .get("marketing_consent")
         .is_none());
 }
+
+#[tokio::test]
+async fn unknown_announcement_severity_parses_as_unknown() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path(ACTIVE))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(json!({"announcements": [
+                {"id": "a1", "message": "New", "severity": "urgent_plus",
+                 "link_url": null, "starts_at": "2026-10-01T00:00:00Z", "ends_at": null},
+                {"id": "a2", "message": "Ok", "severity": "warning",
+                 "link_url": null, "starts_at": "2026-10-01T00:00:00Z", "ends_at": null}
+            ]})),
+        )
+        .mount(&server)
+        .await;
+    let items = client(&server)
+        .list_active_announcements("org_1", "app_1")
+        .await
+        .unwrap();
+    assert_eq!(items.len(), 2);
+    assert_eq!(items[0].severity, AnnouncementSeverity::Unknown);
+    assert_eq!(items[1].severity, AnnouncementSeverity::Warning);
+}
