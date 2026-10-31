@@ -140,12 +140,12 @@ fn validate_idempotency_key(key: &str) -> Result<()> {
     ))
 }
 
-fn validate_app_scope(org_id: &str, app_id: &str) -> Result<()> {
+pub(crate) fn validate_app_scope(org_id: &str, app_id: &str) -> Result<()> {
     validate_resource_id("organization ID", org_id)?;
     validate_resource_id("application ID", app_id)
 }
 
-fn validate_resource_id(label: &str, value: &str) -> Result<()> {
+pub(crate) fn validate_resource_id(label: &str, value: &str) -> Result<()> {
     let valid_length = (1..=MAX_RESOURCE_ID_BYTES).contains(&value.len());
     let path_safe = value
         .bytes()
@@ -192,7 +192,7 @@ fn validate_email_request(request: &TransactionalEmailRequest) -> Result<()> {
     Ok(())
 }
 
-fn looks_like_email_address(value: &str) -> bool {
+pub(crate) fn looks_like_email_address(value: &str) -> bool {
     let mut parts = value.split('@');
     let local = parts.next().unwrap_or_default();
     let domain = parts.next().unwrap_or_default();

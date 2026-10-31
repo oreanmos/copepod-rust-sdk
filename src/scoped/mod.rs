@@ -1,5 +1,6 @@
 mod ai;
 mod app;
+mod audience;
 mod auth;
 mod email;
 mod migrations;
@@ -9,6 +10,7 @@ mod trust;
 
 pub use ai::ScopedAiClient;
 pub use app::ScopedAppClient;
+pub use audience::ScopedAudienceClient;
 pub use auth::ScopedAppAuthClient;
 pub use email::ScopedEmailClient;
 pub use migrations::ScopedMigrationClient;

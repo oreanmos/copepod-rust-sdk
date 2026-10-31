@@ -35,7 +35,8 @@ Signed-in app users use the app-user bearer token (never the API key).
   carries the public signup policy.
 - `app_register` and `scoped.auth().register` return `AppRegisterResponse`
   (`token`, `refresh_token`, `record`, optional `trial`), matching the server;
-  pass an `AppRegisterRequest` as the body.
+  pass an `AppRegisterRequest` as the body. It carries an optional
+  `marketing_consent` (see `audience.md`), omitted from the JSON when `None`.
 - Older servers return 404 for both `me/subscription` routes and omit the new
   fields; the SDK does not fall back.
 

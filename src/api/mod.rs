@@ -5,6 +5,7 @@ pub mod ai_laya;
 pub mod app_auth;
 pub mod app_users;
 pub mod apps;
+pub mod audience;
 pub mod audit_logs;
 pub mod billing;
 pub mod billing_self_service;

@@ -1,8 +1,8 @@
 use crate::client::CopepodClient;
 
 use super::{
-    ScopedAiClient, ScopedAppAuthClient, ScopedEmailClient, ScopedMigrationClient,
-    ScopedRecordCollectionClient, ScopedTrustClient,
+    ScopedAiClient, ScopedAppAuthClient, ScopedAudienceClient, ScopedEmailClient,
+    ScopedMigrationClient, ScopedRecordCollectionClient, ScopedTrustClient,
 };
 
 /// Application-scoped client helpers.
@@ -64,5 +64,10 @@ impl<'a> ScopedAppClient<'a> {
     /// Return transactional email helpers bound to this application.
     pub fn email(&self) -> ScopedEmailClient<'a> {
         ScopedEmailClient::new(self.client, &self.org_id, &self.app_id)
+    }
+
+    /// Return audience helpers (leads and announcements) bound to this application.
+    pub fn audience(&self) -> ScopedAudienceClient<'a> {
+        ScopedAudienceClient::new(self.client, &self.org_id, &self.app_id)
     }
 }

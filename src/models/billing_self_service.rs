@@ -82,7 +82,7 @@ pub struct MeCheckoutResponse {
 }
 
 /// Typed body for app registration with country and evidence.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AppRegisterRequest {
     pub email: String,
     pub password: String,
@@ -92,6 +92,9 @@ pub struct AppRegisterRequest {
     pub billing_country: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub evidence: Option<BillingEvidence>,
+    /// Marketing opt-in recorded with the account; omitted from the JSON when `None`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub marketing_consent: Option<crate::models::MarketingConsent>,
 }
 
 /// Successful app-user registration: tokens, the created record and the
