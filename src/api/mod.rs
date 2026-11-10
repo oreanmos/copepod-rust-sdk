@@ -40,6 +40,7 @@ pub mod observability;
 pub mod org_invites;
 pub mod orgs;
 pub mod outbound_webhooks;
+pub mod owner_audience;
 pub mod plan_features;
 pub mod plans;
 pub mod platform_auth;
