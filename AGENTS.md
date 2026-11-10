@@ -48,3 +48,10 @@ Smallest complete change; locate with scoped searches. Gate before merge:
 `cargo test`, each with its exit status recorded and never piped into a
 filter. Report changed files, checks with exit status, the rev Oikonotes should
 pin, and whether a push is still needed.
+
+## CI
+
+`.forgejo/workflows/ci.yml` runs `cargo fmt --check`, clippy with `-D warnings`
+and `cargo test` on push to `main`/`staging` and on pull requests, plus a
+`cargo audit` job on a fresh lockfile (`Cargo.lock` is gitignored).
+`CopepodError` is `#[non_exhaustive]`; downstream matches need a wildcard arm.

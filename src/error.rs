@@ -215,7 +215,11 @@ pub const CAPACITY_REACHED_CODE: &str = "capacity_reached";
 pub const STORAGE_QUOTA_EXCEEDED_CODE: &str = "storage_quota_exceeded";
 
 /// Errors returned by the Copepod SDK.
+///
+/// This enum is `#[non_exhaustive]`: new variants can be added without a breaking
+/// release, so a downstream `match` needs a wildcard arm.
 #[derive(Debug, Error)]
+#[non_exhaustive]
 pub enum CopepodError {
     /// HTTP transport error from reqwest.
     #[error("HTTP error: {0}")]

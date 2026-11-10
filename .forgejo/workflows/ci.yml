@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - staging
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: fmt, clippy, test
+    runs-on: docker
+    # Cargo state persists in /ci-scratch, mounted into every job (the runner's
+    # actions/cache server fails large uploads); same pattern as oikonotes.
+    env:
+      CARGO_HOME: /ci-scratch/cargo-home/copepod-rust-sdk
+      CARGO_TARGET_DIR: /ci-scratch/targets/copepod-rust-sdk-check
+      CARGO_INCREMENTAL: "1"
+    container:
+      image: rust:1-bookworm
+      options: --user root
+    steps:
+      - name: Bootstrap repository
+        env:
+          CHECKOUT_TOKEN: ${{ secrets.GITEA_TOKEN || github.token }}
+          CI_ACTOR: ${{ github.actor }}
+          CI_REPOSITORY: ${{ github.repository }}
+          CI_SERVER_URL: ${{ github.server_url }}
+          CI_SHA: ${{ github.sha }}
+          CI_REF: ${{ github.ref }}
+        run: |
+          set -eu
+          REPO_DIR="${RUNNER_TEMP:-/tmp}/sdk-check"
+          AUTH_HEADER="Authorization: Basic $(printf '%s' "${CI_ACTOR}:${CHECKOUT_TOKEN}" | base64 | tr -d '\n')"
+          REMOTE_URL="${CI_SERVER_URL%/}/${CI_REPOSITORY}.git"
+          FETCH_TARGET="${CI_REF:-${CI_SHA}}"
+          rm -rf "${REPO_DIR}"
+          git init "${REPO_DIR}"
+          git -C "${REPO_DIR}" remote add origin "${REMOTE_URL}"
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0=http.extraheader
+          export GIT_CONFIG_VALUE_0="${AUTH_HEADER}"
+          if ! git -C "${REPO_DIR}" fetch --depth=1 origin "${FETCH_TARGET}"; then
+            git -C "${REPO_DIR}" fetch --depth=1 origin "${CI_SHA}"
+          fi
+          unset GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
+          git -C "${REPO_DIR}" checkout --detach FETCH_HEAD
+          git config --global --add safe.directory "${REPO_DIR}"
+          printf 'REPO_DIR=%s\n' "${REPO_DIR}" >> "${GITHUB_ENV}"
+
+      - name: Add rustfmt and clippy
+        run: rustup component add rustfmt clippy
+
+      - name: Format
+        run: cd "${REPO_DIR}" && cargo fmt --check
+
+      - name: Clippy
+        run: cd "${REPO_DIR}" && cargo clippy --all-targets -- -D warnings
+
+      - name: Test
+        run: cd "${REPO_DIR}" && cargo test
+
+  audit:
+    name: cargo audit
+    runs-on: docker
+    env:
+      CARGO_HOME: /ci-scratch/cargo-home/copepod-rust-sdk
+      CARGO_TARGET_DIR: /ci-scratch/targets/copepod-rust-sdk-audit
+    container:
+      image: rust:1-bookworm
+      options: --user root
+    steps:
+      - name: Bootstrap repository
+        env:
+          CHECKOUT_TOKEN: ${{ secrets.GITEA_TOKEN || github.token }}
+          CI_ACTOR: ${{ github.actor }}
+          CI_REPOSITORY: ${{ github.repository }}
+          CI_SERVER_URL: ${{ github.server_url }}
+          CI_SHA: ${{ github.sha }}
+          CI_REF: ${{ github.ref }}
+        run: |
+          set -eu
+          REPO_DIR="${RUNNER_TEMP:-/tmp}/sdk-audit"
+          AUTH_HEADER="Authorization: Basic $(printf '%s' "${CI_ACTOR}:${CHECKOUT_TOKEN}" | base64 | tr -d '\n')"
+          REMOTE_URL="${CI_SERVER_URL%/}/${CI_REPOSITORY}.git"
+          FETCH_TARGET="${CI_REF:-${CI_SHA}}"
+          rm -rf "${REPO_DIR}"
+          git init "${REPO_DIR}"
+          git -C "${REPO_DIR}" remote add origin "${REMOTE_URL}"
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0=http.extraheader
+          export GIT_CONFIG_VALUE_0="${AUTH_HEADER}"
+          if ! git -C "${REPO_DIR}" fetch --depth=1 origin "${FETCH_TARGET}"; then
+            git -C "${REPO_DIR}" fetch --depth=1 origin "${CI_SHA}"
+          fi
+          unset GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
+          git -C "${REPO_DIR}" checkout --detach FETCH_HEAD
+          git config --global --add safe.directory "${REPO_DIR}"
+          printf 'REPO_DIR=%s\n' "${REPO_DIR}" >> "${GITHUB_ENV}"
+
+      - name: Install cargo-audit
+        run: |
+          set -eu
+          # CARGO_HOME persists in /ci-scratch, so the binary is built once.
+          if ! "${CARGO_HOME}/bin/cargo-audit" --version >/dev/null 2>&1; then
+            cargo install --locked cargo-audit
+          fi
+          echo "${CARGO_HOME}/bin" >> "${GITHUB_PATH}"
+
+      - name: Audit a fresh resolve
+        # Cargo.lock is gitignored: consumers resolve their own versions, so
+        # audit what a new resolve picks.
+        run: cd "${REPO_DIR}" && cargo generate-lockfile && cargo audit
