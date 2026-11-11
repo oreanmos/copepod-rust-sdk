@@ -1,6 +1,6 @@
 use copepod_sdk::{
     CopepodClient, CopepodError, CreateOwnerIssue, CreateOwnerSubscriber, OwnerAudienceStatus,
-    OwnerIssueStatus, OwnerSubscriberStatus, Page, PutOwnerAudience, SubscriberQuery,
+    OwnerIssueStatus, OwnerPage, OwnerSubscriberStatus, PutOwnerAudience, SubscriberQuery,
 };
 use serde_json::json;
 use wiremock::matchers::{body_json, header, method, path, query_param};
@@ -230,7 +230,7 @@ async fn me_audience_subscribers_passes_the_filter_query() {
         .mount(&server)
         .await;
 
-    let page: Page<copepod_sdk::OwnerSubscriber> = bearer_client(&server)
+    let page: OwnerPage<copepod_sdk::OwnerSubscriber> = bearer_client(&server)
         .me_audience_subscribers(
             "org_1",
             "app_1",

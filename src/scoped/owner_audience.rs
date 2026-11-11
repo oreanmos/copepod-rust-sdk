@@ -1,8 +1,8 @@
 use crate::client::CopepodClient;
 use crate::error::Result;
 use crate::models::{
-    Accepted, CreateOwnerIssue, CreateOwnerSubscriber, OwnerAudience, OwnerIssue, OwnerSubscriber,
-    Page, PutOwnerAudience, SubscriberQuery,
+    CreateOwnerIssue, CreateOwnerSubscriber, OwnerAccepted, OwnerAudience, OwnerIssue, OwnerPage,
+    OwnerSubscriber, PutOwnerAudience, SubscriberQuery,
 };
 
 /// Owner-audience helpers bound to an organization and application.
@@ -34,7 +34,7 @@ impl<'a> ScopedOwnerAudienceClient<'a> {
         &self,
         owner_user_id: &str,
         req: &CreateOwnerSubscriber,
-    ) -> Result<Accepted> {
+    ) -> Result<OwnerAccepted> {
         self.client
             .create_owner_subscriber(&self.org_id, &self.app_id, owner_user_id, req)
             .await
@@ -57,14 +57,14 @@ impl<'a> ScopedOwnerAudienceClient<'a> {
         owner_user_id: &str,
         issue_id: &str,
         to: &str,
-    ) -> Result<Accepted> {
+    ) -> Result<OwnerAccepted> {
         self.client
             .test_owner_issue(&self.org_id, &self.app_id, owner_user_id, issue_id, to)
             .await
     }
 
     /// Send an issue to the owner's subscribers (API key).
-    pub async fn send_issue(&self, owner_user_id: &str, issue_id: &str) -> Result<Accepted> {
+    pub async fn send_issue(&self, owner_user_id: &str, issue_id: &str) -> Result<OwnerAccepted> {
         self.client
             .send_owner_issue(&self.org_id, &self.app_id, owner_user_id, issue_id)
             .await
@@ -82,7 +82,7 @@ impl<'a> ScopedOwnerAudienceClient<'a> {
         &self,
         collection: &str,
         q: &SubscriberQuery,
-    ) -> Result<Page<OwnerSubscriber>> {
+    ) -> Result<OwnerPage<OwnerSubscriber>> {
         self.client
             .me_audience_subscribers(&self.org_id, &self.app_id, collection, q)
             .await
@@ -112,7 +112,7 @@ impl<'a> ScopedOwnerAudienceClient<'a> {
         collection: &str,
         limit: u32,
         offset: u32,
-    ) -> Result<Page<OwnerIssue>> {
+    ) -> Result<OwnerPage<OwnerIssue>> {
         self.client
             .me_audience_issues(&self.org_id, &self.app_id, collection, limit, offset)
             .await

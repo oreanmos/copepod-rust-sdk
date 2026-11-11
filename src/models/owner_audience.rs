@@ -5,29 +5,42 @@ use serde::{Deserialize, Serialize};
 /// Lifecycle of an owner audience.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum OwnerAudienceStatus {
     Active,
     Suspended,
+    /// A status added by a newer server.
+    #[serde(other)]
+    Unknown,
 }
 
 /// Where a subscriber is in double opt-in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum OwnerSubscriberStatus {
     Pending,
     Confirmed,
     Unsubscribed,
+    /// A status added by a newer server.
+    #[serde(other)]
+    Unknown,
 }
 
 /// Lifecycle of an issue.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum OwnerIssueStatus {
     Draft,
     Tested,
     Sending,
     Sent,
+    /// Cancelled by a suspension or disable; it can no longer be tested or sent.
     Cancelled,
+    /// A status added by a newer server.
+    #[serde(other)]
+    Unknown,
 }
 
 /// `PUT …/owner-audiences/{owner_user_id}` request body.
@@ -35,6 +48,8 @@ pub enum OwnerIssueStatus {
 pub struct PutOwnerAudience {
     pub display_name: String,
     pub site_url: String,
+    /// Off unless sent; the server defaults an omitted field to `false`.
+    #[serde(default)]
     pub reply_to_owner: bool,
     pub consent_text: String,
     pub enabled: bool,
@@ -53,13 +68,20 @@ pub struct OwnerAudience {
     pub limits: OwnerAudienceLimits,
     pub counts: OwnerAudienceCounts,
     pub issues_this_month: u64,
+    #[serde(default)]
     pub disabled_at: Option<String>,
 }
 
+/// Plan limits. `u64::MAX` means unlimited (see [`OwnerAudienceLimits::UNLIMITED`]).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OwnerAudienceLimits {
     pub subscribers_max: u64,
     pub issues_per_month: u64,
+}
+
+impl OwnerAudienceLimits {
+    /// The value the server sends for an unlimited plan.
+    pub const UNLIMITED: u64 = u64::MAX;
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -81,7 +103,7 @@ pub struct CreateOwnerSubscriber {
 
 /// The 202 answer of the sign-up, test and send endpoints.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Accepted {
+pub struct OwnerAccepted {
     pub accepted: bool,
 }
 
@@ -92,13 +114,15 @@ pub struct OwnerSubscriber {
     pub email: String,
     pub status: OwnerSubscriberStatus,
     pub created_at: String,
+    #[serde(default)]
     pub confirmed_at: Option<String>,
+    #[serde(default)]
     pub unsubscribed_at: Option<String>,
 }
 
-/// A page of items.
+/// A page of items from an owner list endpoint.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Page<T> {
+pub struct OwnerPage<T> {
     pub items: Vec<T>,
     pub total: u64,
 }
@@ -132,7 +156,7 @@ pub struct OwnerIssue {
     pub subject: String,
     pub content_hash: String,
     pub created_at: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub counts: Option<OwnerIssueCounts>,
 }
 
