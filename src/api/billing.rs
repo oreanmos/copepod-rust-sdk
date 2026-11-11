@@ -260,6 +260,9 @@ impl CopepodClient {
         collection: &str,
         body: &RegisterWithBillingIntentRequest,
     ) -> Result<crate::models::AuthResponse> {
+        if let Some(consent) = &body.marketing_consent {
+            consent.validate()?;
+        }
         self.post_public(
             &format!(
                 "api/platform/orgs/{org_id}/apps/{app_id}/auth/{collection}/register-with-billing-intent"

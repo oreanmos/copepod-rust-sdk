@@ -112,7 +112,7 @@ impl CopepodClient {
     /// # Errors
     /// `InvalidArgument` for empty ids, an empty task; 400
     /// `laya_invalid_request`, 404 `laya_task_unknown`, 503 `laya_unavailable` (treat as "no
-    /// answer") and 403 `ai_paused_for_review` as `CopepodError::Api`.
+    /// answer") and 403 `ai_paused_for_review` (`ApiWithDetails`: scope and until).
     pub async fn ai_decide(
         &self,
         org_id: &str,
@@ -139,7 +139,7 @@ impl CopepodClient {
     /// `POST /api/platform/orgs/{org}/apps/{app}/ai/decide` (`X-API-Key`, scope `ai:decide`).
     ///
     /// Sends `X-API-Key` only, never `Authorization`. `user_id` is sent as `X-User-Id` for
-    /// attribution. Takes a task request or an ad-hoc one (at most 3 questions, state at most
+    /// attribution; a suspended user is refused (403 `account_suspended`). Takes a task request or an ad-hoc one (at most 3 questions, state at most
     /// 4,000 characters). An ad-hoc answer has `mode: "adhoc"`, no `decision_id` and
     /// `confident: false`; apply your own threshold to `confidence`.
     ///

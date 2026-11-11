@@ -1,3 +1,4 @@
+use super::audience::MarketingConsent;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -192,13 +193,17 @@ pub struct BillingIntentCheckoutResponse {
     pub status: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// Body for registering an app user against a billing intent.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct RegisterWithBillingIntentRequest {
     pub billing_intent_id: String,
     pub email: String,
     pub password: String,
     #[serde(default)]
     pub name: Option<String>,
+    /// Marketing opt-in recorded with the account; omitted from the JSON when `None`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub marketing_consent: Option<MarketingConsent>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

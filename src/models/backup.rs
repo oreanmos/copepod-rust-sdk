@@ -203,16 +203,49 @@ pub struct BackupDestinationsUpdateRequest {
     pub default_destination_id: Option<String>,
 }
 
+/// One column of a table found in an uploaded import file.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ImportDiscoverRequest {
-    pub source_path: String,
+pub struct ImportColumn {
+    pub name: String,
+    pub sqlite_type: String,
+    pub copepod_type: String,
+    pub not_null: bool,
+    pub is_pk: bool,
 }
 
+/// One table found in an uploaded import file.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ImportTable {
+    pub name: String,
+    pub row_count: i64,
+    pub columns: Vec<ImportColumn>,
+}
+
+/// Response of `import/discover`: the tables found and the opaque id of the stored upload.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ImportDiscoverResponse {
+    /// 32 hex characters; pass it to `import/execute`. Uploads expire after an hour.
+    pub import_id: String,
+    pub tables: Vec<ImportTable>,
+}
+
+/// Request body of `import/execute`; the server never accepts a path.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImportExecuteRequest {
-    pub source_path: String,
+    /// The `import_id` returned by `import/discover`.
+    pub import_id: String,
+    /// Tables to import; empty imports every table found.
     #[serde(default)]
     pub tables: Vec<String>,
+}
+
+/// Response of `import/execute`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ImportExecuteResponse {
+    pub tables_imported: u64,
+    pub rows_imported: u64,
+    #[serde(default)]
+    pub errors: Vec<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

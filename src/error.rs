@@ -50,8 +50,41 @@ pub const LAYA_UNAVAILABLE_CODE: &str = "laya_unavailable";
 /// 503 on a decide outcome or a donation write: held while a rolling upgrade reaches every peer.
 pub const LAYA_UPGRADING_CODE: &str = "laya_upgrading";
 
-/// 403 on Laya `decide`: the user is restricted pending review (reserved; not enforced yet).
+/// 403 on a hosted AI call (Laya `decide`, the gateway): the user has an active `hosted_ai`
+/// restriction. The body carries `scope` and `until`.
 pub const AI_PAUSED_FOR_REVIEW_CODE: &str = "ai_paused_for_review";
+
+/// 403 on any app-user call: the account is suspended by the app's owner.
+pub const ACCOUNT_SUSPENDED_CODE: &str = "account_suspended";
+
+/// 403 on sign-up (register, register with a billing intent, billing-intent creation): the
+/// email address is held after the erasure of a suspended account. No reason is given.
+pub const SIGNUP_UNAVAILABLE_CODE: &str = "signup_unavailable";
+
+/// 503 on the erase call: a subscription could not be cancelled at the payment provider, so
+/// nothing was erased. Cancelling repeats safely; retry.
+pub const BILLING_CANCELLATION_FAILED_CODE: &str = "billing_cancellation_failed";
+
+/// 503 on a trust write or the erase call: held while a rolling upgrade reaches every peer.
+pub const TRUST_UPGRADING_CODE: &str = "trust_upgrading";
+
+/// 429 on a content report: the reporter or the subject hit a report limit.
+pub const REPORT_RATE_LIMITED_CODE: &str = "report_rate_limited";
+
+/// 429 on `moderate`: the app or the user hit the moderation rate limit.
+pub const MODERATION_RATE_LIMITED_CODE: &str = "moderation_rate_limited";
+
+/// 422 on a record edit: moderation blocked the edited text; nothing was stored.
+pub const CONTENT_REJECTED_CODE: &str = "content_rejected";
+
+/// 409 on suspend: the user is already suspended.
+pub const ALREADY_SUSPENDED_CODE: &str = "already_suspended";
+
+/// 409 on unsuspend: the user is not suspended.
+pub const NOT_SUSPENDED_CODE: &str = "not_suspended";
+
+/// 404 on lifting a restriction: no active restriction in that scope.
+pub const RESTRICTION_NOT_FOUND_CODE: &str = "restriction_not_found";
 
 /// 400 on a consent grant: the policy version is not one the server knows.
 pub const LAYA_POLICY_VERSION_UNKNOWN_CODE: &str = "laya_policy_version_unknown";
@@ -151,6 +184,28 @@ pub const SPACES_UPGRADING_CODE: &str = "spaces_upgrading";
 /// 503: a rolling upgrade holds credit reports.
 pub const CREDITS_UPGRADING_CODE: &str = "credits_upgrading";
 
+/// 402 on a storage pack subscribe: the user has no active, non-trial paid plan.
+pub const REQUIRES_PAID_PLAN_CODE: &str = "requires_paid_plan";
+
+/// 409 on a storage pack subscribe: the pack's currency is not the plan's.
+pub const CURRENCY_MISMATCH_CODE: &str = "currency_mismatch";
+
+/// 409 on a storage pack subscribe: the plan already has unlimited storage.
+pub const STORAGE_UNLIMITED_CODE: &str = "storage_unlimited";
+
+/// 409 on a storage pack subscribe: the app has no spare storage capacity.
+pub const STORAGE_CAPACITY_UNAVAILABLE_CODE: &str = "capacity_unavailable";
+
+/// 409 on a storage pack subscribe: the payment provider has no usable mandate.
+/// The same idempotency key can be retried later.
+pub const MANDATE_UNAVAILABLE_CODE: &str = "mandate_unavailable";
+
+/// 502 on a storage pack subscribe: the payment provider refused the subscription.
+pub const PAYMENT_PROVIDER_REJECTED_CODE: &str = "payment_provider_rejected";
+
+/// 503: a rolling upgrade holds storage pack subscribe, cancel and settlement.
+pub const PACKS_UPGRADING_CODE: &str = "packs_upgrading";
+
 /// 409 at signup or billing intent: the app is at capacity. The body carries `limit`
 /// (the full capacity setting, e.g. `max_active_users`). Do not retry.
 pub const CAPACITY_REACHED_CODE: &str = "capacity_reached";
@@ -160,7 +215,11 @@ pub const CAPACITY_REACHED_CODE: &str = "capacity_reached";
 pub const STORAGE_QUOTA_EXCEEDED_CODE: &str = "storage_quota_exceeded";
 
 /// Errors returned by the Copepod SDK.
+///
+/// This enum is `#[non_exhaustive]`: new variants can be added without a breaking
+/// release, so a downstream `match` needs a wildcard arm.
 #[derive(Debug, Error)]
+#[non_exhaustive]
 pub enum CopepodError {
     /// HTTP transport error from reqwest.
     #[error("HTTP error: {0}")]
@@ -379,6 +438,92 @@ impl CopepodError {
     /// Whether an upload was refused for storage quota (`storage_quota_exceeded`).
     pub fn is_storage_quota_exceeded(&self) -> bool {
         matches!(self, Self::StorageQuotaExceeded { .. })
+    }
+
+    /// Whether the app-user's account is suspended (403 `account_suspended`).
+    pub fn is_account_suspended(&self) -> bool {
+        self.api_status() == Some(403) && self.api_code() == Some(ACCOUNT_SUSPENDED_CODE)
+    }
+
+    /// The erasure token of a 403 `account_suspended` from a login, magic-link redemption or
+    /// MFA verification, when the server sent one (it did not for a call made with an
+    /// existing token or an API key, nor from an older server).
+    pub fn account_suspended_details(&self) -> Option<crate::models::AccountSuspended> {
+        if !self.is_account_suspended() {
+            return None;
+        }
+        match self.api_details() {
+            Some(details) => serde_json::from_value(details.clone()).ok(),
+            None => Some(crate::models::AccountSuspended::default()),
+        }
+    }
+
+    /// Whether sign-up was refused for a held email address (403 `signup_unavailable`).
+    pub fn is_signup_unavailable(&self) -> bool {
+        self.api_status() == Some(403) && self.api_code() == Some(SIGNUP_UNAVAILABLE_CODE)
+    }
+
+    /// Whether the erase call was refused because the erasure token is bad, expired, reused or
+    /// for another app (401).
+    pub fn is_erasure_token_invalid(&self) -> bool {
+        self.api_status() == Some(401)
+    }
+
+    /// Whether the erase call failed cancelling a subscription (503
+    /// `billing_cancellation_failed`); nothing was erased and a retry is safe.
+    pub fn is_billing_cancellation_failed(&self) -> bool {
+        self.api_code() == Some(BILLING_CANCELLATION_FAILED_CODE)
+    }
+
+    /// Whether a trust write is held during a rolling upgrade (503 `trust_upgrading`); retry.
+    pub fn is_trust_upgrading(&self) -> bool {
+        self.api_code() == Some(TRUST_UPGRADING_CODE)
+    }
+
+    /// Whether hosted AI is paused for this user (403 `ai_paused_for_review`).
+    pub fn is_ai_paused_for_review(&self) -> bool {
+        self.api_code() == Some(AI_PAUSED_FOR_REVIEW_CODE)
+    }
+
+    /// The restriction scope and end time of a 403 `ai_paused_for_review`. `until` is the
+    /// RFC 3339 time the pause ends by itself.
+    pub fn ai_paused_for_review_details(&self) -> Option<crate::models::AiPausedForReview> {
+        match self.api_code() {
+            Some(AI_PAUSED_FOR_REVIEW_CODE) => {
+                serde_json::from_value(self.api_details()?.clone()).ok()
+            }
+            _ => None,
+        }
+    }
+
+    /// Whether a content report was rate limited (429 `report_rate_limited`).
+    pub fn is_report_rate_limited(&self) -> bool {
+        self.api_code() == Some(REPORT_RATE_LIMITED_CODE)
+    }
+
+    /// Whether `moderate` was rate limited (429 `moderation_rate_limited`).
+    pub fn is_moderation_rate_limited(&self) -> bool {
+        self.api_code() == Some(MODERATION_RATE_LIMITED_CODE)
+    }
+
+    /// Whether moderation blocked a record edit (422 `content_rejected`); nothing was stored.
+    pub fn is_content_rejected(&self) -> bool {
+        self.api_code() == Some(CONTENT_REJECTED_CODE)
+    }
+
+    /// Whether suspend found the user already suspended (409 `already_suspended`).
+    pub fn is_already_suspended(&self) -> bool {
+        self.api_code() == Some(ALREADY_SUSPENDED_CODE)
+    }
+
+    /// Whether unsuspend found the user not suspended (409 `not_suspended`).
+    pub fn is_not_suspended(&self) -> bool {
+        self.api_code() == Some(NOT_SUSPENDED_CODE)
+    }
+
+    /// Whether a lift found no active restriction (404 `restriction_not_found`).
+    pub fn is_restriction_not_found(&self) -> bool {
+        self.api_code() == Some(RESTRICTION_NOT_FOUND_CODE)
     }
 
     /// Server-advertised retry delay for a Raft leader election.

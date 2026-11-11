@@ -2,34 +2,41 @@ use crate::client::CopepodClient;
 use crate::error::Result;
 use crate::models::{
     AppBackupHealth, AppBackupPolicy, BackupDestinationsResponse, BackupStatus,
-    CreateBackupRequest, CreateBackupResponse,
+    ImportDiscoverResponse, ImportExecuteRequest, ImportExecuteResponse,
 };
 
 impl CopepodClient {
-    /// Discover tables from an import source.
+    /// Upload a SQLite file and discover its tables.
+    ///
+    /// The file is sent as the raw request body (max 100 MiB). The response carries an
+    /// opaque `import_id` for [`import_execute`](Self::import_execute).
     pub async fn import_discover(
         &self,
         org_id: &str,
         app_id: &str,
-        body: &CreateBackupRequest,
-    ) -> Result<CreateBackupResponse> {
-        self.post(
-            &format!(
-                "api/platform/orgs/{}/apps/{}/import/discover",
-                org_id, app_id
-            ),
-            body,
-        )
-        .await
+        file: Vec<u8>,
+    ) -> Result<ImportDiscoverResponse> {
+        let path = format!(
+            "api/platform/orgs/{}/apps/{}/import/discover",
+            org_id, app_id
+        );
+        let resp = self
+            .auth_request(reqwest::Method::POST, &path)
+            .await?
+            .header(reqwest::header::CONTENT_TYPE, "application/octet-stream")
+            .body(file)
+            .send()
+            .await?;
+        Self::handle_response_pub(resp).await
     }
 
-    /// Execute an import.
+    /// Execute an import of a file previously uploaded with `import_discover`.
     pub async fn import_execute(
         &self,
         org_id: &str,
         app_id: &str,
-        body: &impl serde::Serialize,
-    ) -> Result<serde_json::Value> {
+        body: &ImportExecuteRequest,
+    ) -> Result<ImportExecuteResponse> {
         self.post(
             &format!(
                 "api/platform/orgs/{}/apps/{}/import/execute",

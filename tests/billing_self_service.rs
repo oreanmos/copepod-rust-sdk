@@ -299,6 +299,7 @@ async fn app_register_returns_record_and_trial_from_the_server_body() {
         name: None,
         billing_country: Some("GB".into()),
         evidence: None,
+        marketing_consent: None,
     };
     let resp = client(&server)
         .app_register("org1", "app1", "users", &body)

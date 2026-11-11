@@ -519,7 +519,7 @@ impl CopepodClient {
     /// `POST /api/platform/orgs/{org}/apps/{app}/ai/v1/{moderations|chat/moderations}`.
     ///
     /// Sends `X-API-Key` only, never `Authorization` (scope `ai:moderate`). `user_id` is sent as
-    /// `X-User-Id` for attribution only. `chat` selects the chat-message route.
+    /// `X-User-Id` for attribution; a suspended user is refused (403 `account_suspended`). `chat` selects the chat-message route.
     pub async fn app_ai_moderations(
         &self,
         org_id: &str,
