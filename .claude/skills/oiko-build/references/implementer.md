@@ -42,6 +42,12 @@ copepod-rust-sdk (Rust client).
   `npm run test:e2e:*`.
   Never wrap `e2e-env.sh` in `heavy`: it already builds through `heavy`, and
   the outer wrapper would hold a slot its own build waits for (deadlock).
+  Run each e2e session as one call that also tears down, so the server never
+  keeps the e2e lock: `scripts/devx/e2e-env.sh up --build && scripts/devx/e2e-env.sh
+  test <specs>; rc=$?; scripts/devx/e2e-env.sh down; exit $rc` (if you go through
+  `slot --e2e`, wrap that whole line in one `bash -c`; never `slot --e2e` the
+  `up` alone: the daemonised server inherits the lock and every later e2e run
+  waits forever).
 - Stop any process you started: in oikonotes `scripts/devx/e2e-env.sh down`,
   anything else by its recorded PID. Never `pkill`, `killall` or kill by name or port; other
   agents share this machine.

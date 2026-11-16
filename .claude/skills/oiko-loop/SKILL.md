@@ -20,6 +20,10 @@ items) and follow them; this skill only adds how to pick work and how to stop.
 3. Read answers: Pi `owner_answers`; elsewhere the `answer` lines of
    `~/Development/agent-state/loop/owner-questions.jsonl`. An answered question unparks its item.
 4. Read `~/Development/agent-state/owner-notes.md` and `claim list`.
+5. Read the standing operational rules earlier sessions learned:
+   `~/Development/agent-state/_home/claude-memory/oikonotes/MEMORY.md` (an index; open the notes
+   that touch your item: e2e lock, heavy slots, staging pushes cancel builds, wasm budget raises,
+   copepod pushes deploy prod, browser tests before merge). They bind you like this skill.
 
 ## 2. Pick one item, first match wins
 
