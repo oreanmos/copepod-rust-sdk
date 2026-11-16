@@ -9,9 +9,9 @@
 set -euo pipefail
 
 SKILLS=(oiko-plan oiko-build oiko-implement oiko-review oiko-worktree oiko-contract
-        oikonotes-dev copepod-dev copepod-sdk-dev)
-AGENTS=(oiko-implementer oiko-reviewer oiko-scout)
-FILES=(.claude/settings.json .codex/config.toml .pi/skill-orchestrator.json)
+        oiko-loop oikonotes-dev copepod-dev copepod-sdk-dev)
+AGENTS=(oiko-implementer oiko-reviewer oiko-scout oiko-test-author oiko-security-reviewer oiko-gate)
+FILES=(.claude/settings.json .codex/config.toml .pi/skill-orchestrator.json .vibe/agents)
 REPOS=(oikonotes copepod copepod-rust-sdk)
 
 mode="${1:-sync}"
@@ -24,7 +24,11 @@ self="$(basename "$main_checkout")"
 kit_paths() {
     for s in "${SKILLS[@]}"; do echo ".claude/skills/$s"; done
     for a in "${AGENTS[@]}"; do
-        echo ".claude/agents/$a.md"; echo ".codex/agents/$a.toml"; echo ".opencode/agents/$a.md"
+        echo ".claude/agents/$a.md"
+        # Codex and OpenCode define only the original three roles (owner 2026-11-16).
+        for p in ".codex/agents/$a.toml" ".opencode/agents/$a.md"; do
+            [[ -e "$here/$p" ]] && echo "$p"
+        done
     done
     printf '%s\n' "${FILES[@]}"
 }

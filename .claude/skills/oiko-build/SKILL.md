@@ -25,17 +25,29 @@ spec does not cover, or a push.
 
 ## Roles and models
 
-| Role | Claude Code | Codex | Does |
-|---|---|---|---|
-| Orchestrator (you) | the session model | `gpt-6-sol` | briefs, checks evidence, merges, keeps the log, talks to the owner |
-| `oiko-implementer` | Sonnet, medium | `gpt-6-luna` | one slice or fix in its worktree, per `oiko-implement`; never merges |
-| `oiko-reviewer` | Opus, high | `gpt-6-luna` | read-only acceptance, per `oiko-review` |
-| `oiko-scout` | Sonnet, medium | `gpt-6-luna` | read-only runtime observation and code questions |
-| Lookups | `Explore`, `model: "haiku"` | default subagent | "where is X" questions, in parallel |
+Owner policy (2026-11-16): the work runs on Mistral-hosted models (Pi and
+Vibe); Anthropic is spent only on the per-spec go/no-go (`oiko-gate`) and on an
+escalation after Mistral failed twice, inside a fixed monthly budget.
 
-Agent definitions set model and effort (`.claude/agents/`, `.codex/agents/`,
-`.opencode/agents/`): pass no `model` override. Brief with paths, never pasted
-content. Do not fork your own context into an implementer: a fork keeps your
+| Role | Pi (`.pi/skill-orchestrator.json`) | Vibe (`.vibe/agents/`) | Claude Code | Does |
+|---|---|---|---|---|
+| Orchestrator (you) | session: `mistral-large-4`, high | `oiko-orchestrator` (large-4) | session model | briefs, checks evidence, merges, keeps the log, pushes, talks to the owner |
+| `oiko-test-author` | `zai-glm-5-3`, high | `oiko-test-author` (glm-5-3) | Sonnet, medium | red: failing tests for the slice's criteria, per `references/test-author.md` |
+| `oiko-implementer` | `mistral-large-4`, medium | `oiko-implementer` (large-4) | Sonnet, medium | green: makes the red tests pass in its worktree, per `oiko-implement`; never merges |
+| `oiko-reviewer` | `zai-glm-5-3`, high | `oiko-reviewer` (glm-5-3) | Opus, high | read-only branch review, per `oiko-review` (a different model from the implementer) |
+| `oiko-security-reviewer` | `mistral-large-4`, high | `oiko-security-reviewer` (large-4) | Opus, high | read-only security review of every slice and of the spec, per `oiko-review` › Security review |
+| `oiko-acceptance` | `mistral-large-4`, high (the reviewer brief) | `oiko-acceptance` (large-4) | `oiko-reviewer` | read-only acceptance of the finished spec |
+| `oiko-gate` | `claude-opus-5-5`, high (budget) | none: hand the gate to a Pi session | Opus | go/no-go per finished spec, per `references/gate.md` |
+| `oiko-scout`, lookups | `zai-glm-5-3-flash`, low | `oiko-scout` (glm-5-3-flash, high) | Sonnet / haiku | read-only observation and "where is X" questions |
+
+Agent definitions and the Pi map set model and effort: pass no `model`
+override (Pi's map also holds the fallbacks and the budget). Vibe runs every
+in-session subagent on the session's model, so a Vibe orchestrator runs each
+role as its own headless process to get the role's model:
+`vibe --trust --agent <role> -p "<brief>" --auto-approve --output json
+--output-dir <evidence dir>/<role>-<n>` (cost is in its `export.json`).
+Codex and OpenCode keep definitions for the original three roles only. Brief
+with paths, never pasted content. Do not fork your own context into an implementer: a fork keeps your
 model, which is the cost this split avoids. Where the harness has no subagents,
 play each role in turn with the same briefs and checks.
 
@@ -67,6 +79,11 @@ play each role in turn with the same briefs and checks.
   means another session has the work. Resuming your own claimed build needs no
   new claim. If `git worktree list` shows another session's branch for your
   next slice, stop and ask the owner.
+- **Budget.** Before each slice run `~/Development/agent-state/bin/budget check
+  mistral`; exit 3 means the month's Mistral budget is spent: finish the
+  current step, update the log and claim, and stop. Opus dispatches (`oiko-gate`,
+  escalations) check `anthropic` the same way; Pi's dispatcher also refuses on
+  its own.
 - A notification that an agent is still running needs a one-line reply and no
   tool calls.
 - **Owner notes.** `~/Development/agent-state/owner-notes.md` holds what the
@@ -78,8 +95,10 @@ play each role in turn with the same briefs and checks.
 
 ## Each slice, in order
 
-Up to three builds run per machine: `claim take` refuses a fourth, and any new
-build under 100 GB free disk (`--override "<reason>"` only on the owner's word).
+Builds per machine are capped by `OIKO_MAX_BUILDS` (default 3; the `oiko-loop`
+runner sets it from free memory and cores): `claim take` refuses one more, and
+any new build under 100 GB free disk (`--override "<reason>"` only on the
+owner's word).
 Heavy commands queue in `~/Development/agent-state/bin/heavy` (two slots), so
 parallel agents overlap their thinking, not their compiles. Within one build,
 run one implementer at a time unless slices are independent and share no files.
@@ -90,7 +109,15 @@ Read-only lookups can run alongside.
    `~/Development/agent-state/bin/wt take <repo> <slug> --branch <type>/<slug>-s<n> --agent <agent>`,
    and brief the implementer with the path it prints. All slots held: finish
    or release what you hold, or wait; do not create a worktree by hand.
-2. **Delegate** to `oiko-implementer` in the background:
+2. **Red.** Delegate to `oiko-test-author` with the same brief shape as below
+   (worktree, spec slice or fix brief, acceptance criteria, evidence dir; brief
+   `references/test-author.md`). It commits the failing tests and stubs once
+   and reports `red.log`. Check: every new test failed for the stated reason,
+   the commit holds only tests and stubs, and each criterion has a test (or a
+   reason it is a manual check). Record the red commit in the log. Docs-only
+   and pure config slices skip Red; say so in the log.
+3. **Green.** Delegate to `oiko-implementer` in the background, adding
+   `Red commit: <sha> (tests locked; see oiko-implement, Before editing)`:
 
    ```text
    Agent(subagent_type: "oiko-implementer", description: "<slug> S<n>",
@@ -103,30 +130,39 @@ Read-only lookups can run alongside.
    ```
 
    End your turn; the completion notification resumes you.
-3. **Review before the gate.** The implementer's first report is
+4. **Review before the gate.** The implementer's first report is
    *review-ready*: committed, focused checks green, no full gate yet. Read
    `git -C <worktree> diff <base>...HEAD` against the slice goal, and its
    `--stat` file count (build output such as `crates/target/` must never be
    committed); confirm a test that failed before the change; for UI, open every
-   screenshot. Then spawn `oiko-reviewer` for a branch review of that diff
-   (`oiko-review`, Branch review: read-only, nothing heavier than a focused
-   test), with the spec path, the slice and the worktree path. `SendMessage`
-   its findings and your own to the same implementer (it keeps its context and
+   screenshot. Run `scripts/tdd-lock-check.sh <worktree> <red commit>` into the
+   evidence dir; a changed test file goes back to the implementer unless you
+   accept the change with a logged reason. Then spawn, in parallel,
+   `oiko-reviewer` for a branch review of that diff (`oiko-review`, Branch
+   review: read-only, nothing heavier than a focused test) and
+   `oiko-security-reviewer` for its security review (`oiko-review`, Security
+   review), each with the spec path, the slice, the worktree path and the red
+   commit. Send both reports' findings and your own (pi: a follow-up dispatch
+   to `oiko-implementer` naming the worktree, the reports and "continue
+   where the worktree stands"; Claude Code: `SendMessage`) to the implementer (it keeps its context and
    its warm slot), which fixes them, integrates the base and runs the full
    gate once. Reviewers found every High defect of 2026-09-26..10-03 and the
    gates found none, and the slice reviews of 2026-10-06 sent fixes back on
    five slices out of five, so the gate runs on reviewed code, not before it.
-4. **Check the gated report before merging** — never merge on a summary: read
+5. **Check the gated report before merging** — never merge on a summary: read
    the diff since the review; open the gate logs and map every `.status` to its
    check by name; for API slices, confirm the contract artifacts the slice owes
    (see `oiko-contract`). Do not re-run the gate, and do not ask a reviewer to,
    when the base moved only by commits outside what the gate covers (the
    Cadence rules in `oiko-implement`); re-gate only when the evidence is
    missing, red, or predates an overlapping change.
-5. **Gaps:** `SendMessage` the implementer with specifics. After two rounds
-   without resolution, log a blocker and brief a fresh implementer with what
-   the first learned.
-6. **Merge** per `oiko-worktree` (`--no-ff`, evidence in the message), `wt
+6. **Gaps:** send the implementer specifics. After two rounds without
+   resolution, brief a fresh implementer with what the first learned (Pi runs
+   it on the role's fallback model if the primary keeps failing). If that one
+   fails too, escalate once: Pi `skill_dispatch` with `escalate: "<why>"` runs
+   the same brief on Opus within the Anthropic budget. Still unresolved, or no
+   budget: log a blocker, record an owner question and park the slice.
+7. **Merge** per `oiko-worktree` (`--no-ff`, evidence in the message), `wt
    release` the slot, delete the branch, push `main:staging` (and mirror-sync when `FORGEJO_TOKEN` is set), run `claim update <slug> "S<n> merged"` (it pushes the state
    repo), update the log, and go straight to the next slice.
 
@@ -137,14 +173,19 @@ Read-only lookups can run alongside.
   can commit its pin bump. The push of SDK `main:staging` after its merge (step 6)
   puts it there, which is pre-authorized. Pin that rev. Pushing SDK `main` stays
   the owner's call, as for every repo.
+- **leptos-daisyui → Oikonotes** works the same way: the library lives in
+  `~/Development/leptos-daisy` (base `master`, gate per its `AGENTS.md`). After
+  its slice merges, push `master:staging` (pre-authorized, no deploy) and pin
+  that rev in Oikonotes' `Cargo.toml`; `master` follows at the spec's GO.
 - **Deploy order.** An Oikonotes release that uses a new endpoint needs the
   Copepod server deployed first. Record this in the finish report; do not
   deploy unless asked.
 
 ## Acceptance
 
-After the last slice of a spec, spawn `oiko-reviewer` against the merged base
-branches and the spec. The slices' code was already read, so acceptance spends
+After the last slice of a spec, spawn `oiko-acceptance` (the reviewer brief on
+the acceptance model) against the merged base branches and the spec, and
+`oiko-security-reviewer` over the spec's whole merged range, in parallel. The slices' code was already read, so acceptance spends
 its time exercising the merged feature as a user would. All defects of one
 review round go into one fix slice per repo, through the same loop; review
 again. Done when the reviewer accepts or the owner accepts a listed
@@ -156,11 +197,44 @@ acceptance for UI-only specs: the 2026-10 media/records privacy exposure shipped
 from a UI build that had no reviewer, and every High finding of that week came
 from a reviewer, not from a gate.
 
+## Go/no-go and release to main
+
+When acceptance and the spec's security review both pass, spawn `oiko-gate`
+once (Opus; `references/gate.md`) with the spec, the build log, both reports,
+the merge commits and `git log origin/main..main` per repo. It writes
+`~/Development/agent-state/<slug>/gate.md`.
+
+- `GATE: NO-GO` → one fix slice per repo through the same loop, acceptance and
+  security again, then the gate again (each gate call spends Opus budget: batch
+  the fixes).
+- `GATE: OWNER` → record the owner question; the spec waits on `staging`.
+- `GATE: GO` → push `main` to origin (owner's standing authorization of
+  2026-11-16), strictly in dependency order: copepod, then copepod-rust-sdk,
+  then leptos-daisyui (`master`), then oikonotes; only repos the spec touched.
+  Before each push: `main` is a fast-forward of `origin/main`, every commit it
+  adds is on `origin/staging` and staging is healthy; the repo before it has
+  finished its `main` pipeline. Commits of other specs already on `main` go
+  with it only if they are accepted on staging (their build logs say so);
+  otherwise stop and record an owner question. A push to `main` starts the
+  production pipeline (copepod deploys from it); watch it to green and stop
+  the order at the first red. Manual production steps (`scripts/deploy.sh
+  --restart`) stay the owner's call: record that one is pending.
+- Small fixes that do not belong to a spec ride with the next GO release.
+- Anthropic budget exhausted → the spec waits on `staging` with
+  `GATE: pending budget` in its log; continue other work.
+
 ## The owner
 
 Ask only when a decision changes user-visible behaviour beyond what the spec
-settles, when the spec is wrong, or before any push or deploy. Use
-`AskUserQuestion`, recommendation first. Technical choices stay yours; log them.
+settles, when the spec is wrong, or before a deploy (pushes follow the
+release rules above). With the owner in the session, ask directly,
+recommendation first. Unattended (the `oiko-loop`), never wait: record the
+question (Pi: the `owner_question` tool; Vibe and others: append a
+`{"type":"question",...}` line to
+`~/Development/agent-state/loop/owner-questions.jsonl`, the format the Pi
+tool writes), park what depends on it, and continue with everything that does
+not. Read answers (`owner_answers`, or the same file) at the start of every
+slice. Technical choices stay yours; log them.
 
 ## Finish
 

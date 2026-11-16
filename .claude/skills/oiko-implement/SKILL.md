@@ -23,7 +23,12 @@ one slice.
 2. Locate the relevant code with scoped searches; read the ranges you need. Do
    not read broad docs unless you are changing that subsystem's contract.
 3. Reproduce: write or find the test that shows the current behaviour, and watch
-   it fail for the right reason before changing code.
+   it fail for the right reason before changing code. When the brief names a
+   red commit from `oiko-test-author`, those tests are the contract: run them,
+   confirm each fails for the right reason, and make them pass without editing
+   them (replacing a stub's `unimplemented!()` body is implementation, not a
+   test edit). If one is wrong, report it with evidence and leave it as is;
+   the orchestrator decides. Add further tests of your own freely.
 4. State in two or three lines: scope, files, exclusions, and how you will
    verify.
 

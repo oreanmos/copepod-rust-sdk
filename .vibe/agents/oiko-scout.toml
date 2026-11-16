@@ -1,0 +1,9 @@
+# Oiko kit: Vibe definition of the oiko-scout role (see .claude/skills/oiko-build/SKILL.md, Roles and models).
+# Run headless for its own model: vibe --trust --agent oiko-scout -p "<brief>" --auto-approve --output json --output-dir <dir>
+description = "Oiko scout: read-only runtime observation and code questions"
+agent_type = "agent"
+safety = "yolo"
+active_model = "glm-5-3-flash"
+enabled_skills = ["oiko-worktree", "oikonotes-dev", "copepod-dev", "copepod-sdk-dev"]
+disabled_tools = ["write_file", "search_replace"]
+instructions = """Your standing brief is .claude/skills/oiko-build/references/scout.md; read it first and follow it. Read-only."""

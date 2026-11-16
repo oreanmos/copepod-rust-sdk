@@ -46,3 +46,13 @@ full spec runs at acceptance.
   wasm-split step, so a lazy island there leaves unresolved placeholder
   imports. `scripts/check-lazy-island-cfg.sh` (in `make ci` preflight) rejects
   a bare one, a `client` gate or an unpaired line.
+- wasm-split chunks are coarsened: cargo-leptos is installed by
+  `scripts/install-cargo-leptos.sh` with the vendored
+  `vendor-tools/wasm_split_cli_support` (README there), which merges the 3,431
+  per-loader-set chunk modules into about 124 (a shell module for the lazy
+  islands `AppLayout` renders, one common module, pair modules). A new lazy
+  island in `AppLayout` must be added to `DEFAULT_SHELL_LOADERS` in
+  `coarsen.rs` (`scripts/check-wasm-split-shell.sh` fails otherwise).
+  `WASM_SPLIT_COARSEN=0` rolls back to upstream (the chunk budget keys are then skipped). Budgets `lazy_modules_max`,
+  `loader_chunks_max` and `loader_chunks_median_max` live in
+  `scripts/wasm-budget.txt` (`make wasm-size`, `make wasm-split-check`).

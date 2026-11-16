@@ -75,11 +75,13 @@ make dev                      # launch.sh: Tailwind + cargo leptos watch
 make check-affected           # narrowest checks for the current diff
 make app-ssr | app-hydrate | app-csr | tauri-check
 make e2e-csr                   # desktop (CSR wasm) click-handler e2e; run via heavy
+                               # writes to target/local/e2e-csr-results, so it never wipes e2e-results/ used by e2e-env.sh test
 make test-affected FAST_TEST_FILTER=<name>
 make fmt | fmt-check | clippy | test
 make ci                       # full pre-merge set
 make test-ui-focused E2E_SPEC=e2e/<spec>.spec.ts
-scripts/devx/e2e-env.sh up --build | test <args> | down   # agents: per-worktree e2e server
+scripts/devx/e2e-env.sh up --build | test <args> | test-all | down   # agents: per-worktree e2e server; test-all = full suite on 6 servers
+# parallel-run races: e2e/race-graph.json + scripts/devx/e2e-race-check (docs/testing-launch-quality.md, Parallel e2e)
 npm run build:css             # Tailwind 4: npx @tailwindcss/cli -i crates/app/style/input.css -o crates/app/style/output.css --minify
 ```
 

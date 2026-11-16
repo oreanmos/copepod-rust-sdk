@@ -57,3 +57,17 @@ rejects new direct pool access; its baseline only shrinks.
 `_RELEASE_`), `PUBLIC_BASE_URL`, `OIKONOTES_SESSION_COOKIE_*`. AI:
 `MISTRAL_API_KEY`, `AI_PROCESSING_ENABLED`. Runbook:
 `docs/copepod-mvp-integration-runbook.md`; smoke: `make copepod-smoke`.
+
+## Suspended and restricted users (403 with a code)
+
+The server-credential fallback (`CopepodBridge::is_forbidden`) runs only for a
+plain 403 with no machine code, the shape of a collection-rule denial. A coded
+403 describes the user (`account_suspended`, `ai_paused_for_review`,
+`insufficient_role`) and is never retried with the API key or platform token.
+`account_suspended` surfaces as the fixed `ACCOUNT_SUSPENDED` wording (a client-safe
+`Validation` error, also in the gateway provider). A session refresh that meets it is
+terminal: no breaker failure, no retry, the session is deleted and the middleware redirects
+to `/login?reason=suspended`, which shows the same wording; a suspended login shows it too.
+`ai_paused_for_review` maps to "Hosted AI is paused for your account until <time>" in the gateway
+provider. Read errors with `api_status()` / `api_code()`, which cover
+`ApiWithDetails`.

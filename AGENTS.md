@@ -17,14 +17,21 @@ cross-repo feature: server → SDK → Oikonotes.
 
 Reference skills: `copepod-sdk-dev` (this repo), `oiko-contract` (every API
 change and the Oikonotes pin bump), `copepod-dev`, `oikonotes-dev`,
-`oiko-worktree`. Subagents: `oiko-implementer`, `oiko-reviewer`, `oiko-scout`
+`oiko-worktree`. Subagents: `oiko-test-author`, `oiko-implementer`, `oiko-reviewer`, `oiko-security-reviewer`, `oiko-gate`, `oiko-scout`
 (see `oiko-build`). Implement in the main session only when the harness has no
 subagents or the owner asks.
 
-Parallel work: Claude Code, Codex, OpenCode and Pi sessions run on two machines
+Models (owner 2026-11-16): Mistral-hosted models only, through Pi and Vibe; Anthropic only for
+`oiko-gate` and one escalation after Mistral failed twice, within the monthly budget
+(`~/Development/agent-state/bin/budget`). Every code slice is TDD (red by `oiko-test-author`,
+green by `oiko-implementer`) with a code and a security review. After a spec's `GATE: GO`,
+`main` is pushed in dependency order (copepod → SDK → leptos-daisyui → oikonotes). Questions
+for the owner are recorded (`owner_question`, `/questions` in Pi) and worked around, never waited on.
+
+Parallel work: Claude Code, Codex, OpenCode, Pi and Vibe sessions run on two machines
 at once. Before starting a build, sync from `origin/staging` and claim it with
 `~/Development/agent-state/bin/claim`; push `main:staging` after each merge (pre-authorized,
-deploys only staging). Never take claimed work. Up to three builds per machine (`claim` enforces it);
+deploys only staging). Never take claimed work. Builds per machine up to `OIKO_MAX_BUILDS` (`claim` enforces it; the loop sets it from memory and cores);
 heavy commands go through `~/Development/agent-state/bin/heavy`, and nobody
 kills processes by name or port. See
 `oiko-build`, `oiko-worktree` (Two machines) and `oikonotes/docs/agents.md`.

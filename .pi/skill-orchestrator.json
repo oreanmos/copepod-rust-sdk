@@ -1,16 +1,15 @@
 {
   "$comment": [
-    "skill-orchestrator map for the Oikonotes / Copepod / copepod-rust-sdk flow.",
-    "Applies to any pi session started in this repo, including dispatches into",
-    "copepod worktrees (the session's repo decides the map).",
-    "Scheme: zai-glm-5-3 orchestrates (session model) and plans (high);",
-    "gpt-6-luna implements (medium, matching .codex/agents; bump for",
-    "heavyweight slices) and does grunt work (medium); mistral-large-4",
-    "reviews (high) and owns cybersecurity analysis - the security role",
-    "plus the secur|cyber|threat name hint route security-flavoured dispatches",
-    "to it. mistral-large-4 sees images, so the reviewer can LOOK at",
-    "screenshots directly; glm-5-3 stays text-only: scouts capture them via",
-    "scripts and report them as paths."
+    "skill-orchestrator map for the Oikonotes / Copepod / copepod-rust-sdk / leptos-daisyui flow.",
+    "Applies to any pi session started in this repo, including dispatches into sibling worktrees",
+    "(the session's repo decides the map). Owner policy 2026-11-16: every model is hosted on",
+    "Mistral (La Plateforme); Anthropic (Opus) only for the per-spec go/no-go gate and as the",
+    "escalation after Mistral fails twice, under the anthropic budget in the user map.",
+    "Session/orchestrator: mistral-large-4 @ high (settings.json default). TDD: oiko-test-author",
+    "(glm-5-3) writes failing tests, oiko-implementer (large-4) makes them pass, oiko-reviewer",
+    "(glm-5-3, a different model from the implementer) and oiko-security-reviewer (large-4) review",
+    "every slice, oiko-acceptance (large-4) accepts the spec, oiko-gate (Opus) decides go/no-go.",
+    "glm-5-3 is text-only: screenshots are read by large-4 (orchestrator, acceptance, security)."
   ],
   "roles": {
     "planning": {
@@ -18,26 +17,77 @@
       "thinking": "high",
       "requires": [
         "reasoning"
+      ],
+      "fallback": [
+        "mistral/mistral-large-4@high"
       ]
     },
+    "test-author": {
+      "model": "mistral/zai-glm-5-3",
+      "thinking": "high",
+      "requires": [
+        "reasoning"
+      ],
+      "fallback": [
+        "mistral/mistral-large-4@high"
+      ],
+      "tools": "read,edit,write,bash,ls,find,grep"
+    },
     "implementation": {
-      "model": "openai-codex/gpt-6-luna",
+      "model": "mistral/mistral-large-4",
       "thinking": "medium",
       "requires": [
         "reasoning"
-      ]
+      ],
+      "fallback": [
+        "mistral/zai-glm-5-3@high"
+      ],
+      "escalation": "gate"
     },
     "grunt": {
-      "model": "openai-codex/gpt-6-luna",
+      "model": "mistral/zai-glm-5-3-flash",
+      "thinking": "low",
+      "requires": [],
+      "fallback": [
+        "mistral/deepseek-v4-1-flash-1017@medium"
+      ]
+    },
+    "mechanical": {
+      "model": "mistral/deepseek-v4-1-flash-1017",
       "thinking": "medium",
-      "requires": []
+      "requires": [],
+      "fallback": [
+        "mistral/zai-glm-5-3-flash@medium"
+      ]
+    },
+    "scout": {
+      "model": "mistral/zai-glm-5-3-flash",
+      "thinking": "low",
+      "requires": [],
+      "fallback": [
+        "mistral/deepseek-v4-1-flash-1017@medium"
+      ]
     },
     "review": {
+      "model": "mistral/zai-glm-5-3",
+      "thinking": "high",
+      "requires": [
+        "reasoning"
+      ],
+      "fallback": [
+        "mistral/mistral-large-4@high"
+      ],
+      "tools": "read,bash,ls,find,grep"
+    },
+    "acceptance": {
       "model": "mistral/mistral-large-4",
       "thinking": "high",
       "requires": [
         "reasoning",
         "image"
+      ],
+      "fallback": [
+        "mistral/zai-glm-5-3@high"
       ]
     },
     "security": {
@@ -47,12 +97,20 @@
         "reasoning",
         "image"
       ],
+      "fallback": [
+        "mistral/zai-glm-5-3@high"
+      ],
       "tools": "read,bash,ls,find,grep"
     },
-    "scout": {
-      "model": "mistral/zai-glm-5-3",
-      "thinking": "medium",
-      "requires": []
+    "gate": {
+      "model": "anthropic/claude-opus-5-5",
+      "thinking": "high",
+      "requires": [
+        "reasoning",
+        "image"
+      ],
+      "strict": true,
+      "tools": "read,bash,ls,find,grep"
     },
     "orchestration": {
       "model": null,
@@ -68,6 +126,9 @@
       "role": "planning"
     },
     "oiko-build": {
+      "role": "orchestration"
+    },
+    "oiko-loop": {
       "role": "orchestration"
     },
     "oiko-implement": {
@@ -90,12 +151,37 @@
     }
   },
   "agents": {
+    "oiko-test-author": {
+      "role": "test-author",
+      "tools": "read,edit,write,bash,ls,find,grep"
+    },
     "oiko-implementer": {
       "role": "implementation",
       "tools": "read,edit,write,bash,ls,find,grep"
     },
     "oiko-reviewer": {
       "role": "review",
+      "tools": "read,bash,ls,find,grep"
+    },
+    "oiko-security-reviewer": {
+      "role": "security",
+      "tools": "read,bash,ls,find,grep"
+    },
+    "oiko-acceptance": {
+      "role": "acceptance",
+      "brief": ".claude/agents/oiko-reviewer.md",
+      "skills": [
+        "oiko-review",
+        "oiko-worktree"
+      ],
+      "tools": "read,bash,ls,find,grep"
+    },
+    "oiko-gate": {
+      "role": "gate",
+      "brief": ".claude/agents/oiko-gate.md",
+      "skills": [
+        "oiko-review"
+      ],
       "tools": "read,bash,ls,find,grep"
     },
     "oiko-scout": {
@@ -105,6 +191,7 @@
   },
   "roleHints": {
     "grunt": "-dev$",
-    "security": "secur|cyber|threat"
+    "security": "secur|cyber|threat",
+    "test-author": "test-author|tdd"
   }
 }

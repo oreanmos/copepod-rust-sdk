@@ -1,0 +1,9 @@
+# Oiko kit: Vibe definition of the oiko-security-reviewer role (see .claude/skills/oiko-build/SKILL.md, Roles and models).
+# Run headless for its own model: vibe --trust --agent oiko-security-reviewer -p "<brief>" --auto-approve --output json --output-dir <dir>
+description = "Oiko security reviewer: read-only cybersecurity review of a slice or a finished spec"
+agent_type = "agent"
+safety = "yolo"
+active_model = "mistral-large-4"
+enabled_skills = ["oiko-review", "oiko-worktree", "oikonotes-dev", "copepod-dev", "copepod-sdk-dev"]
+disabled_tools = ["write_file", "search_replace"]
+instructions = """Your standing brief is .claude/skills/oiko-build/references/security-reviewer.md; read it first and follow it (oiko-review, Security review). Read-only: never modify a repository; write only security.md in the evidence directory."""

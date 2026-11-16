@@ -87,6 +87,43 @@ file:line and the smallest fix; skip style nits the formatter or clippy would
 catch. Write the report as `summary.md` in the evidence directory as well as
 returning it. End with: gate it, or fix first.
 
+With TDD (`oiko-build`, Red), also confirm the implementer did not edit the
+red commit's tests (`scripts/tdd-lock-check.sh` output in the evidence dir) and
+that the tests state the slice's criteria rather than its implementation.
+
+## Security review
+
+`oiko-build` runs this beside the branch review on every slice, and over the
+merged range at acceptance (`oiko-security-reviewer`). Same limits as a branch
+review: read-only, focused tests and probes only. Check, against the diff and
+the paths it reaches:
+
+- **Tenancy and authorization (Copepod):** every query scoped by app, user and
+  owner; record, file and collection rules enforced server-side; no handler
+  trusts a client-sent id or role; admin and operator routes gated; one app or
+  user can never read, write or delete another's data.
+- **Authentication and sessions:** token scope, expiry, refresh and revocation;
+  cookie flags; CSRF on state-changing forms and server functions; rate limits
+  and lockout on login, signup, invites and AI.
+- **Injection and rendering:** HTML escaping and the link/URL allow-list for
+  every user-controlled `href`/`src`/style; Markdown, public sites, newsletters
+  and email; SQL built only from bound parameters; no shell or path built from
+  user input; deserialisation limits (size, depth).
+- **AI and connectors:** human-in-the-loop holds (no silent edits); prompt
+  injection from notes, imports and pages cannot widen scope or exfiltrate;
+  sensitive data and private notes never leave their audience; per-user caps.
+- **Secrets and privacy:** no secrets in code, logs, errors or client bundles;
+  personal data minimal, erasable, redacted in logs; desktop (Tauri) commands
+  expose no more than the web API.
+- **Supply chain and config:** new dependencies justified and pinned; no pin
+  drift (`copepod-sdk`, `leptos-daisyui`); CI and deploy changes cannot leak
+  tokens.
+
+Write `security.md` in the evidence directory; first line
+`SECURITY: pass` or `SECURITY: fix first (C<n> H<n> M<n> L<n>)`. Each finding:
+asset, attacker, path (file:line), reproduction, impact, severity, fix
+direction.
+
 ## UX critique
 
 Capture each screen at both widths and in its empty, loading, populated and

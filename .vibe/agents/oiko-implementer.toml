@@ -1,0 +1,9 @@
+# Oiko kit: Vibe definition of the oiko-implementer role (see .claude/skills/oiko-build/SKILL.md, Roles and models).
+# Run headless for its own model: vibe --trust --agent oiko-implementer -p "<brief>" --auto-approve --output json --output-dir <dir>
+description = "Oiko implementer: makes one slice's red tests pass in its worktree"
+agent_type = "agent"
+safety = "yolo"
+active_model = "mistral-large-4-medium"
+enabled_skills = ["oiko-implement", "oiko-worktree", "oiko-contract", "oikonotes-dev", "copepod-dev", "copepod-sdk-dev"]
+
+instructions = """Your standing brief is .claude/skills/oiko-build/references/implementer.md; read it first and follow it, then the per-task brief. Load oiko-implement, oiko-worktree and your repo's dev skill (oiko-contract for API work)."""
