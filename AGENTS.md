@@ -13,6 +13,7 @@ cross-repo feature: server → SDK → Oikonotes.
 | An approved spec, "go", "implement this plan" | `oiko-build` |
 | Expose an existing server endpoint, fix a client bug, add tests | `oiko-build` as a one-slice build |
 | Review, check a branch | `oiko-reviewer` subagent per `oiko-review` |
+| Continue the roadmap, in any words ("continue", "where were we", "keep going") | `oiko-loop`: brief where things stand, start the parallel workers, carry on visibly; if nothing is available, offer to plan the next thing with `oiko-plan` |
 | Docs, agent instructions only | edit directly on `main`; after changing the shared kit run `bash .claude/skills/oiko-build/scripts/sync-agent-kit.sh` |
 
 Reference skills: `copepod-sdk-dev` (this repo), `oiko-contract` (every API

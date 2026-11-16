@@ -1,6 +1,6 @@
 ---
 name: oiko-loop
-description: One unattended iteration of the Oikonotes / Copepod / copepod-rust-sdk / leptos-daisyui roadmap loop - pick the next unclaimed work item from the loop queue, owner notes and the launch schedule, claim it, build it through oiko-build (or draft its spec through oiko-plan), park what waits on the owner, and end with a LOOP-RESULT line. Run by the oiko-loop runner's headless sessions (Pi or Vibe); load it when asked to "run one iteration of the loop" or to work the roadmap without the owner.
+description: "Continue the Oikonotes / Copepod / copepod-rust-sdk / leptos-daisyui roadmap - interactively when the owner asks to carry on in any words ('continue', 'where were we', 'keep going', 'work on the roadmap'), brief where things stand, start the parallel workers, resume or pick the next item and build it visibly through oiko-build, and offer to plan with the owner when nothing is available; headless, one unattended iteration per worker session ending with a LOOP-RESULT line. Load it for any request to continue or work the roadmap."
 effort: medium
 ---
 
@@ -10,6 +10,38 @@ You are one orchestrator session started by `~/Development/agent-state/bin/oiko-
 owner). Several such sessions run at once on this machine. The owner is not watching: never wait for
 an answer; record questions and work around them. Load `oiko-build` (and `oiko-plan` for planning
 items) and follow them; this skill only adds how to pick work and how to stop.
+
+## 0. Interactive: the owner asks to continue
+
+Any request that means "carry on with the roadmap" ("continue", "let's keep going", "where were
+we", "work on the roadmap", ...) in an interactive session makes you the **lead orchestrator**,
+and the owner watches you work. Match the intent, not the words.
+
+1. **Where we are**, first, in a short brief (about ten lines):
+   - active builds: `claim list`, and for each this machine holds, the last entries of
+     `~/Development/agent-state/<slug>/build-log.md` (what step, what is next);
+   - the parallel workers: `~/Development/agent-state/bin/oiko-loop status` (alive sessions,
+     last results, paused reason);
+   - open owner questions (`owner_answers` / `/questions`), parked items in `loop/queue.md`;
+   - what landed since the last session (`git log --merges` on `main` of each repo, staging
+     `__version`), and the Mistral and Anthropic budget (`budget status`).
+2. **Continue**: if the supervisor is not running and `budget check mistral` passes,
+   `oiko-loop start` so the parallel workers pick up the rest (the pi window shows them in the
+   loop panel). Then work an item yourself with sections 1–4 below, visibly: resume one of your
+   own stale claims first, else the next available item. After an item ends (done, parked or
+   blocked), pick the next; do not stop at the "about six slices" boundary (pi compacts your
+   context; the build log is your memory). One short line per step for the owner.
+3. **Nothing available** (everything is done, claimed by a live worker, or waits on the owner):
+   say so, list the open owner questions with their recommendations, and offer to plan the next
+   thing together: name the top two or three candidates from the launch schedule that have no
+   approved spec, with why each matters for launch, and run `oiko-plan` as a dialog with the
+   owner on the one they pick. Interactive sessions do not draft specs unattended (section 2,
+   item 6 is for headless workers).
+4. Owner questions raised while working: ask directly if it blocks the item you are on and the
+   answer is quick; otherwise record them (`owner_question`) and keep working on everything that
+   does not depend on them.
+5. Stop when the owner says so (then `oiko-loop stop`: workers finish their items and launch
+   nothing new) or the Mistral budget is exhausted.
 
 ## 1. Start
 
