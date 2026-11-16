@@ -25,12 +25,12 @@ and the owner watches you work. Match the intent, not the words.
    - open owner questions (`owner_answers` / `/questions`), parked items in `loop/queue.md`;
    - what landed since the last session (`git log --merges` on `main` of each repo, staging
      `__version`), and the Mistral and Anthropic budget (`budget status`).
-2. **Continue**: if the supervisor is not running and `budget check mistral` passes,
-   `oiko-loop start` so the parallel workers pick up the rest (the pi window shows them in the
-   loop panel). Then work an item yourself with sections 1–4 below, visibly: resume one of your
-   own stale claims first, else the next available item. After an item ends (done, parked or
-   blocked), pick the next; do not stop at the "about six slices" boundary (pi compacts your
-   context; the build log is your memory). One short line per step for the owner.
+2. **Continue**: never start the parallel workers yourself; the owner starts them with
+   `/loop start` (and they stop when the pi that started them closes). If they are not running,
+   say so in one line and continue alone. Work an item with sections 1–4 below, visibly: resume
+   one of your own stale claims first, else the next available item. After an item ends (done,
+   parked or blocked), pick the next; do not stop at the "about six slices" boundary (pi compacts
+   your context; the build log is your memory). One short line per step for the owner.
 3. **Nothing available** (everything is done, claimed by a live worker, or waits on the owner):
    say so, list the open owner questions with their recommendations, and offer to plan the next
    thing together: name the top two or three candidates from the launch schedule that have no
@@ -40,8 +40,8 @@ and the owner watches you work. Match the intent, not the words.
 4. Owner questions raised while working: ask directly if it blocks the item you are on and the
    answer is quick; otherwise record them (`owner_question`) and keep working on everything that
    does not depend on them.
-5. Stop when the owner says so (then `oiko-loop stop`: workers finish their items and launch
-   nothing new) or the Mistral budget is exhausted.
+5. Stop when the owner says so or the Mistral budget is exhausted. Stopping the workers is the
+   owner's call too (`/loop stop`, or closing the pi that started them).
 
 ## 1. Start
 
@@ -52,6 +52,12 @@ and the owner watches you work. Match the intent, not the words.
 3. Read answers: Pi `owner_answers`; elsewhere the `answer` lines of
    `~/Development/agent-state/loop/owner-questions.jsonl`. An answered question unparks its item.
 4. Read `~/Development/agent-state/owner-notes.md` and `claim list`.
+   Work can be cut off mid-step (workers stop when the owner's pi closes). Before resuming an item,
+   check its worktree and the main checkouts for an interrupted step: `git status`, an unfinished
+   merge or rebase (abort it unless the build log says it completed), uncommitted edits (keep an
+   implementer's work in its worktree; edits left on a main checkout by a killed session go to a
+   patch under `~/Development/agent-state/loop/interrupted/` and the file is restored), and patches
+   already saved there for your item.
 5. Read the standing operational rules earlier sessions learned:
    `~/Development/agent-state/_home/claude-memory/oikonotes/MEMORY.md` (an index; open the notes
    that touch your item: e2e lock, heavy slots, staging pushes cancel builds, wasm budget raises,
