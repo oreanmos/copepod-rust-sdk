@@ -95,6 +95,9 @@ pub struct AppRegisterRequest {
     /// Marketing opt-in recorded with the account; omitted from the JSON when `None`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub marketing_consent: Option<crate::models::MarketingConsent>,
+    /// First-touch attribution recorded with the account; omitted from the JSON when `None`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub acquisition: Option<crate::models::LeadAcquisition>,
 }
 
 /// Successful app-user registration: tokens, the created record and the

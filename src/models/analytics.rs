@@ -11,6 +11,9 @@ use crate::models::LeadAcquisition;
 /// must be `custom:<name>`; the names Copepod emits itself (for example
 /// `signup_completed`) are refused. See `docs/analytics.md`.
 pub mod event_names {
+    use super::is_valid_custom_name;
+    use crate::error::{CopepodError, Result};
+
     /// A page was viewed.
     pub const PAGE_VIEW: &str = "page_view";
     /// A visitor reached the signup form for the first time in a session.
@@ -20,12 +23,58 @@ pub mod event_names {
     /// A checkout was started.
     pub const CHECKOUT_STARTED: &str = "checkout_started";
 
+    /// The four names an app may send without the `custom:` prefix.
+    pub const APP_EVENT_NAMES: [&str; 4] = [PAGE_VIEW, SIGNUP_STARTED, ACTIVATED, CHECKOUT_STARTED];
+
+    /// The names only Copepod emits (registration, leads, the billing watcher).
+    /// An app that sends one is refused with `reserved_event`.
+    pub const COPEPOD_EVENT_NAMES: [&str; 9] = [
+        "signup_completed",
+        "trial_started",
+        "lead_created",
+        "lead_confirmed",
+        "subscription_started",
+        "subscription_renewed",
+        "subscription_cancelled",
+        "subscription_expired",
+        "payment_failed",
+    ];
+
     /// Build a `custom:<name>` event name.
-    pub fn custom(name: &str) -> String {
-        // The pattern check lands with the implementation (launch-g2 S8).
-        let _ = name;
-        unimplemented!("launch-g2 S8")
+    ///
+    /// `name` must match `^[a-z][a-z0-9_]{0,47}$`, the server's rule; anything
+    /// else returns [`CopepodError::InvalidArgument`] without a request.
+    pub fn custom(name: &str) -> Result<String> {
+        if !is_valid_custom_name(name) {
+            return Err(CopepodError::InvalidArgument(format!(
+                "custom event name `{name}` must match ^[a-z][a-z0-9_]{{0,47}}$"
+            )));
+        }
+        Ok(format!("custom:{name}"))
     }
+}
+
+/// Whether `name` is one of the four [`event_names::APP_EVENT_NAMES`] or
+/// `custom:` plus a valid custom name.
+pub(crate) fn is_app_event_name(name: &str) -> bool {
+    event_names::APP_EVENT_NAMES.contains(&name)
+        || name
+            .strip_prefix("custom:")
+            .is_some_and(is_valid_custom_name)
+}
+
+/// Whether `name` is one Copepod emits itself, which apps must not send.
+pub(crate) fn is_copepod_event_name(name: &str) -> bool {
+    event_names::COPEPOD_EVENT_NAMES.contains(&name)
+}
+
+/// `^[a-z][a-z0-9_]{0,47}$`, byte-wise so non-ASCII fails.
+fn is_valid_custom_name(name: &str) -> bool {
+    (1..=48).contains(&name.len())
+        && name.bytes().next().is_some_and(|b| b.is_ascii_lowercase())
+        && name
+            .bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
 }
 
 /// One analytics event in a [`CopepodClient::track_events`](crate::CopepodClient::track_events)

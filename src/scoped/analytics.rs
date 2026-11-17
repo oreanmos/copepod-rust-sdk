@@ -25,9 +25,8 @@ impl<'a> ScopedAnalyticsClient<'a> {
     /// Send a batch of analytics events; see
     /// [`CopepodClient::track_events`](crate::CopepodClient::track_events).
     pub async fn track(&self, events: &[AnalyticsEvent]) -> Result<TrackEventsResponse> {
-        // Delegation lands with the implementation (launch-g2 S8); touch the
-        // bound fields so the stub compiles without lint suppressions.
-        let _ = (self.client, &self.org_id, &self.app_id, events);
-        unimplemented!("launch-g2 S8")
+        self.client
+            .track_events(&self.org_id, &self.app_id, events)
+            .await
     }
 }
