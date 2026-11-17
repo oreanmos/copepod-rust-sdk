@@ -5,8 +5,9 @@
     "(the session's repo decides the map). Owner policy 2026-11-16: every model is hosted on",
     "Mistral (La Plateforme); Anthropic (Opus) only for the per-spec go/no-go gate and as the",
     "escalation after Mistral fails twice, under the anthropic budget in the user map.",
-    "Owner 2026-11-17 (budget): implementer deepseek-v4-1-flash (cheapest cached reads), test author and",
-    "code reviewer mistral-large-4, so the implementer never shares a model with the test author or the reviewer;",
+    "Owner 2026-11-17 (budget): implementer deepseek-v4-1-flash (cheapest cached reads), test author",
+    "zai-glm-5-3-flash and code reviewer mistral-large-4, so no implementer path (primary, fallback or",
+    "oiko-implementer-strong large-4) ever shares a model with the test author;",
     "after two failed rounds a fresh oiko-implementer-strong (large-4) takes over, then one Opus escalation.",
     "Session/orchestrator, security and acceptance: mistral-large-4 @ high; planning zai-glm-5-3 @ high."
   ],
@@ -22,7 +23,7 @@
       ]
     },
     "test-author": {
-      "model": "mistral/mistral-large-4",
+      "model": "mistral/zai-glm-5-3-flash",
       "thinking": "high",
       "requires": [
         "reasoning"

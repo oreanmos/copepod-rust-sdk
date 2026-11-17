@@ -33,7 +33,7 @@ escalation after Mistral failed twice, inside a fixed monthly budget.
 | Role | Pi (`.pi/skill-orchestrator.json`) | Vibe (`.vibe/agents/`) | Claude Code | Does |
 |---|---|---|---|---|
 | Orchestrator (you) | session: `mistral-large-4`, high | `oiko-orchestrator` (large-4) | session model | briefs, checks evidence, merges, keeps the log, pushes, talks to the owner |
-| `oiko-test-author` | `mistral-large-4`, high | `oiko-test-author` (large-4) | Sonnet, medium | red: failing tests for the slice's criteria, per `references/test-author.md` |
+| `oiko-test-author` | `zai-glm-5-3-flash`, high | `oiko-test-author` (glm-5-3-flash) | Sonnet, medium | red: failing tests for the slice's criteria, per `references/test-author.md` |
 | `oiko-implementer` | `deepseek-v4-1-flash`, high | `oiko-implementer` (deepseek-high) | Sonnet, medium | green: makes the red tests pass in its worktree, per `oiko-implement`; never merges |
 | `oiko-reviewer` | `mistral-large-4`, high | `oiko-reviewer` (large-4) | Opus, high | read-only branch review, per `oiko-review` (a different model from the implementer) |
 | `oiko-implementer-strong` | `mistral-large-4`, medium | `oiko-implementer-strong` (large-4) | Sonnet, high | the fresh implementer after two failed rounds (step 6) |
