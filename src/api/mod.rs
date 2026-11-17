@@ -2,6 +2,7 @@ pub mod actions;
 pub mod addons;
 pub mod ai;
 pub mod ai_laya;
+pub mod analytics;
 pub mod app_auth;
 pub mod app_users;
 pub mod apps;

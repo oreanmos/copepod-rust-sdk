@@ -204,6 +204,9 @@ pub struct RegisterWithBillingIntentRequest {
     /// Marketing opt-in recorded with the account; omitted from the JSON when `None`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub marketing_consent: Option<MarketingConsent>,
+    /// First-touch attribution recorded with the account; omitted from the JSON when `None`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub acquisition: Option<super::audience::LeadAcquisition>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
