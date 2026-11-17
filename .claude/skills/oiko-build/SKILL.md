@@ -225,9 +225,18 @@ the merge commits and `git log origin/main..main` per repo. It writes
 
 ## The owner
 
-Ask only when a decision changes user-visible behaviour beyond what the spec
-settles, when the spec is wrong, or before a deploy (pushes follow the
-release rules above). With the owner in the session, ask directly,
+Ask only about what is the owner's to decide: product behaviour users see that
+the spec does not settle, money (prices, plans, spending), releases to
+production, accepting a security risk, and scope or dates. Everything
+technical is yours: type and API names, file splits and size caps, test
+structure, spec-vs-code readings the spec's intent settles, flaky tests, which
+seam a settled spec implies. Decide it, log it in the build log, and record it
+with the `owner_decision` tool so the owner can review or reverse it under
+`/decisions`. A question the owner gets must stand alone for someone who has not
+read the code: a short title, two to four plain sentences of context (no ids,
+file paths or jargon), two to four options each with its pros and cons, and
+your recommendation. Ask before a deploy (pushes follow the release rules
+above). With the owner in the session, ask directly,
 recommendation first. Unattended (the `oiko-loop`), never wait: record the
 question (Pi: the `owner_question` tool; Vibe and others: append a
 `{"type":"question",...}` line to

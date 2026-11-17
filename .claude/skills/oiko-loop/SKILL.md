@@ -37,9 +37,10 @@ and the owner watches you work. Match the intent, not the words.
    approved spec, with why each matters for launch, and run `oiko-plan` as a dialog with the
    owner on the one they pick. Interactive sessions do not draft specs unattended (section 2,
    item 6 is for headless workers).
-4. Owner questions raised while working: ask directly if it blocks the item you are on and the
-   answer is quick; otherwise record them (`owner_question`) and keep working on everything that
-   does not depend on them.
+4. Owner questions follow `oiko-build` › The owner: only product, money, release, security-risk
+   and scope decisions reach the owner (`owner_question`, one plain-language question with options,
+   pros and cons); technical choices you decide and record with `owner_decision`. Keep working on
+   everything that does not depend on an open question.
 5. Stop when the owner says so or the Mistral budget is exhausted. Stopping the workers is the
    owner's call too (`/loop stop`, or closing the pi that started them).
 
