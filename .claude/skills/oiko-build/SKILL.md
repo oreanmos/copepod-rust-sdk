@@ -40,7 +40,7 @@ escalation after Mistral failed twice, inside a fixed monthly budget.
 | `oiko-security-reviewer` | `mistral-large-4`, high | `oiko-security-reviewer` (large-4) | Opus, high | read-only security review of every slice and of the spec, per `oiko-review` › Security review |
 | `oiko-acceptance` | `mistral-large-4`, high (the reviewer brief) | `oiko-acceptance` (large-4) | `oiko-reviewer` | read-only acceptance of the finished spec |
 | `oiko-gate` | `claude-opus-5-5`, high (budget) | none: hand the gate to a Pi session | Opus | go/no-go per finished spec, per `references/gate.md` |
-| `oiko-scout`, lookups | `zai-glm-5-3-flash`, low | `oiko-scout` (glm-5-3-flash, high) | Sonnet / haiku | read-only observation and "where is X" questions |
+| `oiko-scout`, lookups | `zai-glm-5-3-flash`, low | `oiko-scout` (glm-5-3-flash, high) | Sonnet / haiku | read-only observation, "where is X" questions and reading long gate logs for the orchestrator |
 
 Agent definitions and the Pi map set model and effort: pass no `model`
 override (Pi's map also holds the fallbacks and the budget). Vibe runs every
@@ -153,7 +153,9 @@ Read-only lookups can run alongside.
    five slices out of five, so the gate runs on reviewed code, not before it.
 5. **Check the gated report before merging** — never merge on a summary: read
    the diff since the review; open the gate logs and map every `.status` to its
-   check by name; for API slices, confirm the contract artifacts the slice owes
+   check by name (for a red or long log, dispatch `oiko-scout`, the cheapest
+   model, to read it and report each failing check with file:line and its first
+   error, then read only the lines it points to); for API slices, confirm the contract artifacts the slice owes
    (see `oiko-contract`). Do not re-run the gate, and do not ask a reviewer to,
    when the base moved only by commits outside what the gate covers (the
    Cadence rules in `oiko-implement`); re-gate only when the evidence is
