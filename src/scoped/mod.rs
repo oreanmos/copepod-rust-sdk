@@ -1,4 +1,5 @@
 mod ai;
+mod analytics;
 mod app;
 mod audience;
 mod auth;
@@ -10,6 +11,7 @@ mod records;
 mod trust;
 
 pub use ai::ScopedAiClient;
+pub use analytics::ScopedAnalyticsClient;
 pub use app::ScopedAppClient;
 pub use audience::ScopedAudienceClient;
 pub use auth::ScopedAppAuthClient;
