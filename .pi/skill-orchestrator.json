@@ -5,11 +5,10 @@
     "(the session's repo decides the map). Owner policy 2026-11-16: every model is hosted on",
     "Mistral (La Plateforme); Anthropic (Opus) only for the per-spec go/no-go gate and as the",
     "escalation after Mistral fails twice, under the anthropic budget in the user map.",
-    "Session/orchestrator: mistral-large-4 @ high (settings.json default). TDD: oiko-test-author",
-    "(glm-5-3) writes failing tests, oiko-implementer (large-4) makes them pass, oiko-reviewer",
-    "(glm-5-3, a different model from the implementer) and oiko-security-reviewer (large-4) review",
-    "every slice, oiko-acceptance (large-4) accepts the spec, oiko-gate (Opus) decides go/no-go.",
-    "glm-5-3 is text-only: screenshots are read by large-4 (orchestrator, acceptance, security)."
+    "Owner 2026-11-17 (budget): implementer deepseek-v4-1-flash (cheapest cached reads), test author and",
+    "code reviewer mistral-large-4, so the implementer never shares a model with the test author or the reviewer;",
+    "after two failed rounds a fresh oiko-implementer-strong (large-4) takes over, then one Opus escalation.",
+    "Session/orchestrator, security and acceptance: mistral-large-4 @ high; planning zai-glm-5-3 @ high."
   ],
   "roles": {
     "planning": {
@@ -23,24 +22,24 @@
       ]
     },
     "test-author": {
-      "model": "mistral/zai-glm-5-3",
+      "model": "mistral/mistral-large-4",
       "thinking": "high",
       "requires": [
         "reasoning"
       ],
       "fallback": [
-        "mistral/mistral-large-4@high"
+        "mistral/zai-glm-5-3@high"
       ],
       "tools": "read,edit,write,bash,ls,find,grep"
     },
     "implementation": {
-      "model": "mistral/mistral-large-4",
-      "thinking": "medium",
+      "model": "mistral/deepseek-v4-1-flash-1017",
+      "thinking": "high",
       "requires": [
         "reasoning"
       ],
       "fallback": [
-        "mistral/zai-glm-5-3@high"
+        "mistral/mistral-large-4@medium"
       ],
       "escalation": "gate"
     },
@@ -69,13 +68,13 @@
       ]
     },
     "review": {
-      "model": "mistral/zai-glm-5-3",
+      "model": "mistral/mistral-large-4",
       "thinking": "high",
       "requires": [
         "reasoning"
       ],
       "fallback": [
-        "mistral/mistral-large-4@high"
+        "mistral/zai-glm-5-3@high"
       ],
       "tools": "read,bash,ls,find,grep"
     },
@@ -116,6 +115,17 @@
       "model": null,
       "thinking": null,
       "requires": []
+    },
+    "implementation-strong": {
+      "model": "mistral/mistral-large-4",
+      "thinking": "medium",
+      "requires": [
+        "reasoning"
+      ],
+      "fallback": [
+        "mistral/zai-glm-5-3@high"
+      ],
+      "escalation": "gate"
     }
   },
   "skills": {
@@ -187,6 +197,15 @@
     "oiko-scout": {
       "role": "scout",
       "tools": "read,bash,ls,find,grep"
+    },
+    "oiko-implementer-strong": {
+      "role": "implementation-strong",
+      "brief": ".claude/agents/oiko-implementer.md",
+      "skills": [
+        "oiko-implement",
+        "oiko-worktree"
+      ],
+      "tools": "read,edit,write,bash,ls,find,grep"
     }
   },
   "roleHints": {

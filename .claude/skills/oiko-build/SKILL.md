@@ -25,16 +25,18 @@ spec does not cover, or a push.
 
 ## Roles and models
 
-Owner policy (2026-11-16): the work runs on Mistral-hosted models (Pi and
-Vibe); Anthropic is spent only on the per-spec go/no-go (`oiko-gate`) and on an
+Owner policy (2026-11-16; models 2026-11-17): the work runs on Mistral-hosted
+models (Pi and Vibe), and the implementer never shares a model with the test
+author or the reviewer; Anthropic is spent only on the per-spec go/no-go (`oiko-gate`) and on an
 escalation after Mistral failed twice, inside a fixed monthly budget.
 
 | Role | Pi (`.pi/skill-orchestrator.json`) | Vibe (`.vibe/agents/`) | Claude Code | Does |
 |---|---|---|---|---|
 | Orchestrator (you) | session: `mistral-large-4`, high | `oiko-orchestrator` (large-4) | session model | briefs, checks evidence, merges, keeps the log, pushes, talks to the owner |
-| `oiko-test-author` | `zai-glm-5-3`, high | `oiko-test-author` (glm-5-3) | Sonnet, medium | red: failing tests for the slice's criteria, per `references/test-author.md` |
-| `oiko-implementer` | `mistral-large-4`, medium | `oiko-implementer` (large-4) | Sonnet, medium | green: makes the red tests pass in its worktree, per `oiko-implement`; never merges |
-| `oiko-reviewer` | `zai-glm-5-3`, high | `oiko-reviewer` (glm-5-3) | Opus, high | read-only branch review, per `oiko-review` (a different model from the implementer) |
+| `oiko-test-author` | `mistral-large-4`, high | `oiko-test-author` (large-4) | Sonnet, medium | red: failing tests for the slice's criteria, per `references/test-author.md` |
+| `oiko-implementer` | `deepseek-v4-1-flash`, high | `oiko-implementer` (deepseek-high) | Sonnet, medium | green: makes the red tests pass in its worktree, per `oiko-implement`; never merges |
+| `oiko-reviewer` | `mistral-large-4`, high | `oiko-reviewer` (large-4) | Opus, high | read-only branch review, per `oiko-review` (a different model from the implementer) |
+| `oiko-implementer-strong` | `mistral-large-4`, medium | `oiko-implementer-strong` (large-4) | Sonnet, high | the fresh implementer after two failed rounds (step 6) |
 | `oiko-security-reviewer` | `mistral-large-4`, high | `oiko-security-reviewer` (large-4) | Opus, high | read-only security review of every slice and of the spec, per `oiko-review` › Security review |
 | `oiko-acceptance` | `mistral-large-4`, high (the reviewer brief) | `oiko-acceptance` (large-4) | `oiko-reviewer` | read-only acceptance of the finished spec |
 | `oiko-gate` | `claude-opus-5-5`, high (budget) | none: hand the gate to a Pi session | Opus | go/no-go per finished spec, per `references/gate.md` |
@@ -157,8 +159,8 @@ Read-only lookups can run alongside.
    Cadence rules in `oiko-implement`); re-gate only when the evidence is
    missing, red, or predates an overlapping change.
 6. **Gaps:** send the implementer specifics. After two rounds without
-   resolution, brief a fresh implementer with what the first learned (Pi runs
-   it on the role's fallback model if the primary keeps failing). If that one
+   resolution, brief a fresh `oiko-implementer-strong` (the stronger model) with
+   what the first learned. If that one
    fails too, escalate once: Pi `skill_dispatch` with `escalate: "<why>"` runs
    the same brief on Opus within the Anthropic budget. Still unresolved, or no
    budget: log a blocker, record an owner question and park the slice.

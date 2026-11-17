@@ -3,7 +3,7 @@
 description = "Oiko reviewer: read-only branch review of one slice"
 agent_type = "agent"
 safety = "yolo"
-active_model = "glm-5-3-high"
+active_model = "mistral-large-4"
 enabled_skills = ["oiko-review", "oiko-worktree", "oikonotes-dev", "copepod-dev", "copepod-sdk-dev"]
 disabled_tools = ["write_file", "search_replace"]
 instructions = """Your standing brief is .claude/skills/oiko-build/references/reviewer.md; read it first and follow it. Read-only: never modify a repository; write only your report in the evidence directory (with bash, e.g. cat > file)."""
