@@ -287,10 +287,19 @@ impl CopepodClient {
     /// throttle is unavailable.
     pub async fn preview_space_invite(
         &self,
-        _org_id: &str,
-        _app_id: &str,
-        _token: &str,
+        org_id: &str,
+        app_id: &str,
+        token: &str,
     ) -> Result<SpaceInvitePreview> {
-        unimplemented!("toolkit-ui4-ui5 S5c")
+        if token.trim().is_empty() {
+            return Err(CopepodError::InvalidArgument(
+                "invite token must not be empty".into(),
+            ));
+        }
+        self.post_public(
+            &format!("{}/space-invites/preview", base(org_id, app_id)),
+            &serde_json::json!({ "token": token }),
+        )
+        .await
     }
 }
