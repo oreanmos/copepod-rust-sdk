@@ -87,6 +87,34 @@ pub struct SpaceInvite {
     pub created: String,
 }
 
+/// Where an invite stands (`POST space-invites/preview`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SpaceInvitePreviewStatus {
+    Pending,
+    Expired,
+    Revoked,
+    Accepted,
+    /// A status this SDK does not know yet.
+    #[serde(other)]
+    Other,
+}
+
+/// What an invite link shows before sign-in. All keys are always present;
+/// for every status but `pending` the six card fields are `None`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SpaceInvitePreview {
+    pub space_name: Option<String>,
+    pub role: Option<SpaceRole>,
+    pub inviter_email: Option<String>,
+    pub member_count: Option<u32>,
+    /// First character, `***`, then the domain.
+    pub invited_email_masked: Option<String>,
+    pub created: Option<String>,
+    pub expires_at: String,
+    pub status: SpaceInvitePreviewStatus,
+}
+
 /// Body of `POST spaces/{space_id}/invites`. Which roles a Space accepts
 /// depends on its kind; the server answers 400 for a role it refuses.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

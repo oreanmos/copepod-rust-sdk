@@ -8,8 +8,8 @@
 use crate::client::CopepodClient;
 use crate::error::{CopepodError, Result};
 use crate::models::{
-    ItemsResponse, Space, SpaceCreate, SpaceInvite, SpaceInviteCreate, SpaceKind, SpaceMember,
-    SpaceRole, SpaceView, SpaceVisitor, SpaceWithRole,
+    ItemsResponse, Space, SpaceCreate, SpaceInvite, SpaceInviteCreate, SpaceInvitePreview,
+    SpaceKind, SpaceMember, SpaceRole, SpaceView, SpaceVisitor, SpaceWithRole,
 };
 
 /// Reject an empty id or one that is not a single URL path segment / header
@@ -276,6 +276,28 @@ impl CopepodClient {
         }
         self.post(
             &format!("{}/space-invites/accept", base(org_id, app_id)),
+            &serde_json::json!({ "token": token }),
+        )
+        .await
+    }
+
+    /// Look up an invite from its token without signing in (sends no
+    /// credentials): `POST space-invites/preview {"token"}`. Errors: 404
+    /// `invite_not_found`, 429 `link_rate_limited`, 503 when the server's
+    /// throttle is unavailable.
+    pub async fn preview_space_invite(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        token: &str,
+    ) -> Result<SpaceInvitePreview> {
+        if token.trim().is_empty() {
+            return Err(CopepodError::InvalidArgument(
+                "invite token must not be empty".into(),
+            ));
+        }
+        self.post_public(
+            &format!("{}/space-invites/preview", base(org_id, app_id)),
             &serde_json::json!({ "token": token }),
         )
         .await
