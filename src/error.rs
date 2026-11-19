@@ -222,8 +222,10 @@ pub const STORAGE_QUOTA_EXCEEDED_CODE: &str = "storage_quota_exceeded";
 #[non_exhaustive]
 pub enum CopepodError {
     /// HTTP transport error from reqwest.
+    ///
+    /// The request URL is stripped: it can hold a share-link token.
     #[error("HTTP error: {0}")]
-    Http(#[from] reqwest::Error),
+    Http(reqwest::Error),
 
     /// API error returned by the Copepod server.
     #[error("API error {status}: {message}")]
@@ -538,6 +540,12 @@ impl CopepodError {
 }
 
 pub type Result<T> = std::result::Result<T, CopepodError>;
+
+impl From<reqwest::Error> for CopepodError {
+    fn from(error: reqwest::Error) -> Self {
+        CopepodError::Http(error.without_url())
+    }
+}
 
 #[cfg(test)]
 mod tests {

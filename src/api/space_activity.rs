@@ -11,7 +11,7 @@ impl CopepodClient {
     /// List a Space's activity (`GET spaces/{id}/activity`, app-user bearer).
     ///
     /// `limit` and `before` (the previous page's `next_before`) are sent only
-    /// when given; `collections` narrows item and comment events and is sent
+    /// when given (the server clamps `limit` to 10-50); `collections` narrows item and comment events and is sent
     /// comma-joined only when not empty. A name holding a comma or a path
     /// character is `InvalidArgument` before any call.
     pub async fn list_space_activity(

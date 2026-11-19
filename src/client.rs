@@ -102,6 +102,8 @@ impl CopepodClientBuilder {
     }
 
     /// Provide a pre-configured `reqwest::Client` for connection pooling.
+    /// The default client refuses cross-origin redirects; a custom one must
+    /// set its own redirect policy so credentials never leave the origin.
     /// When set, the builder skips creating its own HTTP client.
     ///
     /// The default client negotiates gzip (`Accept-Encoding: gzip`) and decodes
@@ -138,13 +140,27 @@ impl CopepodClientBuilder {
             client
         } else {
             reqwest::Client::builder()
+                // X-API-Key and Authorization must never follow a redirect to
+                // another origin; same-origin redirects continue.
+                .redirect(reqwest::redirect::Policy::custom(|attempt| {
+                    let same_origin = attempt.previous().last().is_some_and(|prev| {
+                        prev.scheme() == attempt.url().scheme()
+                            && prev.host_str() == attempt.url().host_str()
+                            && prev.port_or_known_default() == attempt.url().port_or_known_default()
+                    });
+                    if attempt.previous().len() >= 10 || !same_origin {
+                        attempt.stop()
+                    } else {
+                        attempt.follow()
+                    }
+                }))
                 .default_headers({
                     let mut headers = HeaderMap::new();
                     headers.insert("Accept", HeaderValue::from_static("application/json"));
                     headers
                 })
                 .build()
-                .map_err(CopepodError::Http)?
+                .map_err(CopepodError::from)?
         };
 
         Ok(CopepodClient {

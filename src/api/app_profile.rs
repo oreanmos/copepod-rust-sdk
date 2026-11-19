@@ -18,7 +18,8 @@ impl CopepodClient {
     }
 
     /// Change the caller's name (`PATCH auth/{collection}/me/profile`); `None`
-    /// clears it. 422 `name_invalid` for a bad name.
+    /// clears it. 422 `name_invalid` for a bad name, 403 `name_readonly` when
+    /// the name cannot be changed, 413 for an oversized body.
     pub async fn update_my_profile(
         &self,
         org_id: &str,

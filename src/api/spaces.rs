@@ -13,13 +13,17 @@ use crate::models::{
 };
 
 /// Reject an empty id or one that is not a single URL path segment / header
-/// value, before any network call.
+/// value, before any network call: no `/`, `\`, `?`, `#`, `%`, whitespace,
+/// control or non-ASCII character, and not `.` or `..`.
 pub(crate) fn validate_id(what: &str, value: &str) -> Result<()> {
     if value.is_empty()
         || value == "."
         || value == ".."
         || value.chars().any(|c| {
-            c == '/' || c == '?' || c == '#' || c == '%' || c.is_whitespace() || c.is_control()
+            matches!(c, '/' | '\\' | '?' | '#' | '%')
+                || !c.is_ascii()
+                || c.is_whitespace()
+                || c.is_control()
         })
     {
         return Err(CopepodError::InvalidArgument(format!(

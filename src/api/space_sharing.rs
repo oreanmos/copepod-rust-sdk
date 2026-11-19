@@ -236,10 +236,13 @@ impl CopepodClient {
     /// (`POST shared/{token}/records/{collection}/{id}/comments`).
     ///
     /// Sends the app API key when the client has one (never a bearer) and
-    /// `client_ip` only when given; with a key the answer carries the
-    /// `notify` block. `author_name` is omitted when `None`. Errors: 403
-    /// `link_read_only`, 404 `share_link_not_found`, 422 `comment_invalid`,
-    /// 429 `comment_rate_limited` / `comment_queue_full` / `link_rate_limited`.
+    /// `client_ip` only when given; **an API-key caller must pass `client_ip`**
+    /// (the server answers 422 `comment_invalid` without it). With a key the
+    /// answer carries the `notify` block. `author_name` is omitted when
+    /// `None`. Errors: 401 (key of another app or without `records:write`),
+    /// 403 `link_read_only`, 404 `share_link_not_found`, 413 (body over 8 KB),
+    /// 422 `comment_invalid`, 429 `comment_rate_limited` /
+    /// `comment_queue_full` / `link_rate_limited`, 503 `comment_unavailable`.
     #[allow(clippy::too_many_arguments)]
     pub async fn create_shared_comment(
         &self,
@@ -275,10 +278,12 @@ impl CopepodClient {
         CopepodClient::handle_response_pub(response).await
     }
 
-    /// A Space's comments for a member (`GET spaces/{id}/comments`), newest
-    /// first as the server orders them. `record_id` and `status` narrow the
-    /// list and are sent only when given. 403 `insufficient_role` for a
-    /// status filter the caller's role may not read, 404 `space_not_found`.
+    /// A Space's comments for a member (`GET spaces/{id}/comments`).
+    /// `record_id` is sent only when given; `status` only accepts `Approved`
+    /// or `Pending` (the server refuses any other with an uncoded 400, so the
+    /// SDK returns `InvalidArgument` before the call). The server also takes
+    /// a `limit` (default and maximum 200) that this method does not expose.
+    /// 403 `insufficient_role`, 404 `space_not_found`.
     pub async fn list_space_comments(
         &self,
         org_id: &str,
@@ -297,11 +302,11 @@ impl CopepodClient {
             let wire = match status {
                 SpaceCommentStatus::Pending => "pending",
                 SpaceCommentStatus::Approved => "approved",
-                SpaceCommentStatus::Rejected => "rejected",
-                SpaceCommentStatus::Removed => "removed",
-                SpaceCommentStatus::Other => {
+                SpaceCommentStatus::Rejected
+                | SpaceCommentStatus::Removed
+                | SpaceCommentStatus::Other => {
                     return Err(CopepodError::InvalidArgument(
-                        "status must be pending, approved, rejected or removed".into(),
+                        "status must be approved or pending".into(),
                     ))
                 }
             };
