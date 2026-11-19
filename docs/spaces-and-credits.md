@@ -164,3 +164,23 @@ literal or matches it exhaustively must be updated), and `App::anonymous_commons
 switch the way the server does. Off closes every anonymous door and kills file
 links already issued (401); turning it on again restores what owners had open.
 A node on an older server image ignores the switch until upgraded.
+
+## Link comments, activity and profile (toolkit-ui4-ui5 S9)
+
+Contract: copepod `docs/api-integration-reference.md`, "Link comments",
+"Activity" and the app profile. Unknown enum values deserialize to `Other`.
+
+- `shared_link_info`, `list_shared_comments` send no credentials.
+  `create_shared_comment` sends `X-API-Key` (never `Authorization`) when the
+  client has a key, and `client_ip` only when given; with a key the answer
+  carries `notify` (owner ids, `first_in_hour`) for the app's notifier.
+- `list_space_comments` (member; `record_id` and `status` filters) and
+  `decide_space_comment` (owner; approve, reject, remove) use the bearer. An
+  already-decided comment is a plain **uncoded** 409; there is no `limit`.
+- `list_space_activity(org, app, space, limit, before, collections)`: newest
+  first, last 90 days; pass `next_before` as `before`, null ends paging.
+  `actor` and `subject` are nullable (`comment.*` events have no actor; a
+  former member has no `display_name`).
+- `get_my_profile` / `update_my_profile` (`auth/{collection}/me/profile`,
+  bearer): `None` clears the name; 422 `name_invalid`.
+- `SpaceMember.display_name` is `None` when unset or hidden.

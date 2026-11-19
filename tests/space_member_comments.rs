@@ -25,13 +25,6 @@ fn coded(status: u16, code: &str) -> ResponseTemplate {
     ResponseTemplate::new(status).set_body_json(json!({"code": code, "message": "m"}))
 }
 
-fn assert_coded(err: CopepodError, status: u16, code: &str) {
-    assert!(
-        matches!(&err, CopepodError::Api { status: s, code: Some(c), .. } if *s == status && c == code),
-        "{err:?}"
-    );
-}
-
 #[tokio::test]
 async fn list_sends_bearer_and_query_and_parses_items() {
     let server = MockServer::start().await;
@@ -173,16 +166,19 @@ async fn decide_posts_each_decision_with_bearer() {
 #[tokio::test]
 async fn decide_errors_are_coded() {
     let server = MockServer::start().await;
-    for (id, status, code) in [
-        ("notowner", 403, "insufficient_role"),
-        ("decided", 409, "comment_already_decided"),
-    ] {
+    for (id, status, code) in [("notowner", 403, "insufficient_role")] {
         Mock::given(method("POST"))
             .and(path(format!("{SP}/comments/{id}/decision")))
             .respond_with(coded(status, code))
             .mount(&server)
             .await;
     }
+    // The server answers an already-decided comment with a plain, uncoded 409.
+    Mock::given(method("POST"))
+        .and(path(format!("{SP}/comments/decided/decision")))
+        .respond_with(ResponseTemplate::new(409).set_body_json(json!({"message": "m"})))
+        .mount(&server)
+        .await;
     let c = client(&server);
     let err = c
         .decide_space_comment("org", "app", "sp1", "notowner", CommentDecision::Approve)
@@ -193,7 +189,8 @@ async fn decide_errors_are_coded() {
         .decide_space_comment("org", "app", "sp1", "decided", CommentDecision::Reject)
         .await
         .unwrap_err();
-    assert_coded(err, 409, "comment_already_decided");
+    assert_eq!(err.api_status(), Some(409), "{err:?}");
+    assert_eq!(err.api_code(), None, "{err:?}");
 }
 
 #[tokio::test]

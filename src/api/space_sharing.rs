@@ -15,6 +15,7 @@
 //! `docs/api-integration-reference.md`, "Share links" (restored on main
 //! 706c44f).
 
+use reqwest::Method;
 use serde_json::Value;
 
 use super::spaces::{base, validate_id};
@@ -198,19 +199,19 @@ impl CopepodClient {
 
     /// What a link opens and at which level (`GET shared/{token}`, no
     /// credentials). 404 `share_link_not_found`, 429 `link_rate_limited`.
-    #[allow(unused_variables)]
     pub async fn shared_link_info(
         &self,
         org_id: &str,
         app_id: &str,
         token: &str,
     ) -> Result<SharedLinkInfo> {
-        unimplemented!("toolkit-ui4-ui5 S9")
+        validate_token(token)?;
+        self.get_public(&format!("{}/shared/{token}", base(org_id, app_id)))
+            .await
     }
 
     /// Approved comments on a record through a link, oldest first (no
     /// credentials).
-    #[allow(unused_variables)]
     pub async fn list_shared_comments(
         &self,
         org_id: &str,
@@ -219,12 +220,27 @@ impl CopepodClient {
         collection: &str,
         record_id: &str,
     ) -> Result<Vec<SharedComment>> {
-        unimplemented!("toolkit-ui4-ui5 S9")
+        validate_token(token)?;
+        validate_id("collection", collection)?;
+        validate_id("record_id", record_id)?;
+        let list: ItemsResponse<SharedComment> = self
+            .get_public(&format!(
+                "{}/shared/{token}/records/{collection}/{record_id}/comments",
+                base(org_id, app_id)
+            ))
+            .await?;
+        Ok(list.items)
     }
 
-    /// Leave a comment through a `comment` link. Sends the app API key when
-    /// the client has one (never a bearer) and `client_ip` only when given.
-    #[allow(unused_variables, clippy::too_many_arguments)]
+    /// Leave a comment through a `comment` link
+    /// (`POST shared/{token}/records/{collection}/{id}/comments`).
+    ///
+    /// Sends the app API key when the client has one (never a bearer) and
+    /// `client_ip` only when given; with a key the answer carries the
+    /// `notify` block. `author_name` is omitted when `None`. Errors: 403
+    /// `link_read_only`, 404 `share_link_not_found`, 422 `comment_invalid`,
+    /// 429 `comment_rate_limited` / `comment_queue_full` / `link_rate_limited`.
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_shared_comment(
         &self,
         org_id: &str,
@@ -236,11 +252,33 @@ impl CopepodClient {
         body: &str,
         client_ip: Option<std::net::IpAddr>,
     ) -> Result<SharedCommentCreated> {
-        unimplemented!("toolkit-ui4-ui5 S9")
+        validate_token(token)?;
+        validate_id("collection", collection)?;
+        validate_id("record_id", record_id)?;
+        let mut payload = serde_json::json!({ "body": body });
+        if let Some(name) = author_name {
+            payload["author_name"] = Value::String(name.to_owned());
+        }
+        if let Some(ip) = client_ip {
+            payload["client_ip"] = Value::String(ip.to_string());
+        }
+        let path = format!(
+            "{}/shared/{token}/records/{collection}/{record_id}/comments",
+            base(org_id, app_id)
+        );
+        let builder = if self.api_key.is_some() {
+            self.api_key_request(Method::POST, &path)?
+        } else {
+            self.request(Method::POST, &path)
+        };
+        let response = builder.json(&payload).send().await?;
+        CopepodClient::handle_response_pub(response).await
     }
 
-    /// A Space's comments for a member (`GET spaces/{id}/comments`).
-    #[allow(unused_variables)]
+    /// A Space's comments for a member (`GET spaces/{id}/comments`), newest
+    /// first as the server orders them. `record_id` and `status` narrow the
+    /// list and are sent only when given. 403 `insufficient_role` for a
+    /// status filter the caller's role may not read, 404 `space_not_found`.
     pub async fn list_space_comments(
         &self,
         org_id: &str,
@@ -249,11 +287,44 @@ impl CopepodClient {
         record_id: Option<&str>,
         status: Option<SpaceCommentStatus>,
     ) -> Result<Vec<SpaceComment>> {
-        unimplemented!("toolkit-ui4-ui5 S9")
+        validate_id("space_id", space_id)?;
+        let mut params: Vec<(&str, String)> = Vec::new();
+        if let Some(id) = record_id {
+            validate_id("record_id", id)?;
+            params.push(("record_id", id.to_owned()));
+        }
+        if let Some(status) = status {
+            let wire = match status {
+                SpaceCommentStatus::Pending => "pending",
+                SpaceCommentStatus::Approved => "approved",
+                SpaceCommentStatus::Rejected => "rejected",
+                SpaceCommentStatus::Removed => "removed",
+                SpaceCommentStatus::Other => {
+                    return Err(CopepodError::InvalidArgument(
+                        "status must be pending, approved, rejected or removed".into(),
+                    ))
+                }
+            };
+            params.push(("status", wire.to_owned()));
+        }
+        let response = self
+            .auth_request(
+                Method::GET,
+                &format!("{}/spaces/{space_id}/comments", base(org_id, app_id)),
+            )
+            .await?
+            .query(&params)
+            .send()
+            .await?;
+        let list: ItemsResponse<SpaceComment> =
+            CopepodClient::handle_response_pub(response).await?;
+        Ok(list.items)
     }
 
-    /// An owner's decision on a comment.
-    #[allow(unused_variables)]
+    /// An owner's decision on a comment
+    /// (`POST spaces/{id}/comments/{comment_id}/decision`). 403
+    /// `insufficient_role`; a comment already decided answers a plain 409
+    /// **without a code**.
     pub async fn decide_space_comment(
         &self,
         org_id: &str,
@@ -262,6 +333,15 @@ impl CopepodClient {
         comment_id: &str,
         decision: CommentDecision,
     ) -> Result<SpaceCommentDecided> {
-        unimplemented!("toolkit-ui4-ui5 S9")
+        validate_id("space_id", space_id)?;
+        validate_id("comment_id", comment_id)?;
+        self.post(
+            &format!(
+                "{}/spaces/{space_id}/comments/{comment_id}/decision",
+                base(org_id, app_id)
+            ),
+            &serde_json::json!({ "decision": decision }),
+        )
+        .await
     }
 }
