@@ -60,6 +60,9 @@ pub struct SpaceMember {
     pub role: SpaceRole,
     pub added_by: String,
     pub created: String,
+    /// The member's chosen name; null when unset or hidden.
+    #[serde(default)]
+    pub display_name: Option<String>,
 }
 
 /// Body of `POST spaces`.

@@ -164,3 +164,28 @@ literal or matches it exhaustively must be updated), and `App::anonymous_commons
 switch the way the server does. Off closes every anonymous door and kills file
 links already issued (401); turning it on again restores what owners had open.
 A node on an older server image ignores the switch until upgraded.
+
+## Link comments, activity and profile (toolkit-ui4-ui5 S9)
+
+Contract: copepod `docs/api-integration-reference.md`, "Link comments",
+"Activity" and the app profile. Unknown enum values deserialize to `Other`.
+
+- `shared_link_info`, `list_shared_comments` send no credentials.
+  `create_shared_comment` sends `X-API-Key` (never `Authorization`) when the
+  client has a key, and `client_ip` only when given. **With a key,
+  `client_ip` is required** (422 `comment_invalid` otherwise). With a key the
+  answer carries `notify` (owner ids, `first_in_hour`) for the app's notifier.
+  Also: 401 (key of another app or without `records:write`), 413 (body over
+  8 KB), 503 `comment_unavailable`.
+- `list_space_comments` (member; `record_id` filter; `status` only `Approved` or `Pending`, else
+  `InvalidArgument`) and
+  `decide_space_comment` (owner; approve, reject, remove) use the bearer. An
+  already-decided comment is a plain **uncoded** 409. The server accepts a
+  `limit` (default and maximum 200); the SDK does not expose it.
+- `list_space_activity(org, app, space, limit, before, collections)`: newest
+  first, last 90 days; the server clamps `limit` to 10-50; pass `next_before` as `before`, null ends paging.
+  `actor` and `subject` are nullable (`comment.*` events have no actor; a
+  former member has no `display_name`).
+- `get_my_profile` / `update_my_profile` (`auth/{collection}/me/profile`,
+  bearer): `None` clears the name; 422 `name_invalid`, 403 `name_readonly`.
+- `SpaceMember.display_name` is `None` when unset or hidden.

@@ -2,11 +2,21 @@ use chrono::{DateTime, Utc};
 use tokio::sync::RwLock;
 
 /// A token pair (access + refresh).
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct TokenPair {
     pub token: String,
     pub refresh_token: String,
     pub expires_at: Option<DateTime<Utc>>,
+}
+
+impl std::fmt::Debug for TokenPair {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TokenPair")
+            .field("token", &"<redacted>")
+            .field("refresh_token", &"<redacted>")
+            .field("expires_at", &self.expires_at)
+            .finish()
+    }
 }
 
 /// Thread-safe token store used by `CopepodClient` for automatic auth management.
