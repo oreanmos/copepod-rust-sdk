@@ -21,8 +21,9 @@ use super::spaces::{base, validate_id};
 use crate::client::CopepodClient;
 use crate::error::{CopepodError, Result};
 use crate::models::{
-    ItemsResponse, ListResult, ShareLinkCreate, ShareLinkIssued, ShareLinkScope, SharePermission,
-    SharedRecordsQuery, SpaceShareLink,
+    CommentDecision, ItemsResponse, ListResult, ShareLinkCreate, ShareLinkIssued, ShareLinkScope,
+    SharePermission, SharedComment, SharedCommentCreated, SharedLinkInfo, SharedRecordsQuery,
+    SpaceComment, SpaceCommentDecided, SpaceCommentStatus, SpaceShareLink,
 };
 
 /// Longest token the server looks up.
@@ -193,5 +194,74 @@ impl CopepodClient {
             base(org_id, app_id)
         ))
         .await
+    }
+
+    /// What a link opens and at which level (`GET shared/{token}`, no
+    /// credentials). 404 `share_link_not_found`, 429 `link_rate_limited`.
+    #[allow(unused_variables)]
+    pub async fn shared_link_info(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        token: &str,
+    ) -> Result<SharedLinkInfo> {
+        unimplemented!("toolkit-ui4-ui5 S9")
+    }
+
+    /// Approved comments on a record through a link, oldest first (no
+    /// credentials).
+    #[allow(unused_variables)]
+    pub async fn list_shared_comments(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        token: &str,
+        collection: &str,
+        record_id: &str,
+    ) -> Result<Vec<SharedComment>> {
+        unimplemented!("toolkit-ui4-ui5 S9")
+    }
+
+    /// Leave a comment through a `comment` link. Sends the app API key when
+    /// the client has one (never a bearer) and `client_ip` only when given.
+    #[allow(unused_variables, clippy::too_many_arguments)]
+    pub async fn create_shared_comment(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        token: &str,
+        collection: &str,
+        record_id: &str,
+        author_name: Option<&str>,
+        body: &str,
+        client_ip: Option<std::net::IpAddr>,
+    ) -> Result<SharedCommentCreated> {
+        unimplemented!("toolkit-ui4-ui5 S9")
+    }
+
+    /// A Space's comments for a member (`GET spaces/{id}/comments`).
+    #[allow(unused_variables)]
+    pub async fn list_space_comments(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        space_id: &str,
+        record_id: Option<&str>,
+        status: Option<SpaceCommentStatus>,
+    ) -> Result<Vec<SpaceComment>> {
+        unimplemented!("toolkit-ui4-ui5 S9")
+    }
+
+    /// An owner's decision on a comment.
+    #[allow(unused_variables)]
+    pub async fn decide_space_comment(
+        &self,
+        org_id: &str,
+        app_id: &str,
+        space_id: &str,
+        comment_id: &str,
+        decision: CommentDecision,
+    ) -> Result<SpaceCommentDecided> {
+        unimplemented!("toolkit-ui4-ui5 S9")
     }
 }
